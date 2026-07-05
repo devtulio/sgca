@@ -117,6 +117,30 @@ def init_db():
                 razao_social TEXT,
                 updated_at   TEXT
             );
+            CREATE TABLE IF NOT EXISTS contratos (
+                id             TEXT PRIMARY KEY,
+                data           TEXT NOT NULL,
+                objeto         TEXT,
+                status         TEXT DEFAULT 'vigente',
+                fornecedor_id  TEXT,
+                vigencia_final TEXT,
+                valor_global   REAL,
+                created_at     TEXT,
+                updated_at     TEXT,
+                created_by     INTEGER REFERENCES users(id),
+                deleted_at     TEXT
+            );
+            CREATE TABLE IF NOT EXISTS atas (
+                id             TEXT PRIMARY KEY,
+                data           TEXT NOT NULL,
+                numero         TEXT,
+                status         TEXT DEFAULT 'vigente',
+                vigencia_final TEXT,
+                created_at     TEXT,
+                updated_at     TEXT,
+                created_by     INTEGER REFERENCES users(id),
+                deleted_at     TEXT
+            );
             CREATE TABLE IF NOT EXISTS files (
                 id            TEXT PRIMARY KEY,
                 process_id    TEXT REFERENCES processes(id) ON DELETE CASCADE,
@@ -163,6 +187,13 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_proc_updated  ON processes(updated_at);
             CREATE INDEX IF NOT EXISTS idx_files_proc    ON files(process_id);
             CREATE INDEX IF NOT EXISTS idx_forn_cnpj     ON fornecedores(cnpj);
+            CREATE INDEX IF NOT EXISTS idx_contr_status  ON contratos(status);
+            CREATE INDEX IF NOT EXISTS idx_contr_forn    ON contratos(fornecedor_id);
+            CREATE INDEX IF NOT EXISTS idx_contr_vig     ON contratos(vigencia_final);
+            CREATE INDEX IF NOT EXISTS idx_contr_deleted ON contratos(deleted_at);
+            CREATE INDEX IF NOT EXISTS idx_ata_status    ON atas(status);
+            CREATE INDEX IF NOT EXISTS idx_ata_vig       ON atas(vigencia_final);
+            CREATE INDEX IF NOT EXISTS idx_ata_deleted   ON atas(deleted_at);
             CREATE INDEX IF NOT EXISTS idx_audit_ts      ON audit_global(ts);
             CREATE INDEX IF NOT EXISTS idx_sig_proc      ON signatures(process_id);
             CREATE INDEX IF NOT EXISTS idx_sig_cod       ON signatures(cod);
@@ -399,6 +430,18 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/fornecedores/[^/]+', p):
             self._get_fornecedor(p.split('/')[-1])
 
+        # Contratos
+        elif p == '/api/contratos':
+            self._list_contratos(qs)
+        elif re.fullmatch(r'/api/contratos/[^/]+', p):
+            self._get_contrato(p.split('/')[-1])
+
+        # Atas de Registro de Preços
+        elif p == '/api/atas':
+            self._list_atas(qs)
+        elif re.fullmatch(r'/api/atas/[^/]+', p):
+            self._get_ata(p.split('/')[-1])
+
         # Arquivos
         elif p == '/api/files':
             pid    = qp('process_id')
@@ -575,6 +618,18 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif p == '/api/fornecedores':
             self._create_fornecedor(data)
 
+        elif p == '/api/contratos':
+            self._create_contrato(data, s)
+
+        elif re.fullmatch(r'/api/contratos/[^/]+/aditivos', p):
+            self._add_aditivo(p.split('/')[3], data, s)
+
+        elif p == '/api/atas':
+            self._create_ata(data, s)
+
+        elif re.fullmatch(r'/api/atas/[^/]+/itens', p):
+            self._add_ata_item(p.split('/')[3], data, s)
+
         elif p == '/api/audit':
             self._add_audit(data, s)
 
@@ -622,10 +677,20 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._restore_process(p.split('/')[-2])
         elif re.fullmatch(r'/api/fornecedores/[^/]+/restore', p):
             self._restore_fornecedor(p.split('/')[-2])
+        elif re.fullmatch(r'/api/contratos/[^/]+/restore', p):
+            self._restore_contrato(p.split('/')[-2])
+        elif re.fullmatch(r'/api/atas/[^/]+/restore', p):
+            self._restore_ata(p.split('/')[-2])
         elif re.fullmatch(r'/api/processes/[^/]+', p):
             self._update_process(p.split('/')[-1], data, s)
         elif re.fullmatch(r'/api/fornecedores/[^/]+', p):
             self._update_fornecedor(p.split('/')[-1], data)
+        elif re.fullmatch(r'/api/contratos/[^/]+', p):
+            self._update_contrato(p.split('/')[-1], data, s)
+        elif re.fullmatch(r'/api/atas/[^/]+', p):
+            self._update_ata(p.split('/')[-1], data, s)
+        elif re.fullmatch(r'/api/atas/[^/]+/itens/[^/]+', p):
+            self._update_ata_item(p.split('/')[-3], p.split('/')[-1], data, s)
         elif p in ('/api/settings', '/api/settings/'):
             if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
             self._save_settings(data)
@@ -687,6 +752,36 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 with get_db() as conn:
                     conn.execute('UPDATE fornecedores SET deleted_at=? WHERE id=?', (_now(), fid))
+            self._json(200, {'ok': True})
+
+        elif re.fullmatch(r'/api/contratos/[^/]+/aditivos/[^/]+', p):
+            cid, aid = p.split('/')[3], p.split('/')[5]
+            self._remove_aditivo(cid, aid, s)
+
+        elif re.fullmatch(r'/api/contratos/[^/]+', p):
+            cid = p.split('/')[-1]
+            if purge:
+                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                with get_db() as conn:
+                    conn.execute('DELETE FROM contratos WHERE id=?', (cid,))
+            else:
+                with get_db() as conn:
+                    conn.execute('UPDATE contratos SET deleted_at=? WHERE id=?', (_now(), cid))
+            self._json(200, {'ok': True})
+
+        elif re.fullmatch(r'/api/atas/[^/]+/itens/[^/]+', p):
+            aid, iid = p.split('/')[3], p.split('/')[5]
+            self._remove_ata_item(aid, iid, s)
+
+        elif re.fullmatch(r'/api/atas/[^/]+', p):
+            aid = p.split('/')[-1]
+            if purge:
+                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                with get_db() as conn:
+                    conn.execute('DELETE FROM atas WHERE id=?', (aid,))
+            else:
+                with get_db() as conn:
+                    conn.execute('UPDATE atas SET deleted_at=? WHERE id=?', (_now(), aid))
             self._json(200, {'ok': True})
 
         elif p == '/api/files' and parse_qs(urlparse(self.path).query).get('process_id'):
@@ -975,6 +1070,237 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
     def _restore_fornecedor(self, fid):
         with get_db() as conn:
             conn.execute('UPDATE fornecedores SET deleted_at=NULL WHERE id=?', (fid,))
+        self._json(200, {'ok': True})
+
+    # ── Contratos ─────────────────────────────────────────────────────────────
+    # Mesmo padrão de processes/fornecedores: registro completo em JSON na coluna
+    # `data`, com colunas soltas só para filtro/ordenação. Aditivos e apostilamentos
+    # ficam embutidos como array `aditivos` dentro do próprio JSON do contrato —
+    # não precisam de tabela própria (mesma lógica de `propostas`/`cotacoes` em processes).
+
+    def _list_contratos(self, qs):
+        def qp(k, d=None): v = qs.get(k); return v[0] if v else d
+        q      = qp('q', '')
+        status = qp('status', '')
+        page   = int(qp('page', 1))
+        per    = min(int(qp('per', 500)), 2000)
+        trash  = qp('trash') == '1'
+
+        where, params = [], []
+        where.append('deleted_at IS NOT NULL' if trash else 'deleted_at IS NULL')
+        if q:
+            where.append('(objeto LIKE ? OR numero LIKE ?)')
+            params += [f'%{q}%', f'%{q}%']
+        if status:
+            where.append('status=?'); params.append(status)
+
+        wc = ('WHERE ' + ' AND '.join(where)) if where else ''
+        order = 'deleted_at DESC' if trash else 'vigencia_final ASC'
+        with get_db() as conn:
+            total = conn.execute(f'SELECT COUNT(*) FROM contratos {wc}', params).fetchone()[0]
+            rows  = conn.execute(
+                f'SELECT data,deleted_at FROM contratos {wc} ORDER BY {order} LIMIT ? OFFSET ?',
+                params + [per, (page-1)*per]
+            ).fetchall()
+        items = []
+        for r in rows:
+            item = json.loads(r['data'])
+            item['deletedAt'] = r['deleted_at']
+            items.append(item)
+        self._json(200, {'total': total, 'items': items})
+
+    def _get_contrato(self, cid):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM contratos WHERE id=?', (cid,)).fetchone()
+        if not row: self._json(404, {'error': 'Contrato não encontrado'}); return
+        self._json(200, json.loads(row['data']))
+
+    def _save_contrato_row(self, conn, data):
+        conn.execute(
+            '''INSERT OR REPLACE INTO contratos
+               (id,data,objeto,status,fornecedor_id,vigencia_final,valor_global,
+                created_at,updated_at,created_by,deleted_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,
+                       (SELECT deleted_at FROM contratos WHERE id=?))''',
+            (data['id'], json.dumps(data, ensure_ascii=False),
+             data.get('objeto'), data.get('status', 'vigente'), data.get('fornecedorId'),
+             data.get('vigenciaFinal'), _float(data.get('valorGlobal')),
+             data.get('createdAt'), data['updatedAt'], data.get('_createdBy'), data['id'])
+        )
+
+    def _create_contrato(self, data, s):
+        cid = data.get('id') or str(uuid.uuid4())
+        data['id'] = cid
+        now = _now()
+        data.setdefault('createdAt', now)
+        data['updatedAt'] = now
+        data.setdefault('aditivos', [])
+        data.setdefault('valorOriginal', data.get('valorGlobal'))
+        data['_createdBy'] = s['user_id']
+        with get_db() as conn:
+            self._save_contrato_row(conn, data)
+        self._json(200, data)
+
+    def _update_contrato(self, cid, data, s):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM contratos WHERE id=?', (cid,)).fetchone()
+            if not row:
+                self._create_contrato({**data, 'id': cid}, s); return
+            existing = json.loads(row['data'])
+            existing.update(data)
+            existing['updatedAt'] = _now()
+            self._save_contrato_row(conn, existing)
+        self._json(200, existing)
+
+    def _restore_contrato(self, cid):
+        with get_db() as conn:
+            conn.execute('UPDATE contratos SET deleted_at=NULL WHERE id=?', (cid,))
+        self._json(200, {'ok': True})
+
+    def _add_aditivo(self, cid, data, s):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM contratos WHERE id=?', (cid,)).fetchone()
+            if not row: self._json(404, {'error': 'Contrato não encontrado'}); return
+            contrato = json.loads(row['data'])
+            data['id'] = data.get('id') or str(uuid.uuid4())
+            data.setdefault('createdAt', _now())
+            contrato.setdefault('aditivos', []).append(data)
+            # Recalcula vigência final e valor global a partir do histórico de aditivos
+            if data.get('tipo') == 'prazo' and data.get('novaVigenciaFinal'):
+                contrato['vigenciaFinal'] = data['novaVigenciaFinal']
+            if data.get('valorVariacao'):
+                contrato['valorGlobal'] = (_float(contrato.get('valorGlobal')) or 0) + _float(data['valorVariacao'])
+                valor_original = _float(contrato.get('valorOriginal')) or _float(contrato.get('valorGlobal'))
+                if valor_original:
+                    acumulado = sum(_float(a.get('valorVariacao')) or 0 for a in contrato['aditivos'])
+                    contrato['percentualAcumulado'] = round(abs(acumulado) / valor_original * 100, 2)
+            contrato['updatedAt'] = _now()
+            self._save_contrato_row(conn, contrato)
+        self._json(200, contrato)
+
+    def _remove_aditivo(self, cid, aid, s):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM contratos WHERE id=?', (cid,)).fetchone()
+            if not row: self._json(404, {'error': 'Contrato não encontrado'}); return
+            contrato = json.loads(row['data'])
+            contrato['aditivos'] = [a for a in contrato.get('aditivos', []) if a.get('id') != aid]
+            contrato['updatedAt'] = _now()
+            self._save_contrato_row(conn, contrato)
+        self._json(200, {'ok': True})
+
+    # ── Atas de Registro de Preços ────────────────────────────────────────────
+    # Mesmo padrão: itens da ata embutidos como array `itens` dentro do JSON.
+
+    def _list_atas(self, qs):
+        def qp(k, d=None): v = qs.get(k); return v[0] if v else d
+        q      = qp('q', '')
+        status = qp('status', '')
+        page   = int(qp('page', 1))
+        per    = min(int(qp('per', 500)), 2000)
+        trash  = qp('trash') == '1'
+
+        where, params = [], []
+        where.append('deleted_at IS NOT NULL' if trash else 'deleted_at IS NULL')
+        if q:
+            where.append('numero LIKE ?'); params.append(f'%{q}%')
+        if status:
+            where.append('status=?'); params.append(status)
+
+        wc = ('WHERE ' + ' AND '.join(where)) if where else ''
+        order = 'deleted_at DESC' if trash else 'vigencia_final ASC'
+        with get_db() as conn:
+            total = conn.execute(f'SELECT COUNT(*) FROM atas {wc}', params).fetchone()[0]
+            rows  = conn.execute(
+                f'SELECT data,deleted_at FROM atas {wc} ORDER BY {order} LIMIT ? OFFSET ?',
+                params + [per, (page-1)*per]
+            ).fetchall()
+        items = []
+        for r in rows:
+            item = json.loads(r['data'])
+            item['deletedAt'] = r['deleted_at']
+            items.append(item)
+        self._json(200, {'total': total, 'items': items})
+
+    def _get_ata(self, aid):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM atas WHERE id=?', (aid,)).fetchone()
+        if not row: self._json(404, {'error': 'Ata não encontrada'}); return
+        self._json(200, json.loads(row['data']))
+
+    def _save_ata_row(self, conn, data):
+        conn.execute(
+            '''INSERT OR REPLACE INTO atas
+               (id,data,numero,status,vigencia_final,created_at,updated_at,created_by,deleted_at)
+               VALUES (?,?,?,?,?,?,?,?,
+                       (SELECT deleted_at FROM atas WHERE id=?))''',
+            (data['id'], json.dumps(data, ensure_ascii=False),
+             data.get('numero'), data.get('status', 'vigente'), data.get('vigenciaFinal'),
+             data.get('createdAt'), data['updatedAt'], data.get('_createdBy'), data['id'])
+        )
+
+    def _create_ata(self, data, s):
+        aid = data.get('id') or str(uuid.uuid4())
+        data['id'] = aid
+        now = _now()
+        data.setdefault('createdAt', now)
+        data['updatedAt'] = now
+        data.setdefault('itens', [])
+        data['_createdBy'] = s['user_id']
+        with get_db() as conn:
+            self._save_ata_row(conn, data)
+        self._json(200, data)
+
+    def _update_ata(self, aid, data, s):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM atas WHERE id=?', (aid,)).fetchone()
+            if not row:
+                self._create_ata({**data, 'id': aid}, s); return
+            existing = json.loads(row['data'])
+            existing.update(data)
+            existing['updatedAt'] = _now()
+            self._save_ata_row(conn, existing)
+        self._json(200, existing)
+
+    def _restore_ata(self, aid):
+        with get_db() as conn:
+            conn.execute('UPDATE atas SET deleted_at=NULL WHERE id=?', (aid,))
+        self._json(200, {'ok': True})
+
+    def _add_ata_item(self, aid, data, s):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM atas WHERE id=?', (aid,)).fetchone()
+            if not row: self._json(404, {'error': 'Ata não encontrada'}); return
+            ata = json.loads(row['data'])
+            data['id'] = data.get('id') or str(uuid.uuid4())
+            data.setdefault('quantidadeUtilizada', 0)
+            ata.setdefault('itens', []).append(data)
+            ata['updatedAt'] = _now()
+            self._save_ata_row(conn, ata)
+        self._json(200, ata)
+
+    def _update_ata_item(self, aid, iid, data, s):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM atas WHERE id=?', (aid,)).fetchone()
+            if not row: self._json(404, {'error': 'Ata não encontrada'}); return
+            ata = json.loads(row['data'])
+            for item in ata.get('itens', []):
+                if item.get('id') == iid:
+                    item.update(data)
+                    break
+            else:
+                self._json(404, {'error': 'Item não encontrado'}); return
+            ata['updatedAt'] = _now()
+            self._save_ata_row(conn, ata)
+        self._json(200, ata)
+
+    def _remove_ata_item(self, aid, iid, s):
+        with get_db() as conn:
+            row = conn.execute('SELECT data FROM atas WHERE id=?', (aid,)).fetchone()
+            if not row: self._json(404, {'error': 'Ata não encontrada'}); return
+            ata = json.loads(row['data'])
+            ata['itens'] = [i for i in ata.get('itens', []) if i.get('id') != iid]
+            ata['updatedAt'] = _now()
+            self._save_ata_row(conn, ata)
         self._json(200, {'ok': True})
 
     # ── Arquivos ──────────────────────────────────────────────────────────────

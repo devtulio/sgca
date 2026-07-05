@@ -164,6 +164,111 @@ class TestFornecedores(SGCATestCase):
         self.assertTrue(any(f['id'] == fid for f in listed['items']))
 
 
+class TestContratos(SGCATestCase):
+
+    def test_criar_listar_atualizar_e_excluir_contrato(self):
+        token = self.login()
+
+        status, created = self.request('POST', '/api/contratos', {
+            'objeto': 'Manutenção predial', 'numero': '10/2026',
+            'valorGlobal': 100000.0, 'vigenciaFinal': '2027-01-01', 'status': 'vigente'
+        }, token=token)
+        self.assertEqual(status, 200)
+        cid = created['id']
+        self.assertEqual(created['objeto'], 'Manutenção predial')
+        self.assertEqual(created['aditivos'], [])
+
+        status, listed = self.request('GET', '/api/contratos', token=token)
+        self.assertEqual(status, 200)
+        self.assertTrue(any(c['id'] == cid for c in listed['items']))
+
+        status, updated = self.request('PUT', f'/api/contratos/{cid}', {'status': 'em_prorrogacao'}, token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(updated['status'], 'em_prorrogacao')
+
+        # soft-delete + lixeira + restauração
+        status, _ = self.request('DELETE', f'/api/contratos/{cid}', token=token)
+        self.assertEqual(status, 200)
+        status, listed = self.request('GET', '/api/contratos', token=token)
+        self.assertFalse(any(c['id'] == cid for c in listed['items']))
+        status, trashed = self.request('GET', '/api/contratos?trash=1', token=token)
+        self.assertTrue(any(c['id'] == cid for c in trashed['items']))
+        status, _ = self.request('PUT', f'/api/contratos/{cid}/restore', token=token)
+        self.assertEqual(status, 200)
+        status, listed = self.request('GET', '/api/contratos', token=token)
+        self.assertTrue(any(c['id'] == cid for c in listed['items']))
+
+    def test_aditivo_de_prazo_atualiza_vigencia_e_de_valor_acumula_percentual(self):
+        token = self.login()
+        status, created = self.request('POST', '/api/contratos', {
+            'objeto': 'Serviço de vigilância', 'valorGlobal': 200000.0, 'vigenciaFinal': '2026-12-31'
+        }, token=token)
+        cid = created['id']
+
+        status, updated = self.request('POST', f'/api/contratos/{cid}/aditivos', {
+            'tipo': 'prazo', 'novaVigenciaFinal': '2027-06-30', 'justificativa': 'Prorrogação de prazo'
+        }, token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(updated['vigenciaFinal'], '2027-06-30')
+        self.assertEqual(len(updated['aditivos']), 1)
+
+        status, updated = self.request('POST', f'/api/contratos/{cid}/aditivos', {
+            'tipo': 'valor', 'valorVariacao': 20000.0, 'justificativa': 'Acréscimo de escopo'
+        }, token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(updated['valorGlobal'], 220000.0)
+        self.assertEqual(updated['percentualAcumulado'], 10.0)
+
+        aid = updated['aditivos'][-1]['id']
+        status, _ = self.request('DELETE', f'/api/contratos/{cid}/aditivos/{aid}', token=token)
+        self.assertEqual(status, 200)
+        status, single = self.request('GET', f'/api/contratos/{cid}', token=token)
+        self.assertEqual(len(single['aditivos']), 1)
+
+    def test_busca_contrato_inexistente_retorna_404(self):
+        token = self.login()
+        status, data = self.request('GET', '/api/contratos/id-que-nao-existe', token=token)
+        self.assertEqual(status, 404)
+
+
+class TestAtas(SGCATestCase):
+
+    def test_criar_ata_com_itens_e_controlar_saldo(self):
+        token = self.login()
+
+        status, created = self.request('POST', '/api/atas', {
+            'numero': '05/2026', 'orgaoGerenciador': 'Prefeitura Municipal', 'vigenciaFinal': '2027-03-01'
+        }, token=token)
+        self.assertEqual(status, 200)
+        aid = created['id']
+        self.assertEqual(created['itens'], [])
+
+        status, updated = self.request('POST', f'/api/atas/{aid}/itens', {
+            'descricao': 'Papel A4', 'quantidadeRegistrada': 1000, 'precoUnitario': 25.0
+        }, token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(updated['itens']), 1)
+        self.assertEqual(updated['itens'][0]['quantidadeUtilizada'], 0)
+        iid = updated['itens'][0]['id']
+
+        status, updated = self.request('PUT', f'/api/atas/{aid}/itens/{iid}', {'quantidadeUtilizada': 850}, token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(updated['itens'][0]['quantidadeUtilizada'], 850)
+
+        status, listed = self.request('GET', '/api/atas', token=token)
+        self.assertTrue(any(a['id'] == aid for a in listed['items']))
+
+        status, _ = self.request('DELETE', f'/api/atas/{aid}/itens/{iid}', token=token)
+        self.assertEqual(status, 200)
+        status, single = self.request('GET', f'/api/atas/{aid}', token=token)
+        self.assertEqual(single['itens'], [])
+
+    def test_busca_ata_inexistente_retorna_404(self):
+        token = self.login()
+        status, data = self.request('GET', '/api/atas/id-que-nao-existe', token=token)
+        self.assertEqual(status, 404)
+
+
 class TestAudit(SGCATestCase):
 
     def test_registra_e_lista_evento_de_auditoria(self):
