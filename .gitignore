@@ -1,0 +1,29 @@
+# Arquivos de desenvolvimento (Claude Code)
+.claude/
+
+# Planos e specs internos
+docs/superpowers/
+
+# Runtime — banco de dados
+sgca.db
+sgca.db-wal
+sgca.db-shm
+
+# Runtime — logs e cache
+sgca_errors.log
+__pycache__/
+
+# Runtime — pastas de dados
+backups/
+uploads/
+
+# Arquivos institucionais (não versionar)
+brasao.png
+
+# Arquivos temporários
+_tmp_check.js
+nul
+*.log
+
+# Ferramentas de desenvolvimento (lint) — não fazem parte do runtime
+node_modules/
