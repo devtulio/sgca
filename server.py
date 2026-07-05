@@ -1,4 +1,4 @@
-# SGCA v2.17.5 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.1.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -1443,13 +1443,13 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 </head>
 <body>
 <div class="card">
-  <div class="logo">SGCA — Sistema de Gestão de Contratação Direta</div>
+  <div class="logo">SGCA — Sistema de Gestão de Contratos e Atas</div>
   <h1>Verificação de Autenticidade</h1>
   <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Código informado:</p>
   <div class="cod">{cod_safe}</div>
   <div id="status" class="{status_class}">{status_html}</div>
   {extra_note}
-  <div class="footer">SGCA · Lei Federal nº 14.133/2021 · Verificação local</div>
+  <div class="footer">SGCA · Verificação local</div>
 </div>
 </body></html>"""
         payload = html.encode('utf-8')
