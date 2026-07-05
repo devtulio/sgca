@@ -1041,7 +1041,7 @@
   <div class="sidebar-logo">
     <img id="sidebar-brasao" alt="" class="sidebar-brasao" style="display:none" onerror="this.style.display='none'">
     <div class="s-title">SGCA</div>
-    <div class="s-sub">Contratação Direta</div>
+    <div class="s-sub">Contratos e Atas</div>
     <div class="s-muni" id="sidebar-orgao">—</div>
   </div>
 
@@ -1056,18 +1056,19 @@
 
   <div class="sidebar-nav">
     <div class="nav-section">Principal</div>
-    <button class="nav-item active" id="nav-dash" onclick="showDash()">
+    <!-- ponytail: Dashboard/Agenda de dispensa ocultos (código ainda no arquivo) — reescrever para o domínio de Contratos/Atas na Fase 2 -->
+    <button class="nav-item" id="nav-dash" onclick="showDash()" style="display:none">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
       Dashboard
       <span class="nav-badge" id="badge-processos">—</span>
     </button>
 
     <div class="nav-section">Contratações</div>
-    <button class="nav-item" id="nav-forn" onclick="showFornecedores()">
+    <button class="nav-item active" id="nav-forn" onclick="showFornecedores()">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 0-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
       Fornecedores
     </button>
-    <button class="nav-item" id="nav-agenda" onclick="showAgenda()">
+    <button class="nav-item" id="nav-agenda" onclick="showAgenda()" style="display:none">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
       Agenda
       <span class="nav-badge" id="agenda-badge" style="display:none"></span>
@@ -1110,7 +1111,7 @@
 
 <div id="app">
   <!-- ── Dashboard ── -->
-  <div id="view-dash" class="view active">
+  <div id="view-dash" class="view">
     <div class="dash-top">
       <h2>Processos</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1137,7 +1138,7 @@
   </div>
 
   <!-- ── Fornecedores ── -->
-  <div id="view-fornecedores" class="view">
+  <div id="view-fornecedores" class="view active">
     <div class="dash-top">
       <h2>Fornecedores</h2>
       <div style="display:flex;gap:8px">
@@ -1791,7 +1792,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e8eef7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
       </div>
       <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:.01em;margin-bottom:2px">SGCA — Acesso Restrito</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;font-weight:500">Sistema de Gestão de Contratação Direta</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;font-weight:500">Sistema de Gestão de Contratos e Atas</div>
       <div style="display:inline-flex;align-items:center;gap:5px;margin-top:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8);font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.04em">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         Lei Federal nº 14.133/2021
@@ -1864,7 +1865,7 @@
 
     <!-- Rodapé -->
     <div style="background:#f7f7f7;border-top:1px solid #ebebeb;padding:10px 32px;display:flex;align-items:center;justify-content:space-between">
-      <div style="font-size:10px;color:#aea79f"><strong style="color:#1a3a6b">SGCA</strong> — Contratação Direta</div>
+      <div style="font-size:10px;color:#aea79f"><strong style="color:#1a3a6b">SGCA</strong> — Contratos e Atas</div>
       <div style="font-size:10px;color:#aea79f;background:#ebebeb;padding:2px 7px;border-radius:10px">v<span class="sgca-version-badge">1.17.0</span></div>
     </div>
   </div>
@@ -3452,7 +3453,6 @@ function maskMoney(el) {
 async function loadProcesses() {
   processes = await dbGetAll('processes');
   processes.sort((a,b) => b.createdAt - a.createdAt);
-  fracResultado = analisarFracionamento(processes);
   updateAgendaBadge();
   try { renderNotificacoes(); } catch {}
   const bp = document.getElementById('badge-processos');
@@ -11821,12 +11821,10 @@ function carregarDashboard() {
       checkBackupAlert();
       const u = getUser();
       if (!u.nome) {
-        _hideDashSkeletonWhenReady(() => {
-          showSettings();
-          setTimeout(() => toast('Bem-vindo ao SGCA! Configure seus dados antes de começar.', 'success'), 400);
-        });
+        showSettings();
+        setTimeout(() => toast('Bem-vindo ao SGCA! Configure seus dados antes de começar.', 'success'), 400);
       } else {
-        _hideDashSkeletonWhenReady(() => renderDash());
+        showFornecedores();
       }
     })
     .catch(err => console.error('Erro ao carregar dashboard:', err));
@@ -11852,7 +11850,7 @@ setInterval(() => {
 
 </script>
 <footer style="text-align:center;padding:18px 16px 14px;font-size:.72rem;color:var(--gray-400);border-top:1px solid var(--gray-100);margin-top:32px">
-  SGCA — Sistema de Gestão de Contratação Direta &nbsp;·&nbsp; <strong id="footer-version"></strong> &nbsp;·&nbsp; Lei Federal nº 14.133/2021
+  SGCA — Sistema de Gestão de Contratos e Atas &nbsp;·&nbsp; <strong id="footer-version"></strong>
 </footer>
 </body>
 </html>
