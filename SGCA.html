@@ -154,6 +154,8 @@
   #app:not(.layout-expanded) #view-dash,
   #app:not(.layout-expanded) #view-detail,
   #app:not(.layout-expanded) #view-fornecedores,
+  #app:not(.layout-expanded) #view-contratos,
+  #app:not(.layout-expanded) #view-atas,
   #app:not(.layout-expanded) #view-settings { max-width: 960px; margin: 0 auto; }
 
   /* ── Views ───────────────────────────────────────── */
@@ -1354,7 +1356,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
             <label>Data de Assinatura</label>
-            <input type="date" id="a-data-assinatura">
+            <input type="date" id="a-data-assinatura" onchange="_autoVigenciaAta(this.value)">
           </div>
           <div class="info-field" style="margin:0">
             <label>Vigência Final</label>
@@ -1632,8 +1634,6 @@
             <input type="url" id="s-site-oficial" placeholder="Ex: https://orindiuva.sp.gov.br/"></div>
           <div class="info-field"><label>URL do Diário Oficial Eletrônico</label>
             <input type="url" id="s-diario-url" placeholder="Ex: https://imprensaoficialmunicipal.com.br/orindiuva"></div>
-          <div class="info-field"><label>Decreto de Atualização dos Limites de Dispensa <span style="color:var(--gray-400);font-weight:400">(usado nos documentos gerados — atualize a cada novo decreto)</span></label>
-            <input type="text" id="s-decreto-limites" placeholder="Ex: Decreto Federal nº 12.807, de 29 de dezembro de 2025"></div>
         </fieldset>
 
         <fieldset style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px;margin-bottom:16px">
@@ -3570,6 +3570,13 @@ async function renderAtas() {
   `).join('') : '<p style="font-size:.8rem;color:var(--gray-400)">Nenhuma ata cadastrada</p>';
 }
 
+function _autoVigenciaAta(dataAssinatura) {
+  if (!dataAssinatura) return;
+  const d = new Date(dataAssinatura + 'T00:00:00');
+  d.setFullYear(d.getFullYear() + 1);
+  document.getElementById('a-vig-final').value = d.toISOString().slice(0, 10);
+}
+
 async function openAtaModal(id) {
   await _loadFornecedoresCache();
   _ataAtualId = id || null;
@@ -4429,11 +4436,28 @@ function _renderFornCardEdit() {
   </div>
   <div class="forn-inline-body" style="border-top:none" onclick="event.stopPropagation()">
     ${_buildFornEditHtml(f)}
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--gray-200)">
-      <button class="btn btn-outline" onclick="_renderFornCardView()">Cancelar</button>
-      <button class="btn btn-primary" onclick="_saveFornEdit()">Salvar alterações</button>
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--gray-200)">
+      <button class="btn btn-danger btn-outline" onclick="_deleteForn('${f.id}','${escHtml(f.razao_social || '').replace(/'/g,"\\'")}')">Excluir Fornecedor</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="_renderFornCardView()">Cancelar</button>
+        <button class="btn btn-primary" onclick="_saveFornEdit()">Salvar alterações</button>
+      </div>
     </div>
   </div>`, 'edit');
+}
+
+async function _deleteForn(id, nome) {
+  const ok = await customConfirm(
+    `Excluir o fornecedor "${nome}"? Ele ficará na Lixeira por 30 dias antes da exclusão definitiva.`,
+    { title: 'Excluir Fornecedor', icon: '⚠️', okLabel: 'Excluir', okClass: 'btn-danger' }
+  );
+  if (!ok) return;
+  const r = await API.del(`/api/fornecedores/${id}`);
+  if (!r?.ok) { toast('Erro ao excluir fornecedor.', 'error'); return; }
+  await _auditEvento('FORNECEDOR_EXCLUIDO', `Fornecedor "${nome}" excluído`);
+  toast('Fornecedor excluído.', 'success');
+  _collapseFornCard(id);
+  renderFornecedores();
 }
 function _qsaRowHtml(i, s = {}) {
   return `<div class="fe-qsa-row" style="display:grid;grid-template-columns:1fr 1fr 150px 28px;gap:6px;align-items:end;margin-bottom:6px">
@@ -5849,7 +5873,6 @@ function showSettings() {
   document.getElementById('s-aut-cargo').value     = u.aut_cargo     || '';
   document.getElementById('s-site-oficial').value  = u.site_oficial  || '';
   document.getElementById('s-diario-url').value    = u.diario_url    || '';
-  document.getElementById('s-decreto-limites').value = u.decreto_limites || '';
   document.getElementById('s-cnpj-orgao').value    = u.cnpj_orgao    || '';
   document.getElementById('s-codigo-ibge').value   = u.codigo_ibge   || '';
   document.getElementById('s-uf').value            = u.uf            || '';
@@ -5916,7 +5939,6 @@ async function saveSettings() {
     aut_cargo:        document.getElementById('s-aut-cargo').value.trim(),
     site_oficial:     document.getElementById('s-site-oficial').value.trim(),
     diario_url:       document.getElementById('s-diario-url').value.trim(),
-    decreto_limites:  document.getElementById('s-decreto-limites').value.trim(),
     cnpj_orgao:       document.getElementById('s-cnpj-orgao').value.trim(),
     codigo_ibge:      document.getElementById('s-codigo-ibge').value.trim(),
     uf:               document.getElementById('s-uf').value.trim().toUpperCase(),
@@ -5952,7 +5974,7 @@ async function saveSettings() {
   const orgPayload = {
     orgao: u.orgao, municipio: u.municipio, aut_nome: u.aut_nome, aut_cargo: u.aut_cargo,
     site_oficial: u.site_oficial, diario_url: u.diario_url, cnpj_orgao: u.cnpj_orgao,
-    codigo_ibge: u.codigo_ibge, uf: u.uf, decreto_limites: u.decreto_limites,
+    codigo_ibge: u.codigo_ibge, uf: u.uf,
   };
   console.log('[SGCA] Enviando /api/settings/org:', orgPayload);
   const rOrg = await API.put('/api/settings/org', orgPayload);
