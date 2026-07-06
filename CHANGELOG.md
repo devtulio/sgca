@@ -20,9 +20,30 @@
 
 ---
 
+## [0.2.0] — 2026-07-05
+
+### Adicionado
+- Módulo de **Contratos**: cadastro, Kanban por status (Vigente/Em prorrogação/Encerrado/Rescindido), vínculo com Fornecedores, aditivos/apostilamentos com alerta de limite legal de 25% (Art. 125, Lei 14.133/2021)
+- Módulo de **Atas de Registro de Preços**: cadastro, itens registrados com controle de saldo (quantidade utilizada vs. registrada) e alerta visual de esgotamento
+- Backend: tabelas `contratos`/`atas` e endpoints REST completos (CRUD, lixeira, aditivos, itens)
+
+### Removido — domínio de Dispensa de Licitação totalmente descontinuado
+- Todo o fluxo de checklist de 18 etapas, geração de documentos, fracionamento, dotação orçamentária, propostas/cotações, conformidade, PNCP e vinculação entre processos (~4.500 linhas de código morto)
+- Assinatura eletrônica de documentos (Simples/gov.br/ICP-Brasil) e verificação de autenticidade por QR Code — dependiam do sistema de documentos removido
+- Upload de arquivos/anexos e endpoint de download — sem uso após a remoção do módulo de processos
+- Busca global (Ctrl+K), templates de processo, "mais ações" do card de processo — telas sem funcionalidade após a remoção do domínio
+- Dependência opcional `pyhanko` (só usada pela assinatura ICP-Brasil)
+
+### Corrigido
+- **Lixeira** agora lista itens excluídos de Fornecedores, Contratos e Atas (antes só enxergava processos, já removidos)
+- Painel de Diagnóstico (Configurações) simplificado para checar só fornecedores/dados institucionais, sem mais depender de processos inexistentes
+- Backup (exportar/importar/sincronizar) atualizado para o novo formato de dados (`contratos`/`atas` em vez de `processes`/`files`)
+- Diversas referências órfãs deixadas por uma remoção anterior malfeita (funções chamadas mas não mais definidas: `_debounce`, `_closeNotifOutside`, `_pinCheckCaps`, atalhos de teclado para telas removidas)
+
+---
+
 ## Próximos passos
 
-- Modelagem de dados de Contratos Administrativos e Atas de Registro de Preços (vigências, aditivos, apostilamentos, prorrogações, fiscais/gestores)
-- Documentos gerados do novo domínio
-- Alertas de vencimento de vigência/prazo
-- Kanban por status do contrato/ata
+- Documentos gerados do domínio de Contratos/Atas (extrato, termo aditivo)
+- Agenda de Vencimentos unificada (contratos + atas vencendo)
+- Exportação PNCP de contratos/atas

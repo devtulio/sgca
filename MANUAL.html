@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.1.0</title>
+<title>Manual Operacional — SGCA v0.2.0</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       margin: 20mm 20mm 25mm;
       size: A4;
       @top-center {
-        content: "SGCA v0.1.0 — Manual Operacional";
+        content: "SGCA v0.2.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -102,15 +102,15 @@
     <div class="cover-logo"><img src="sgca.ico" alt="SGCA"></div>
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
-    <div class="cover-system">Módulos administrativos (esqueleto inicial)</div>
-    <div class="cover-version">Versão v0.1.0</div>
+    <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
+    <div class="cover-version">Versão v0.2.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
       Armazenamento local via SQLite · Autenticação server-side · Sem instalação necessária
     </div>
     <div class="nota" style="text-align:left;margin-top:24pt">
-      <strong>Sobre esta versão:</strong> o SGCA está em desenvolvimento. Este manual documenta apenas os módulos administrativos já prontos (usuários, fornecedores, configurações, auditoria, backup). O módulo de <strong>Contratos e Atas de Registro de Preços</strong> — o objeto principal do sistema — ainda está em construção e será documentado à medida que for lançado.
+      <strong>Sobre esta versão:</strong> o SGCA já conta com os módulos de <strong>Contratos</strong> e <strong>Atas de Registro de Preços</strong> (cadastro, Kanban por status, aditivos/apostilamentos, controle de saldo de itens), além dos módulos administrativos (usuários, fornecedores, configurações, auditoria, backup). Geração de documentos e exportação PNCP ainda estão em desenvolvimento — veja a Seção 13 (Roadmap).
     </div>
     <div class="cover-legal" style="border-top:none;margin-top:6pt;padding-top:0">
       Este sistema é distribuído sob a licença <strong>MIT</strong> — software livre, de código aberto, que pode ser usado, copiado, modificado e redistribuído livremente, inclusive para fins comerciais, desde que mantido o aviso de copyright original. Veja o arquivo <code>LICENSE</code> no repositório para o texto completo.
@@ -126,15 +126,17 @@
     <div class="toc-item h2"><a href="#sec1">1. Introdução</a></div>
     <div class="toc-item h2"><a href="#sec2">2. Primeiro Acesso — Configuração Inicial</a></div>
     <div class="toc-item h2"><a href="#sec3">3. Visão Geral da Interface</a></div>
-    <div class="toc-item h2"><a href="#sec4">4. Cadastro de Fornecedores</a></div>
-    <div class="toc-item h2"><a href="#sec5">5. Login e Controle de Acesso</a></div>
-    <div class="toc-item h2"><a href="#sec6">6. Trilha de Auditoria</a></div>
-    <div class="toc-item h2"><a href="#sec7">7. Notificações</a></div>
-    <div class="toc-item h2"><a href="#sec8">8. Backup e Restauração</a></div>
-    <div class="toc-item h2"><a href="#sec9">9. Painel de Diagnóstico de Rede</a></div>
-    <div class="toc-item h2"><a href="#sec10">10. Lixeira</a></div>
-    <div class="toc-item h2"><a href="#sec11">11. Roadmap — Contratos e Atas de Registro de Preços</a></div>
-    <div class="toc-item h2"><a href="#sec12">12. Histórico de Versões</a></div>
+    <div class="toc-item h2"><a href="#sec4">4. Contratos</a></div>
+    <div class="toc-item h2"><a href="#sec5">5. Atas de Registro de Preços</a></div>
+    <div class="toc-item h2"><a href="#sec6">6. Cadastro de Fornecedores</a></div>
+    <div class="toc-item h2"><a href="#sec7">7. Login e Controle de Acesso</a></div>
+    <div class="toc-item h2"><a href="#sec8">8. Trilha de Auditoria</a></div>
+    <div class="toc-item h2"><a href="#sec9">9. Notificações</a></div>
+    <div class="toc-item h2"><a href="#sec10">10. Backup e Restauração</a></div>
+    <div class="toc-item h2"><a href="#sec11">11. Painel de Diagnóstico de Rede</a></div>
+    <div class="toc-item h2"><a href="#sec12">12. Lixeira</a></div>
+    <div class="toc-item h2"><a href="#sec13">13. Roadmap</a></div>
+    <div class="toc-item h2"><a href="#sec14">14. Histórico de Versões</a></div>
   </div>
 </div>
 
@@ -143,43 +145,52 @@
 
 <h2 id="sec1">1. Introdução</h2>
 <p>O <strong>SGCA — Sistema de Gestão de Contratos e Atas</strong> é uma aplicação web multiusuário desenvolvida para o Departamento de Gestão e Contratos, destinada ao controle de <strong>Contratos Administrativos</strong> e <strong>Atas de Registro de Preços</strong>.</p>
-<p>O sistema nasceu como uma adaptação estrutural do SGCD (Sistema de Gestão de Contratação Direta), reaproveitando os módulos administrativos genéricos — autenticação, usuários, fornecedores, auditoria, notificações e backup — que não são específicos de nenhum tipo de processo. O módulo de domínio (Contratos e Atas propriamente ditos) está em desenvolvimento; veja a Seção 11.</p>
+<p>O sistema nasceu como uma adaptação estrutural do SGCD (Sistema de Gestão de Contratação Direta), reaproveitando os módulos administrativos genéricos — autenticação, usuários, fornecedores, auditoria, notificações e backup — que não são específicos de nenhum tipo de processo.</p>
 <p>O sistema funciona como uma aplicação local iniciada pelo arquivo <strong>Iniciar SGCA.bat</strong>, sem necessidade de instalação adicional. Os dados são armazenados em um banco de dados SQLite (<code>sgca.db</code>) gerenciado por um servidor Python local, com suporte a múltiplos usuários autenticados simultaneamente pela rede.</p>
 
 <h2 id="sec2">2. Primeiro Acesso — Configuração Inicial</h2>
 <p>No primeiro acesso, use o usuário <code>admin</code> e a senha <code>admin123</code>, e troque a senha imediatamente em <strong>Configurações → Segurança</strong>.</p>
-<p>Em <strong>Configurações → Organização</strong>, cadastre o nome do órgão e, opcionalmente, um brasão/logotipo — usado no cabeçalho da aplicação e nos documentos gerados futuramente pelo módulo de Contratos e Atas.</p>
-<p>Em <strong>Configurações → Comunicação</strong>, configure o servidor SMTP para habilitar notificações por e-mail (veja Seção 7).</p>
+<p>Em <strong>Configurações → Organização</strong>, cadastre o nome do órgão e, opcionalmente, um brasão/logotipo — usado no cabeçalho da aplicação.</p>
+<p>Em <strong>Configurações → Comunicação</strong>, configure o servidor SMTP para habilitar notificações por e-mail (veja Seção 9).</p>
 
 <h2 id="sec3">3. Visão Geral da Interface</h2>
-<p>A barra lateral esquerda concentra a navegação entre os módulos disponíveis: Fornecedores, Lixeira, Auditoria, Notificações e Configurações. O tema (claro/escuro) e a densidade de exibição podem ser ajustados em Configurações → Interface.</p>
+<p>A barra lateral esquerda concentra a navegação entre os módulos disponíveis: Contratos, Atas de Registro de Preços, Fornecedores, Lixeira, Auditoria, Notificações e Configurações. O tema (claro/escuro) e a densidade de exibição podem ser ajustados em Configurações → Interface.</p>
 
-<h2 id="sec4">4. Cadastro de Fornecedores</h2>
+<h2 id="sec4">4. Contratos</h2>
+<p>A tela <strong>Contratos</strong> (tela inicial após o login) mostra um quadro Kanban com os contratos agrupados por status: Vigente, Em prorrogação, Encerrado e Rescindido. Cada cartão exibe o número, objeto, valor e um indicador colorido de vigência (vigente, vencendo em até 60 dias, ou vencido).</p>
+<p>Clique em <strong>+ Novo Contrato</strong> para cadastrar: número, processo administrativo de origem, objeto, fornecedor contratado (vinculado ao cadastro de Fornecedores), valor global, vigência inicial/final, fiscal e gestor do contrato, dotação orçamentária e status.</p>
+<p>Ao editar um contrato já existente, a seção <strong>Aditivos e Apostilamentos</strong> fica disponível para registrar prorrogações de prazo, acréscimos/supressões de valor, alterações qualitativas, reequilíbrios e repactuações. Um aditivo de prazo atualiza automaticamente a vigência final do contrato; um aditivo de valor recalcula o valor global e exibe um alerta quando a variação acumulada se aproxima ou ultrapassa o limite legal de 25% (Art. 125, Lei nº 14.133/2021).</p>
+
+<h2 id="sec5">5. Atas de Registro de Preços</h2>
+<p>A tela <strong>Atas de RP</strong> lista as atas cadastradas com número, órgão gerenciador, status (Vigente/Vencida/Cancelada) e indicador de vigência.</p>
+<p>Cada ata pode ter vários <strong>itens registrados</strong>: descrição, unidade, quantidade registrada, preço unitário e fornecedor vinculado. Ao consumir o saldo de um item (quantidade utilizada), uma barra de progresso mostra visualmente o percentual já utilizado, destacada em vermelho quando o consumo atinge 80% ou mais da quantidade registrada.</p>
+
+<h2 id="sec6">6. Cadastro de Fornecedores</h2>
 <p>O módulo de Fornecedores permite consultar CNPJ automaticamente (via ReceitaWS, com fallback para BrasilAPI), preencher endereço por CEP (ViaCEP), e manter o controle de certidões de regularidade fiscal e trabalhista com alertas de vencimento.</p>
 <p>Também é possível importar fornecedores em lote via CSV (botão "Importar CSV") e gerar um relatório consolidado (botão "Relatório").</p>
 
-<h2 id="sec5">5. Login e Controle de Acesso</h2>
+<h2 id="sec7">7. Login e Controle de Acesso</h2>
 <p>Senhas são armazenadas com PBKDF2-HMAC-SHA256 e salt aleatório por usuário. Sessões são gerenciadas pelo servidor e invalidadas automaticamente por inatividade. Novos usuários são cadastrados pelo administrador em Configurações → Usuários.</p>
 
-<h2 id="sec6">6. Trilha de Auditoria</h2>
-<p>Todas as ações relevantes do sistema (login, criação/edição/exclusão de fornecedores, alterações de configuração, etc.) ficam registradas em uma timeline global, agrupada por dia, com filtros por tipo de evento, período e usuário.</p>
+<h2 id="sec8">8. Trilha de Auditoria</h2>
+<p>Todas as ações relevantes do sistema (login, criação/edição/exclusão de contratos, atas e fornecedores, alterações de configuração, etc.) ficam registradas em uma timeline global, agrupada por dia, com filtros por tipo de evento, período e usuário.</p>
 
-<h2 id="sec7">7. Notificações</h2>
-<p>O sistema exibe alertas in-app (ex.: certidões de fornecedores vencendo) e pode enviar notificações por e-mail quando o SMTP estiver configurado, usando um editor de texto rico para redigir mensagens a fornecedores ou à equipe interna.</p>
+<h2 id="sec9">9. Notificações</h2>
+<p>O sistema exibe alertas in-app (ex.: certidões de fornecedores vencendo) e pode enviar notificações por e-mail quando o SMTP estiver configurado.</p>
 
-<h2 id="sec8">8. Backup e Restauração</h2>
-<p>O sistema realiza backup automático (JSON + banco SQLite) ao encerrar, com rotação configurável em Configurações → Backup. É possível também exportar/restaurar manualmente e sincronizar backups entre instalações diferentes (mescla o que é novo, revisa conflitos, sem substituir o banco inteiro).</p>
+<h2 id="sec10">10. Backup e Restauração</h2>
+<p>O sistema realiza backup automático (JSON + banco SQLite) ao encerrar, com rotação configurável em Configurações → Backup. É possível também exportar/restaurar manualmente e sincronizar fornecedores entre instalações diferentes (mescla o que é novo, revisa conflitos, sem substituir o banco inteiro).</p>
 
-<h2 id="sec9">9. Painel de Diagnóstico de Rede</h2>
-<p>Em Configurações → Diagnóstico, o sistema verifica IP, porta 3002, perfil de rede, regra de firewall e antivírus de terceiros, corrigindo automaticamente o que estiver ao alcance do Windows (com elevação de Administrador quando necessário). O mesmo diagnóstico está disponível via <strong>Diagnostico SGCA.bat</strong>.</p>
+<h2 id="sec11">11. Painel de Diagnóstico de Rede</h2>
+<p>Em Configurações → Diagnóstico, o sistema verifica IP, porta 3002, perfil de rede, regra de firewall e antivírus de terceiros, corrigindo automaticamente o que estiver ao alcance do Windows (com elevação de Administrador quando necessário), além de apontar inconsistências no cadastro de fornecedores (CNPJ duplicado ou inválido). O mesmo diagnóstico está disponível via <strong>Diagnostico SGCA.bat</strong>.</p>
 
-<h2 id="sec10">10. Lixeira</h2>
-<p>Itens excluídos ficam recuperáveis por 30 dias, incluindo arquivos anexados, antes da exclusão definitiva.</p>
+<h2 id="sec12">12. Lixeira</h2>
+<p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva.</p>
 
-<h2 id="sec11">11. Roadmap — Contratos e Atas de Registro de Preços</h2>
-<p>O módulo de domínio do SGCA — cadastro e acompanhamento de Contratos Administrativos e Atas de Registro de Preços, com vigências, aditivos, apostilamentos, prorrogações, fiscais/gestores designados e alertas de vencimento — está em desenvolvimento. Esta seção será expandida à medida que o módulo for lançado.</p>
+<h2 id="sec13">13. Roadmap</h2>
+<p>Ainda em desenvolvimento: geração de documentos do domínio de Contratos/Atas (extrato, termo aditivo), Agenda de Vencimentos unificada (contratos e atas vencendo) e exportação PNCP.</p>
 
-<h2 id="sec12">12. Histórico de Versões</h2>
+<h2 id="sec14">14. Histórico de Versões</h2>
 <p>Consulte o <code>CHANGELOG.md</code> no repositório para o histórico completo de versões e alterações.</p>
 
 </div>

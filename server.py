@@ -1,4 +1,4 @@
-# SGCA v0.1.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.2.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -97,19 +97,6 @@ def init_db():
                 user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 expires  REAL NOT NULL
             );
-            CREATE TABLE IF NOT EXISTS processes (
-                id         TEXT PRIMARY KEY,
-                data       TEXT NOT NULL,
-                objeto     TEXT,
-                status     TEXT DEFAULT 'em_andamento',
-                unidade    TEXT,
-                valor      REAL,
-                num_proc   TEXT,
-                num_dl     TEXT,
-                created_at TEXT,
-                updated_at TEXT,
-                created_by INTEGER REFERENCES users(id)
-            );
             CREATE TABLE IF NOT EXISTS fornecedores (
                 id           TEXT PRIMARY KEY,
                 data         TEXT NOT NULL,
@@ -141,17 +128,6 @@ def init_db():
                 created_by     INTEGER REFERENCES users(id),
                 deleted_at     TEXT
             );
-            CREATE TABLE IF NOT EXISTS files (
-                id            TEXT PRIMARY KEY,
-                process_id    TEXT REFERENCES processes(id) ON DELETE CASCADE,
-                step_index    INTEGER,
-                nome_original TEXT NOT NULL,
-                nome_disco    TEXT NOT NULL,
-                tamanho       INTEGER,
-                mime          TEXT,
-                uploaded_by   INTEGER REFERENCES users(id),
-                uploaded_em   TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S','now','localtime'))
-            );
             CREATE TABLE IF NOT EXISTS audit_global (
                 id          TEXT PRIMARY KEY,
                 ts          TEXT NOT NULL,
@@ -167,25 +143,6 @@ def init_db():
                 key   TEXT PRIMARY KEY,
                 value TEXT
             );
-            CREATE TABLE IF NOT EXISTS signatures (
-                id             TEXT PRIMARY KEY,
-                cod            TEXT UNIQUE,
-                process_id     TEXT REFERENCES processes(id) ON DELETE CASCADE,
-                doc_type       TEXT NOT NULL,
-                doc_filename   TEXT,
-                signer_user_id INTEGER REFERENCES users(id),
-                signer_name    TEXT,
-                method         TEXT NOT NULL,
-                status         TEXT DEFAULT 'signed',
-                hash_sha256    TEXT,
-                file_id        TEXT REFERENCES files(id),
-                signed_at      TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S','now','localtime')),
-                extra_json     TEXT
-            );
-            CREATE INDEX IF NOT EXISTS idx_proc_status   ON processes(status);
-            CREATE INDEX IF NOT EXISTS idx_proc_unidade  ON processes(unidade);
-            CREATE INDEX IF NOT EXISTS idx_proc_updated  ON processes(updated_at);
-            CREATE INDEX IF NOT EXISTS idx_files_proc    ON files(process_id);
             CREATE INDEX IF NOT EXISTS idx_forn_cnpj     ON fornecedores(cnpj);
             CREATE INDEX IF NOT EXISTS idx_contr_status  ON contratos(status);
             CREATE INDEX IF NOT EXISTS idx_contr_forn    ON contratos(fornecedor_id);
@@ -195,17 +152,13 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_ata_vig       ON atas(vigencia_final);
             CREATE INDEX IF NOT EXISTS idx_ata_deleted   ON atas(deleted_at);
             CREATE INDEX IF NOT EXISTS idx_audit_ts      ON audit_global(ts);
-            CREATE INDEX IF NOT EXISTS idx_sig_proc      ON signatures(process_id);
-            CREATE INDEX IF NOT EXISTS idx_sig_cod       ON signatures(cod);
         ''')
         # Migração: coluna deleted_at para lixeira (soft-delete) — SQLite não suporta
         # ADD COLUMN IF NOT EXISTS, então tentamos e ignoramos se já existir
-        for tbl in ('processes', 'fornecedores'):
-            try:
-                conn.execute(f'ALTER TABLE {tbl} ADD COLUMN deleted_at TEXT')
-            except sqlite3.OperationalError:
-                pass
-        conn.execute('CREATE INDEX IF NOT EXISTS idx_proc_deleted ON processes(deleted_at)')
+        try:
+            conn.execute('ALTER TABLE fornecedores ADD COLUMN deleted_at TEXT')
+        except sqlite3.OperationalError:
+            pass
         conn.execute('CREATE INDEX IF NOT EXISTS idx_forn_deleted ON fornecedores(deleted_at)')
         # Sessões são descartadas a cada início do servidor (logout automático ao fechar janela)
         conn.execute('DELETE FROM sessions')
@@ -341,8 +294,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             threading.Thread(target=_check_shutdown, daemon=True).start()
         elif p.startswith('/cnpj/'):
             self._proxy_cnpj(p[6:].strip('/'))
-        elif p.startswith('/verificar/'):
-            self._serve_verificar(p[11:].strip('/').upper())
         elif p.startswith('/api/'):
             s = self._auth()
             if s: self._route_get(p, qs, s)
@@ -418,12 +369,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif p == '/api/auth/me':
             self._json(200, self._user_dict(s))
 
-        # Processos
-        elif p == '/api/processes':
-            self._list_processes(qs, s)
-        elif re.fullmatch(r'/api/processes/[^/]+', p):
-            self._get_process(p.split('/')[-1])
-
         # Fornecedores
         elif p == '/api/fornecedores':
             self._list_fornecedores(qs)
@@ -441,43 +386,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._list_atas(qs)
         elif re.fullmatch(r'/api/atas/[^/]+', p):
             self._get_ata(p.split('/')[-1])
-
-        # Arquivos
-        elif p == '/api/files':
-            pid    = qp('process_id')
-            prefix = qp('prefix') == '1'
-            per    = min(int(qp('per', 200)), 1000)
-            with get_db() as conn:
-                if pid and prefix:
-                    total = conn.execute('SELECT COUNT(*) FROM files WHERE process_id LIKE ?', (pid + '%',)).fetchone()[0]
-                    rows  = conn.execute('SELECT id,process_id,step_index,nome_original,mime,tamanho,uploaded_em FROM files WHERE process_id LIKE ? LIMIT ?', (pid + '%', per)).fetchall()
-                elif pid:
-                    total = conn.execute('SELECT COUNT(*) FROM files WHERE process_id=?', (pid,)).fetchone()[0]
-                    rows  = conn.execute('SELECT id,process_id,step_index,nome_original,mime,tamanho,uploaded_em FROM files WHERE process_id=? LIMIT ?', (pid, per)).fetchall()
-                else:
-                    total = conn.execute('SELECT COUNT(*) FROM files').fetchone()[0]
-                    rows  = conn.execute('SELECT id,process_id,step_index,nome_original,mime,tamanho,uploaded_em FROM files LIMIT ?', (per,)).fetchall()
-            self._json(200, {'total': total, 'items': [dict(r) for r in rows]})
-        elif re.fullmatch(r'/api/files/[^/]+/meta', p):
-            fid = p.split('/')[3]
-            with get_db() as conn:
-                row = conn.execute('SELECT id,process_id,step_index,nome_original,mime,tamanho FROM files WHERE id=?', (fid,)).fetchone()
-            if not row: self._json(404, {'error': 'Arquivo não encontrado'}); return
-            self._json(200, {'id': row['id'], 'name': row['nome_original'], 'type': row['mime'], 'size': row['tamanho']})
-        elif re.fullmatch(r'/api/files/[^/]+', p):
-            self._serve_file(p.split('/')[-1])
-
-        # Assinaturas
-        elif p == '/api/signatures':
-            pid = qp('process_id')
-            with get_db() as conn:
-                if pid:
-                    rows = conn.execute(
-                        'SELECT * FROM signatures WHERE process_id=? ORDER BY signed_at DESC', (pid,)
-                    ).fetchall()
-                else:
-                    rows = conn.execute('SELECT * FROM signatures ORDER BY signed_at DESC LIMIT 500').fetchall()
-            self._json(200, {'items': [dict(r) for r in rows]})
 
         # Auditoria
         elif p == '/api/audit':
@@ -609,12 +517,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'ok': True})
             threading.Thread(target=_check_shutdown, daemon=True).start()
 
-        elif p == '/api/processes':
-            self._create_process(data, s)
-
-        elif re.fullmatch(r'/api/processes/[^/]+/files', p):
-            self._upload_file(p.split('/')[3], s)
-
         elif p == '/api/fornecedores':
             self._create_fornecedor(data)
 
@@ -658,31 +560,18 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
             self._restore_db_backup(body)
 
-        elif p == '/api/files':
-            self._upload_file_direct(s)
-
-        elif p == '/api/signatures':
-            self._create_signature_simple(data, s)
-
-        elif p == '/api/signatures/upload':
-            self._create_signature_upload(s)
-
         else:
             self._json(404, {'error': 'Rota não encontrada'})
 
     def _route_put(self, p, body, s):
         data = self._parse_json(body)
 
-        if re.fullmatch(r'/api/processes/[^/]+/restore', p):
-            self._restore_process(p.split('/')[-2])
-        elif re.fullmatch(r'/api/fornecedores/[^/]+/restore', p):
+        if re.fullmatch(r'/api/fornecedores/[^/]+/restore', p):
             self._restore_fornecedor(p.split('/')[-2])
         elif re.fullmatch(r'/api/contratos/[^/]+/restore', p):
             self._restore_contrato(p.split('/')[-2])
         elif re.fullmatch(r'/api/atas/[^/]+/restore', p):
             self._restore_ata(p.split('/')[-2])
-        elif re.fullmatch(r'/api/processes/[^/]+', p):
-            self._update_process(p.split('/')[-1], data, s)
         elif re.fullmatch(r'/api/fornecedores/[^/]+', p):
             self._update_fornecedor(p.split('/')[-1], data)
         elif re.fullmatch(r'/api/contratos/[^/]+', p):
@@ -733,17 +622,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
     def _route_delete(self, p, qs, s):
         purge = qs.get('purge', [None])[0] == '1'
 
-        if re.fullmatch(r'/api/processes/[^/]+', p):
-            pid = p.split('/')[-1]
-            if purge:
-                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
-                self._purge_process(pid)
-            else:
-                with get_db() as conn:
-                    conn.execute('UPDATE processes SET deleted_at=? WHERE id=?', (_now(), pid))
-            self._json(200, {'ok': True})
-
-        elif re.fullmatch(r'/api/fornecedores/[^/]+', p):
+        if re.fullmatch(r'/api/fornecedores/[^/]+', p):
             fid = p.split('/')[-1]
             if purge:
                 if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
@@ -784,29 +663,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                     conn.execute('UPDATE atas SET deleted_at=? WHERE id=?', (_now(), aid))
             self._json(200, {'ok': True})
 
-        elif p == '/api/files' and parse_qs(urlparse(self.path).query).get('process_id'):
-            pid_prefix = parse_qs(urlparse(self.path).query)['process_id'][0]
-            with get_db() as conn:
-                rows = conn.execute(
-                    "SELECT nome_disco FROM files WHERE process_id LIKE ?",
-                    (pid_prefix + '%',)
-                ).fetchall()
-                for row in rows:
-                    fp = os.path.join(UPLOADS_DIR, row['nome_disco'])
-                    if os.path.exists(fp): os.remove(fp)
-                conn.execute("DELETE FROM files WHERE process_id LIKE ?", (pid_prefix + '%',))
-            self._json(200, {'ok': True})
-
-        elif re.fullmatch(r'/api/files/[^/]+', p):
-            fid = p.split('/')[-1]
-            with get_db() as conn:
-                row = conn.execute('SELECT nome_disco FROM files WHERE id=?', (fid,)).fetchone()
-                if row:
-                    fp = os.path.join(UPLOADS_DIR, row['nome_disco'])
-                    if os.path.exists(fp): os.remove(fp)
-                    conn.execute('DELETE FROM files WHERE id=?', (fid,))
-            self._json(200, {'ok': True})
-
         elif re.fullmatch(r'/api/users/[^/]+', p):
             if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
             uid = int(p.split('/')[-1])
@@ -816,26 +672,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 conn.execute('DELETE FROM users WHERE id=?', (uid,))
             self._json(200, {'ok': True})
 
-        elif p == '/api/processes/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
-            with get_db() as conn:
-                conn.execute('DELETE FROM processes')
-            self._json(200, {'ok': True})
-
         elif p == '/api/fornecedores/all':
             if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
             with get_db() as conn:
                 conn.execute('DELETE FROM fornecedores')
-            self._json(200, {'ok': True})
-
-        elif p == '/api/files/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
-            import shutil
-            with get_db() as conn:
-                conn.execute('DELETE FROM files')
-            if os.path.exists(UPLOADS_DIR):
-                shutil.rmtree(UPLOADS_DIR)
-            os.makedirs(UPLOADS_DIR, exist_ok=True)
             self._json(200, {'ok': True})
 
         elif p == '/api/audit/all':
@@ -846,15 +686,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
         elif p == '/api/wipe':
             if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
-            import shutil
             with get_db() as conn:
-                conn.execute('DELETE FROM processes')
                 conn.execute('DELETE FROM fornecedores')
-                conn.execute('DELETE FROM files')
+                conn.execute('DELETE FROM contratos')
+                conn.execute('DELETE FROM atas')
                 conn.execute('DELETE FROM audit_global')
-            if os.path.exists(UPLOADS_DIR):
-                shutil.rmtree(UPLOADS_DIR)
-            os.makedirs(UPLOADS_DIR, exist_ok=True)
             self._json(200, {'ok': True})
 
         else:
@@ -908,100 +744,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 'cargo': row['cargo'], 'matricula': row['matricula'], 'admin': bool(row['admin'])
             }
         })
-
-    # ── Processos ─────────────────────────────────────────────────────────────
-
-    def _list_processes(self, qs, s):
-        def qp(k, d=None): v = qs.get(k); return v[0] if v else d
-        q       = qp('q', '')
-        status  = qp('status', '')
-        unidade = qp('unidade', '')
-        page    = int(qp('page', 1))
-        per     = min(int(qp('per', 500)), 2000)
-        trash   = qp('trash') == '1'
-
-        where, params = [], []
-        where.append('deleted_at IS NOT NULL' if trash else 'deleted_at IS NULL')
-        if q:
-            where.append('(objeto LIKE ? OR num_proc LIKE ? OR num_dl LIKE ?)')
-            params += [f'%{q}%', f'%{q}%', f'%{q}%']
-        if status:
-            where.append('status=?'); params.append(status)
-        if unidade:
-            where.append('unidade=?'); params.append(unidade)
-
-        wc = ('WHERE ' + ' AND '.join(where)) if where else ''
-        order = 'deleted_at DESC' if trash else 'updated_at DESC'
-        with get_db() as conn:
-            total = conn.execute(f'SELECT COUNT(*) FROM processes {wc}', params).fetchone()[0]
-            rows  = conn.execute(
-                f'SELECT data,deleted_at FROM processes {wc} ORDER BY {order} LIMIT ? OFFSET ?',
-                params + [per, (page-1)*per]
-            ).fetchall()
-        items = []
-        for r in rows:
-            item = json.loads(r['data'])
-            item['deletedAt'] = r['deleted_at']
-            items.append(item)
-        self._json(200, {'total': total, 'items': items})
-
-    def _get_process(self, pid):
-        with get_db() as conn:
-            row = conn.execute('SELECT data FROM processes WHERE id=?', (pid,)).fetchone()
-        if not row: self._json(404, {'error': 'Processo não encontrado'}); return
-        self._json(200, json.loads(row['data']))
-
-    def _create_process(self, data, s):
-        pid = data.get('id') or str(uuid.uuid4())
-        data['id'] = pid
-        now = _now()
-        data.setdefault('createdAt', now)
-        data['updatedAt'] = now
-        with get_db() as conn:
-            conn.execute(
-                '''INSERT OR REPLACE INTO processes
-                   (id,data,objeto,status,unidade,valor,num_proc,num_dl,created_at,updated_at,created_by)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
-                (pid, json.dumps(data, ensure_ascii=False),
-                 data.get('objeto'), data.get('status', 'em_andamento'),
-                 data.get('unidade'), _float(data.get('valor')),
-                 data.get('num_proc'), data.get('num_dl'),
-                 data.get('createdAt'), data['updatedAt'], s['user_id'])
-            )
-        self._json(200, data)
-
-    def _update_process(self, pid, data, s):
-        with get_db() as conn:
-            row = conn.execute('SELECT data FROM processes WHERE id=?', (pid,)).fetchone()
-            if not row:
-                # Cria se não existir (upsert)
-                self._create_process({**data, 'id': pid}, s); return
-            existing = json.loads(row['data'])
-            existing.update(data)
-            existing['updatedAt'] = _now()
-            conn.execute(
-                '''UPDATE processes SET data=?,objeto=?,status=?,unidade=?,valor=?,
-                   num_proc=?,num_dl=?,updated_at=? WHERE id=?''',
-                (json.dumps(existing, ensure_ascii=False),
-                 existing.get('objeto'), existing.get('status'), existing.get('unidade'),
-                 _float(existing.get('valor')), existing.get('num_proc'), existing.get('num_dl'),
-                 existing['updatedAt'], pid)
-            )
-        self._json(200, existing)
-
-    def _restore_process(self, pid):
-        with get_db() as conn:
-            conn.execute('UPDATE processes SET deleted_at=NULL WHERE id=?', (pid,))
-        self._json(200, {'ok': True})
-
-    def _purge_process(self, pid):
-        with get_db() as conn:
-            rows = conn.execute('SELECT nome_disco FROM files WHERE process_id LIKE ?', (pid + '%',)).fetchall()
-            for row in rows:
-                fp = os.path.join(UPLOADS_DIR, row['nome_disco'])
-                if os.path.exists(fp): os.remove(fp)
-            conn.execute('DELETE FROM files WHERE process_id LIKE ?', (pid + '%',))
-            conn.execute('DELETE FROM processes WHERE id=?', (pid,))
 
     # ── Fornecedores ──────────────────────────────────────────────────────────
 
@@ -1073,10 +815,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         self._json(200, {'ok': True})
 
     # ── Contratos ─────────────────────────────────────────────────────────────
-    # Mesmo padrão de processes/fornecedores: registro completo em JSON na coluna
-    # `data`, com colunas soltas só para filtro/ordenação. Aditivos e apostilamentos
+    # Mesmo padrão de fornecedores: registro completo em JSON na coluna `data`,
+    # com colunas soltas só para filtro/ordenação. Aditivos e apostilamentos
     # ficam embutidos como array `aditivos` dentro do próprio JSON do contrato —
-    # não precisam de tabela própria (mesma lógica de `propostas`/`cotacoes` em processes).
+    # não precisam de tabela própria.
 
     def _list_contratos(self, qs):
         def qp(k, d=None): v = qs.get(k); return v[0] if v else d
@@ -1303,188 +1045,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._save_ata_row(conn, ata)
         self._json(200, {'ok': True})
 
-    # ── Arquivos ──────────────────────────────────────────────────────────────
-
-    def _upload_file(self, process_id, s):
-        ct = self.headers.get('Content-Type', '')
-        if 'multipart/form-data' not in ct:
-            self._json(400, {'error': 'Esperado multipart/form-data'}); return
-
-        boundary = ct.split('boundary=')[-1].strip().encode()
-        length   = int(self.headers.get('Content-Length', 0))
-        if length > MAX_UPLOAD:
-            self._json(413, {'error': f'Arquivo muito grande (máximo {MAX_UPLOAD//1024//1024} MB)'}); return
-        body     = self.rfile.read(length)
-
-        filename, file_bytes, step_index = _parse_multipart(body, boundary)
-        if not filename or file_bytes is None:
-            self._json(400, {'error': 'Arquivo não encontrado no upload'}); return
-
-        ext       = os.path.splitext(filename)[1].lower()
-        if ext not in ALLOWED_EXTS:
-            self._json(400, {'error': f'Extensão não permitida: {ext}'}); return
-        safe_name = secrets.token_hex(16) + ext
-        with open(os.path.join(UPLOADS_DIR, safe_name), 'wb') as f:
-            f.write(file_bytes)
-
-        fid  = str(uuid.uuid4())
-        mime = _mime(ext)
-        with get_db() as conn:
-            conn.execute(
-                '''INSERT INTO files (id,process_id,step_index,nome_original,nome_disco,tamanho,mime,uploaded_by)
-                   VALUES (?,?,?,?,?,?,?,?)''',
-                (fid, process_id, step_index, filename, safe_name, len(file_bytes), mime, s['user_id'])
-            )
-        self._json(200, {
-            'id': fid, 'process_id': process_id, 'step_index': step_index,
-            'nome_original': filename, 'tamanho': len(file_bytes), 'mime': mime
-        })
-
-    def _upload_file_direct(self, s):
-        """Upload direto sem precisar de process_id no path — extrai do form."""
-        ct = self.headers.get('Content-Type', '')
-        if 'multipart/form-data' not in ct:
-            self._json(400, {'error': 'Esperado multipart/form-data'}); return
-
-        boundary = ct.split('boundary=')[-1].strip().encode()
-        length   = int(self.headers.get('Content-Length', 0))
-        if length > MAX_UPLOAD:
-            self._json(413, {'error': f'Arquivo muito grande (máximo {MAX_UPLOAD//1024//1024} MB)'}); return
-        body     = self.rfile.read(length)
-
-        parts = _parse_multipart_all(body, boundary)
-        file_bytes = parts.get('file', {}).get('data')
-        filename   = parts.get('file', {}).get('filename') or parts.get('nome_original', {}).get('text', 'arquivo')
-        process_id = parts.get('process_id', {}).get('text', '')
-        step_index = parts.get('step_index', {}).get('text', '')
-        mime_type  = parts.get('mime', {}).get('text') or ''
-
-        if not file_bytes:
-            self._json(400, {'error': 'Arquivo não encontrado no upload'}); return
-
-        ext       = os.path.splitext(filename)[1].lower()
-        if ext not in ALLOWED_EXTS:
-            self._json(400, {'error': f'Extensão não permitida: {ext}'}); return
-        safe_name = secrets.token_hex(16) + ext
-        with open(os.path.join(UPLOADS_DIR, safe_name), 'wb') as f:
-            f.write(file_bytes)
-
-        fid  = str(uuid.uuid4())
-        mime = mime_type or _mime(ext)
-        with get_db() as conn:
-            conn.execute(
-                '''INSERT INTO files (id,process_id,step_index,nome_original,nome_disco,tamanho,mime,uploaded_by)
-                   VALUES (?,?,?,?,?,?,?,?)''',
-                (fid, process_id, step_index, filename, safe_name, len(file_bytes), mime, s['user_id'])
-            )
-        self._json(200, {'id': fid, 'process_id': process_id, 'step_index': step_index,
-                         'nome_original': filename, 'tamanho': len(file_bytes), 'mime': mime})
-
-    # ── Assinaturas ───────────────────────────────────────────────────────────
-
-    def _create_signature_simple(self, data, s):
-        """Módulo 1 — Assinatura Simples: hash do documento + identidade do usuário logado."""
-        process_id = data.get('process_id') or ''
-        doc_type   = data.get('doc_type') or ''
-        filename   = data.get('doc_filename') or ''
-        hash_sha256 = data.get('hash_sha256') or ''
-        if not doc_type or not hash_sha256:
-            self._json(400, {'error': 'doc_type e hash_sha256 são obrigatórios'}); return
-
-        sig_id = str(uuid.uuid4())
-        cod = _gerar_cod_assinatura()
-        with get_db() as conn:
-            conn.execute(
-                '''INSERT INTO signatures (id,cod,process_id,doc_type,doc_filename,signer_user_id,
-                   signer_name,method,status,hash_sha256)
-                   VALUES (?,?,?,?,?,?,?,?,?,?)''',
-                (sig_id, cod, process_id, doc_type, filename, s['user_id'], s.get('nome'),
-                 'internal', 'signed', hash_sha256)
-            )
-        self._json(200, {'id': sig_id, 'cod': cod})
-
-    def _create_signature_upload(self, s):
-        """Módulos 2 (gov.br) e 3 (ICP-Brasil) — recebe PDF (já assinado, no
-        caso gov.br, ou a assinar + certificado .pfx + senha, no caso ICP-Brasil)."""
-        ct = self.headers.get('Content-Type', '')
-        if 'multipart/form-data' not in ct:
-            self._json(400, {'error': 'Esperado multipart/form-data'}); return
-        boundary = ct.split('boundary=')[-1].strip().encode()
-        length = int(self.headers.get('Content-Length', 0))
-        if length > MAX_UPLOAD:
-            self._json(413, {'error': f'Arquivo muito grande (máximo {MAX_UPLOAD//1024//1024} MB)'}); return
-        body = self.rfile.read(length)
-        parts = _parse_multipart_all(body, boundary)
-
-        method     = parts.get('method', {}).get('text', '')
-        process_id = parts.get('process_id', {}).get('text', '')
-        doc_type   = parts.get('doc_type', {}).get('text', '')
-        pdf_bytes  = parts.get('pdf', {}).get('data')
-        pdf_name   = parts.get('pdf', {}).get('filename') or 'documento.pdf'
-
-        if method not in ('govbr', 'icp-brasil'):
-            self._json(400, {'error': 'method deve ser "govbr" ou "icp-brasil"'}); return
-        if not pdf_bytes:
-            self._json(400, {'error': 'PDF não encontrado no upload'}); return
-
-        extra = {}
-        if method == 'icp-brasil':
-            cert_bytes = parts.get('cert', {}).get('data')
-            senha = parts.get('senha', {}).get('text', '')
-            if not cert_bytes or not senha:
-                self._json(400, {'error': 'Certificado (.pfx) e senha são obrigatórios para ICP-Brasil'}); return
-            try:
-                pdf_bytes, cert_info = _assinar_pdf_icp(pdf_bytes, cert_bytes, senha)
-                extra['cert_subject'] = cert_info
-            except Exception as e:
-                self._json(400, {'error': f'Falha ao assinar com o certificado: {e}'}); return
-            finally:
-                cert_bytes = None; senha = None  # descarta referências assim que possível
-
-        # Salva o PDF (assinado) como um arquivo do processo, reaproveitando a tabela files
-        safe_name = secrets.token_hex(16) + '.pdf'
-        with open(os.path.join(UPLOADS_DIR, safe_name), 'wb') as f:
-            f.write(pdf_bytes)
-        fid = str(uuid.uuid4())
-        with get_db() as conn:
-            conn.execute(
-                '''INSERT INTO files (id,process_id,step_index,nome_original,nome_disco,tamanho,mime,uploaded_by)
-                   VALUES (?,?,?,?,?,?,?,?)''',
-                (fid, process_id, '', pdf_name, safe_name, len(pdf_bytes), 'application/pdf', s['user_id'])
-            )
-
-        sig_id = str(uuid.uuid4())
-        cod = _gerar_cod_assinatura()
-        with get_db() as conn:
-            conn.execute(
-                '''INSERT INTO signatures (id,cod,process_id,doc_type,doc_filename,signer_user_id,
-                   signer_name,method,status,file_id,extra_json)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
-                (sig_id, cod, process_id, doc_type, pdf_name, s['user_id'], s.get('nome'),
-                 method, 'signed', fid, json.dumps(extra, ensure_ascii=False) if extra else None)
-            )
-        self._json(200, {'id': sig_id, 'cod': cod, 'file_id': fid})
-
-    def _serve_file(self, fid):
-        with get_db() as conn:
-            row = conn.execute('SELECT * FROM files WHERE id=?', (fid,)).fetchone()
-        if not row: self._json(404, {'error': 'Arquivo não encontrado'}); return
-
-        fp = os.path.join(UPLOADS_DIR, row['nome_disco'])
-        if not os.path.exists(fp): self._json(404, {'error': 'Arquivo não encontrado no disco'}); return
-
-        with open(fp, 'rb') as f:
-            data = f.read()
-
-        self.send_response(200)
-        self._cors()
-        self.send_header('Content-Type', row['mime'] or 'application/octet-stream')
-        self.send_header('Content-Length', str(len(data)))
-        safe_fn = row['nome_original'].replace('"', '_').replace('\n', '_').replace('\r', '_')
-        self.send_header('Content-Disposition', f'inline; filename="{safe_fn}"')
-        self.end_headers()
-        self.wfile.write(data)
-
     # ── Auditoria ─────────────────────────────────────────────────────────────
 
     def _add_audit(self, data, s=None):
@@ -1607,22 +1167,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         _do_db_backup()  # backup do atual antes de substituir tudo
         with get_db() as conn:
             conn.execute('DELETE FROM audit_global')
-            conn.execute('DELETE FROM files')
-            conn.execute('DELETE FROM processes')
             conn.execute('DELETE FROM fornecedores')
+            conn.execute('DELETE FROM contratos')
+            conn.execute('DELETE FROM atas')
             conn.commit()
-
-            for p in data.get('processes', []):
-                pid = p.get('id') or str(uuid.uuid4())
-                p['id'] = pid
-                conn.execute(
-                    '''INSERT OR REPLACE INTO processes
-                       (id,data,objeto,status,unidade,valor,num_proc,num_dl,created_at,updated_at)
-                       VALUES (?,?,?,?,?,?,?,?,?,?)''',
-                    (pid, json.dumps(p, ensure_ascii=False),
-                     p.get('objeto'), p.get('status'), p.get('unidade'), _float(p.get('valor')),
-                     p.get('num_proc'), p.get('num_dl'), p.get('createdAt'), p.get('updatedAt'))
-                )
 
             for f in data.get('fornecedores', []):
                 fid = f.get('id') or str(uuid.uuid4())
@@ -1633,31 +1181,22 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                      f.get('cnpj'), f.get('razao') or f.get('razao_social'), f.get('updatedAt'))
                 )
 
+            for c in data.get('contratos', []):
+                c['id'] = c.get('id') or str(uuid.uuid4())
+                c.setdefault('updatedAt', c.get('updatedAt') or _now())
+                self._save_contrato_row(conn, c)
+
+            for a in data.get('atas', []):
+                a['id'] = a.get('id') or str(uuid.uuid4())
+                a.setdefault('updatedAt', a.get('updatedAt') or _now())
+                self._save_ata_row(conn, a)
+
             for a in data.get('auditGlobal', []):
                 _insert_audit_raw(conn, a)
 
             for key, value in (data.get('settings') or {}).items():
                 v = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
                 conn.execute('INSERT OR REPLACE INTO sys_settings (key,value) VALUES (?,?)', (key, v))
-
-            for fd in data.get('files', []):
-                b64 = fd.get('data_b64') or fd.get('data', '')
-                if not b64: continue
-                try:
-                    binary    = base64.b64decode(b64)
-                    safe_name = secrets.token_hex(16) + '.bin'
-                    with open(os.path.join(UPLOADS_DIR, safe_name), 'wb') as fh:
-                        fh.write(binary)
-                    conn.execute(
-                        '''INSERT OR REPLACE INTO files
-                           (id,process_id,step_index,nome_original,nome_disco,tamanho,mime)
-                           VALUES (?,?,?,?,?,?,?)''',
-                        (fd.get('id') or str(uuid.uuid4()), fd.get('process_id'),
-                         fd.get('step_index'), fd.get('nome_original', 'arquivo'),
-                         safe_name, len(binary), fd.get('mime', 'application/octet-stream'))
-                    )
-                except Exception:
-                    pass
 
         self._json(200, {'ok': True})
 
@@ -1672,7 +1211,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             # Valida que o arquivo tem as tabelas esperadas
             with sqlite3.connect(tmp.name) as test_conn:
                 tables = {r[0] for r in test_conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
-            required = {'processes', 'fornecedores', 'sys_settings'}
+            required = {'fornecedores', 'contratos', 'atas', 'sys_settings'}
             if not required.issubset(tables):
                 self._json(400, {'error': 'Banco inválido: tabelas obrigatórias ausentes'}); return
             # Backup do atual antes de restaurar
@@ -1712,79 +1251,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers(); self.wfile.write(body)
         except Exception as e:
             self._json(502, {'status': 'ERROR', 'message': str(e)})
-
-    # ── Verificar documento ───────────────────────────────────────────────────
-
-    def _serve_verificar(self, cod):
-        cod_safe = html_mod.escape(cod)
-        # Consulta real no servidor — antes disso era um hash fraco recalculado no
-        # navegador com URL fixa para localhost, o que nem funcionava fora da máquina
-        # do servidor. Agora consulta a tabela signatures diretamente.
-        with get_db() as conn:
-            row = conn.execute(
-                '''SELECT sig.*, p.objeto AS proc_objeto, p.num_proc, p.num_dl, p.unidade
-                   FROM signatures sig LEFT JOIN processes p ON p.id = sig.process_id
-                   WHERE sig.cod = ?''', (cod,)
-            ).fetchone()
-
-        metodo_label = {'internal': 'Assinatura Simples (nível básico — controle interno)',
-                         'govbr': 'gov.br (nível avançado)',
-                         'icp-brasil': 'Certificado ICP-Brasil (nível qualificado)'}
-        extra_note = ''
-        if row:
-            nums = ' · '.join(x for x in [f"PA {row['num_proc']}" if row['num_proc'] else '', f"DL {row['num_dl']}" if row['num_dl'] else ''] if x)
-            status_html = f'''<h2>✓ Assinatura Encontrada</h2>
-    <div class="field"><strong>Documento:</strong> {html_mod.escape(row['doc_type'] or '')}</div>
-    <div class="field"><strong>Processo:</strong> {html_mod.escape(nums or '—')} — {html_mod.escape(row['proc_objeto'] or '—')}</div>
-    <div class="field"><strong>Assinado por:</strong> {html_mod.escape(row['signer_name'] or '—')}</div>
-    <div class="field"><strong>Método:</strong> {html_mod.escape(metodo_label.get(row['method'], row['method']))}</div>
-    <div class="field"><strong>Data:</strong> {html_mod.escape(row['signed_at'] or '—')}</div>'''
-            status_class = 'ok'
-            if row['method'] == 'icp-brasil':
-                extra_note = '<p style="font-size:12px;color:#6b7280;margin-top:10px">Para validar a cadeia de certificação, confira também o <a href="https://verificador.iti.gov.br/" target="_blank">verificador oficial do ITI</a>.</p>'
-        else:
-            status_html = '<h2>✗ Não encontrado</h2><p style="font-size:13px;margin-top:6px">O código não corresponde a nenhuma assinatura registrada nesta instalação.</p>'
-            status_class = 'err'
-
-        html = f"""<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Verificação de Autenticidade — SGCA</title>
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:system-ui,sans-serif;background:#f3f4f6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
-  .card{{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.10);max-width:520px;width:100%;padding:32px 36px}}
-  .logo{{font-size:13px;font-weight:700;letter-spacing:.5px;color:#6b7280;text-transform:uppercase;margin-bottom:20px}}
-  h1{{font-size:18px;font-weight:700;margin-bottom:6px}}
-  .cod{{font-family:monospace;font-size:15px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px 14px;display:inline-block;margin-bottom:20px;letter-spacing:2px}}
-  #status{{border-radius:8px;padding:16px 20px;margin-bottom:20px}}
-  #status.ok{{background:#f0fdf4;border:1px solid #86efac}}
-  #status.err{{background:#fef2f2;border:1px solid #fca5a5}}
-  #status h2{{font-size:15px;font-weight:700;margin-bottom:4px}}
-  #status.ok h2{{color:#166534}} #status.err h2{{color:#b91c1c}}
-  .field{{margin-bottom:8px;font-size:13px}} .field strong{{color:#374151}}
-  .footer{{font-size:11px;color:#9ca3af;margin-top:20px;text-align:center}}
-</style>
-</head>
-<body>
-<div class="card">
-  <div class="logo">SGCA — Sistema de Gestão de Contratos e Atas</div>
-  <h1>Verificação de Autenticidade</h1>
-  <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Código informado:</p>
-  <div class="cod">{cod_safe}</div>
-  <div id="status" class="{status_class}">{status_html}</div>
-  {extra_note}
-  <div class="footer">SGCA · Verificação local</div>
-</div>
-</body></html>"""
-        payload = html.encode('utf-8')
-        self.send_response(200)
-        self._cors()
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
-        self.send_header('Content-Length', str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
 
     # ── E-mail ────────────────────────────────────────────────────────────────
 
@@ -1843,65 +1309,10 @@ def _insert_audit_raw(conn, a):
          json.dumps(a['processObj']) if a.get('processObj') else a.get('process_obj'))
     )
 
-def _gerar_cod_assinatura():
-    """Código curto de verificação (ex: A1B2-C3D4), único na tabela signatures."""
-    with get_db() as conn:
-        for _ in range(10):
-            raw = secrets.token_hex(4).upper()
-            cod = raw[:4] + '-' + raw[4:]
-            if not conn.execute('SELECT 1 FROM signatures WHERE cod=?', (cod,)).fetchone():
-                return cod
-    raise RuntimeError('Não foi possível gerar código de verificação único')
-
 def _float(v):
     if v is None: return None
     try: return float(str(v).replace(',', '.').replace('R$', '').strip())
     except: return None
-
-def _mime(ext):
-    return {'.pdf': 'application/pdf', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg'}.get(ext, 'application/octet-stream')
-
-def _parse_multipart(body, boundary):
-    filename, file_bytes, step_index = None, None, None
-    for part in body.split(b'--' + boundary):
-        if b'Content-Disposition' not in part: continue
-        sep = part.find(b'\r\n\r\n')
-        if sep < 0: continue
-        header  = part[:sep].decode('utf-8', errors='replace')
-        content = part[sep+4:]
-        if content.endswith(b'\r\n'): content = content[:-2]
-        if 'filename=' in header:
-            m = re.search(r'filename="([^"]*)"', header)
-            if m: filename = m.group(1)
-            file_bytes = content
-        elif 'name="step_index"' in header:
-            try: step_index = int(content.strip())
-            except: pass
-    return filename, file_bytes, step_index
-
-def _parse_multipart_all(body, boundary):
-    """Extrai todos os campos do multipart/form-data em um dict.
-    Retorna: {field_name: {'text': str, 'data': bytes, 'filename': str}}
-    """
-    parts = {}
-    for part in body.split(b'--' + boundary):
-        if b'Content-Disposition' not in part: continue
-        sep = part.find(b'\r\n\r\n')
-        if sep < 0: continue
-        header  = part[:sep].decode('utf-8', errors='replace')
-        content = part[sep+4:]
-        if content.endswith(b'\r\n'): content = content[:-2]
-        m_name = re.search(r'name="([^"]*)"', header)
-        if not m_name: continue
-        name = m_name.group(1)
-        m_file = re.search(r'filename="([^"]*)"', header)
-        if m_file:
-            parts[name] = {'data': content, 'filename': m_file.group(1), 'text': None}
-        else:
-            parts[name] = {'data': content, 'filename': None, 'text': content.decode('utf-8', errors='replace').strip()}
-    return parts
 
 def _find_browser():
     for c in [
@@ -1912,30 +1323,6 @@ def _find_browser():
     ]:
         if os.path.isfile(c): return c
     return None
-
-def _assinar_pdf_icp(pdf_bytes, cert_bytes, senha):
-    """Assina um PDF com certificado ICP-Brasil A1 (.pfx), nível qualificado.
-    Import tardio de pyHanko: o servidor sobe normalmente mesmo sem a lib
-    instalada — só o módulo ICP-Brasil fica indisponível, com erro claro.
-    Retorna (pdf_assinado_bytes, subject_do_certificado)."""
-    import tempfile, io
-    from pyhanko.sign import signers
-    from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
-
-    with tempfile.NamedTemporaryFile(suffix='.pfx', delete=False) as tf:
-        tf.write(cert_bytes)
-        pfx_path = tf.name
-    try:
-        signer = signers.SimpleSigner.load_pkcs12(pfx_path, passphrase=senha.encode('utf-8'))
-        if signer is None:
-            raise ValueError('Senha do certificado incorreta ou arquivo .pfx inválido/corrompido')
-        cert_subject = str(signer.signing_cert.subject.human_friendly)
-        writer = IncrementalPdfFileWriter(io.BytesIO(pdf_bytes))
-        out = io.BytesIO()
-        signers.sign_pdf(writer, signers.PdfSignatureMetadata(field_name='Signature1'), signer=signer, output=out)
-        return out.getvalue(), cert_subject
-    finally:
-        os.remove(pfx_path)
 
 def _send_email_raw(smtp, frm, to, subj, html, plain=''):
     msg = MIMEMultipart('alternative')
@@ -1964,110 +1351,16 @@ def _send_email_raw(smtp, frm, to, subj, html, plain=''):
             if smtp.get('requireTLS', True): s.starttls(context=ctx)
             s.login(user, pw); s.send_message(msg)
 
-def _send_daily_alerts():
-    """Resumo diário por e-mail de prazos vencendo e processos parados.
-    Só envia se SMTP estiver configurado no servidor e ainda não tiver enviado hoje."""
-    with get_db() as conn:
-        cfg = {r['key']: r['value'] for r in conn.execute(
-            "SELECT key,value FROM sys_settings WHERE key LIKE 'smtp_%' OR key='alert_email_last_sent'"
-        ).fetchall()}
-    if not (cfg.get('smtp_host') and cfg.get('smtp_user') and cfg.get('smtp_pass') and cfg.get('smtp_to')):
-        return
-    hoje = time.strftime('%Y-%m-%d')
-    if cfg.get('alert_email_last_sent') == hoje:
-        return
-
-    with get_db() as conn:
-        rows = conn.execute("SELECT data FROM processes WHERE deleted_at IS NULL").fetchall()
-
-    agora = time.time()
-    parados, prazos = [], []
-    for row in rows:
-        try:
-            p = json.loads(row['data'])
-        except Exception:
-            continue
-        steps = p.get('steps') or []
-        done = sum(1 for st in steps if st.get('status') == 'done')
-        if steps and done == len(steps):
-            continue  # processo concluído — fora dos alertas
-
-        objeto = p.get('objeto') or p.get('num') or p.get('id')
-        updated = p.get('updatedAt')
-        if updated:
-            try:
-                ts = time.mktime(time.strptime(updated[:19], '%Y-%m-%dT%H:%M:%S'))
-                dias_parado = int((agora - ts) / 86400)
-                if dias_parado >= 15:
-                    parados.append((objeto, dias_parado))
-            except Exception:
-                pass
-
-        prazo = p.get('prazo')
-        if prazo:
-            try:
-                ts = time.mktime(time.strptime(prazo[:10], '%Y-%m-%d'))
-                dias = int((ts - agora) / 86400)
-                if dias <= 7:
-                    prazos.append((objeto, dias))
-            except Exception:
-                pass
-
-    if not parados and not prazos:
-        # Nada para reportar hoje — ainda assim marca como "enviado" para não reprocessar
-        with get_db() as conn:
-            conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('alert_email_last_sent',?)", (hoje,))
-        return
-
-    linhas = []
-    if prazos:
-        linhas.append('<h3>Prazos</h3><ul>')
-        for objeto, dias in sorted(prazos, key=lambda x: x[1]):
-            txt = f'vencido há {-dias} dia(s)' if dias < 0 else (f'vence hoje' if dias == 0 else f'vence em {dias} dia(s)')
-            linhas.append(f'<li><strong>{html_mod.escape(str(objeto))}</strong> — {txt}</li>')
-        linhas.append('</ul>')
-    if parados:
-        linhas.append('<h3>Processos parados (15+ dias sem atualização)</h3><ul>')
-        for objeto, dias in sorted(parados, key=lambda x: -x[1]):
-            linhas.append(f'<li><strong>{html_mod.escape(str(objeto))}</strong> — {dias} dias sem atualização</li>')
-        linhas.append('</ul>')
-
-    corpo = f"<p>Resumo automático do SGCA — {hoje}</p>" + ''.join(linhas)
-    smtp_cfg = {
-        'host': cfg['smtp_host'], 'port': cfg.get('smtp_port', 587),
-        'secure': cfg.get('smtp_secure') == '1', 'requireTLS': cfg.get('smtp_require_tls') != '0',
-        'ignoreSSL': cfg.get('smtp_ignore_ssl') == '1',
-        'auth': {'user': cfg['smtp_user'], 'pass': cfg['smtp_pass']},
-    }
-    frm = {'name': cfg.get('smtp_from_name') or 'SGCA', 'email': cfg['smtp_user']}
-    try:
-        _send_email_raw(smtp_cfg, frm, cfg['smtp_to'], f'SGCA — Resumo de pendências ({hoje})', corpo)
-        print(f'  [ALERTAS] E-mail de resumo enviado ({len(prazos)} prazo(s), {len(parados)} parado(s))', flush=True)
-    except Exception as e:
-        _log.error('Falha ao enviar e-mail de alertas: %s', e)
-    with get_db() as conn:
-        conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('alert_email_last_sent',?)", (hoje,))
-
 _last_trash_purge = 0
 
 def _purge_old_trash():
-    """Esvazia a lixeira: processos/fornecedores excluídos há mais de 30 dias."""
+    """Esvazia a lixeira: fornecedores/contratos/atas excluídos há mais de 30 dias."""
     global _last_trash_purge
     _last_trash_purge = time.time()
     limite_iso = time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(time.time() - 30 * 86400))
     with get_db() as conn:
-        old_procs = conn.execute(
-            "SELECT id FROM processes WHERE deleted_at IS NOT NULL AND deleted_at < ?", (limite_iso,)
-        ).fetchall()
-        for row in old_procs:
-            pid = row['id']
-            files = conn.execute('SELECT nome_disco FROM files WHERE process_id LIKE ?', (pid + '%',)).fetchall()
-            for f in files:
-                fp = os.path.join(UPLOADS_DIR, f['nome_disco'])
-                if os.path.exists(fp): os.remove(fp)
-            conn.execute('DELETE FROM files WHERE process_id LIKE ?', (pid + '%',))
-            conn.execute('DELETE FROM processes WHERE id=?', (pid,))
-        conn.execute("DELETE FROM fornecedores WHERE deleted_at IS NOT NULL AND deleted_at < ?", (limite_iso,))
+        for tbl in ('fornecedores', 'contratos', 'atas'):
+            conn.execute(f"DELETE FROM {tbl} WHERE deleted_at IS NOT NULL AND deleted_at < ?", (limite_iso,))
 
 def _watchdog():
     # Limpa sessões expiradas a cada 5s e verifica encerramento.
@@ -2083,30 +1376,20 @@ def _watchdog():
         if time.time() - _last_trash_purge > 3600:
             try: _purge_old_trash()
             except Exception as e: _log.error('Erro ao esvaziar lixeira: %s', e)
-        try: _send_daily_alerts()
-        except Exception as e: _log.error('Erro ao enviar alertas por e-mail: %s', e)
 
 # ── Backup automático do banco ─────────────────────────────────────────────────
 
 def _build_backup_payload():
     with get_db() as conn:
-        processes    = [json.loads(r['data']) for r in conn.execute('SELECT data FROM processes').fetchall()]
         fornecedores = [json.loads(r['data']) for r in conn.execute('SELECT data FROM fornecedores').fetchall()]
+        contratos    = [json.loads(r['data']) for r in conn.execute('SELECT data FROM contratos').fetchall()]
+        atas         = [json.loads(r['data']) for r in conn.execute('SELECT data FROM atas').fetchall()]
         audit        = [dict(r) for r in conn.execute('SELECT * FROM audit_global').fetchall()]
         settings     = {r['key']: r['value'] for r in conn.execute('SELECT key,value FROM sys_settings').fetchall()}
-        file_rows    = conn.execute('SELECT * FROM files').fetchall()
-    files_out = []
-    for fr in file_rows:
-        fp = os.path.join(UPLOADS_DIR, fr['nome_disco'])
-        b64 = ''
-        if os.path.exists(fp):
-            with open(fp, 'rb') as f:
-                b64 = base64.b64encode(f.read()).decode()
-        files_out.append({**dict(fr), 'data_b64': b64})
     return {
-        '_sgca': True, 'version': 4, 'exportedAt': _now(),
-        'processes': processes, 'fornecedores': fornecedores,
-        'auditGlobal': audit, 'settings': settings, 'files': files_out,
+        '_sgca': True, 'version': 5, 'exportedAt': _now(),
+        'fornecedores': fornecedores, 'contratos': contratos, 'atas': atas,
+        'auditGlobal': audit, 'settings': settings,
     }
 
 def _do_json_backup(cfg=None):

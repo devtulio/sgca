@@ -90,11 +90,11 @@ class TestAuth(SGCATestCase):
         self.assertEqual(status, 401)
 
     def test_endpoint_protegido_sem_token(self):
-        status, data = self.request('GET', '/api/processes')
+        status, data = self.request('GET', '/api/contratos')
         self.assertEqual(status, 401)
 
     def test_endpoint_protegido_com_token_invalido(self):
-        status, data = self.request('GET', '/api/processes', token='token-que-nao-existe')
+        status, data = self.request('GET', '/api/contratos', token='token-que-nao-existe')
         self.assertEqual(status, 401)
 
     def test_me_retorna_usuario_da_sessao(self):
@@ -102,48 +102,6 @@ class TestAuth(SGCATestCase):
         status, data = self.request('GET', '/api/auth/me', token=token)
         self.assertEqual(status, 200)
         self.assertEqual(data['username'], 'admin')
-
-
-class TestProcesses(SGCATestCase):
-
-    def test_criar_listar_atualizar_e_excluir_processo(self):
-        token = self.login()
-
-        status, created = self.request('POST', '/api/processes', {'objeto': 'Aquisição de teste', 'status': 'em_andamento'}, token=token)
-        self.assertEqual(status, 200)
-        pid = created['id']
-        self.assertEqual(created['objeto'], 'Aquisição de teste')
-
-        status, listed = self.request('GET', '/api/processes', token=token)
-        self.assertEqual(status, 200)
-        self.assertTrue(any(p['id'] == pid for p in listed['items']))
-
-        status, updated = self.request('PUT', f'/api/processes/{pid}', {'status': 'concluido'}, token=token)
-        self.assertEqual(status, 200)
-        self.assertEqual(updated['status'], 'concluido')
-
-        status, single = self.request('GET', f'/api/processes/{pid}', token=token)
-        self.assertEqual(status, 200)
-        self.assertEqual(single['status'], 'concluido')
-
-        # soft-delete: some da listagem normal, aparece na lixeira
-        status, _ = self.request('DELETE', f'/api/processes/{pid}', token=token)
-        self.assertEqual(status, 200)
-        status, listed = self.request('GET', '/api/processes', token=token)
-        self.assertFalse(any(p['id'] == pid for p in listed['items']))
-        status, trashed = self.request('GET', '/api/processes?trash=1', token=token)
-        self.assertTrue(any(p['id'] == pid for p in trashed['items']))
-
-        # restaurar da lixeira
-        status, _ = self.request('PUT', f'/api/processes/{pid}/restore', token=token)
-        self.assertEqual(status, 200)
-        status, listed = self.request('GET', '/api/processes', token=token)
-        self.assertTrue(any(p['id'] == pid for p in listed['items']))
-
-    def test_busca_processo_inexistente_retorna_404(self):
-        token = self.login()
-        status, data = self.request('GET', '/api/processes/id-que-nao-existe', token=token)
-        self.assertEqual(status, 404)
 
 
 class TestFornecedores(SGCATestCase):
@@ -320,12 +278,12 @@ class TestBackup(SGCATestCase):
 
     def test_export_backup_json_contem_dados_criados(self):
         token = self.login()
-        self.request('POST', '/api/processes', {'objeto': 'Processo para backup'}, token=token)
+        self.request('POST', '/api/contratos', {'objeto': 'Contrato para backup'}, token=token)
 
         status, data = self.request('GET', '/api/backup', token=token)
         self.assertEqual(status, 200)
         self.assertTrue(data['_sgca'])
-        self.assertTrue(any(p['objeto'] == 'Processo para backup' for p in data['processes']))
+        self.assertTrue(any(c['objeto'] == 'Contrato para backup' for c in data['contratos']))
 
 
 class TestHealth(SGCATestCase):
