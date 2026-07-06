@@ -2142,96 +2142,29 @@ async function fecharSistema() {
   window.close();
 }
 
-// ── Camada de compatibilidade IDB → REST API ──────────────────
-// Mantém assinaturas idênticas ao código existente.
+// ── Acesso a dados (chama a REST API direto, sem camada intermediária) ──
 
-async function dbGetAll(store) {
-  if (store === 'processes') {
-    const r = await API.get('/api/processes?per=2000');
-    const d = await API.json(r);
-    return d?.items || [];
-  }
-  if (store === 'fornecedores') {
-    const r = await API.get('/api/fornecedores?per=2000');
-    const d = await API.json(r);
-    return d?.items || [];
-  }
-  if (store === 'auditGlobal') {
-    const r = await API.get('/api/audit?per=2000');
-    const d = await API.json(r);
-    return (d?.items || []).map(a => ({
-      id: a.id, ts: a.ts,
-      at: a.ts ? new Date(a.ts).getTime() : Date.now(),
-      userId: a.user_id, userName: a.user_nome,
-      usuario: a.user_nome,
-      type: a.type, evento: a.type, label: a.label,
-      detail: a.detail, detalhe: a.detail,
-      processId: a.process_id,
-      processObj: a.process_obj ? JSON.parse(a.process_obj) : null
-    }));
-  }
-  if (store === 'files') {
-    return []; // arquivos são buscados por processo via dbGetByIndex
-  }
-  return [];
+async function listarFornecedores() {
+  const r = await API.get('/api/fornecedores?per=2000');
+  const d = await API.json(r);
+  return d?.items || [];
 }
 
-async function dbGet(store, key) {
-  if (store === 'processes') {
-    const r = await API.get(`/api/processes/${key}`);
-    return r?.ok ? API.json(r) : null;
-  }
-  if (store === 'fornecedores') {
-    const r = await API.get(`/api/fornecedores/${key}`);
-    return r?.ok ? API.json(r) : null;
-  }
-  if (store === 'files') {
-    // Retorna apenas metadados (name/type) — conteúdo é buscado em downloadFile()
-    const r = await API.get(`/api/files/${key}/meta`);
-    if (!r?.ok) return { id: key, name: String(key) };
-    return API.json(r);
-  }
-  return null;
+async function listarAuditGlobal() {
+  const r = await API.get('/api/audit?per=2000');
+  const d = await API.json(r);
+  return (d?.items || []).map(a => ({
+    id: a.id, ts: a.ts,
+    at: a.ts ? new Date(a.ts).getTime() : Date.now(),
+    userId: a.user_id, userName: a.user_nome,
+    usuario: a.user_nome,
+    type: a.type, evento: a.type, label: a.label,
+    detail: a.detail, detalhe: a.detail,
+    processId: a.process_id,
+    processObj: a.process_obj ? JSON.parse(a.process_obj) : null
+  }));
 }
 
-async function dbPut(store, data) {
-  if (store === 'processes') {
-    const r = await API.put(`/api/processes/${data.id}`, data);
-    return r?.ok ? API.json(r) : data;
-  }
-  if (store === 'fornecedores') {
-    const r = await API.put(`/api/fornecedores/${data.id}`, data);
-    return r?.ok ? API.json(r) : data;
-  }
-  if (store === 'auditGlobal') {
-    await API.post('/api/audit', data);
-    return data;
-  }
-  if (store === 'files') {
-    // data.data é ArrayBuffer; faz upload multipart
-    const form = new FormData();
-    const blob = new Blob([data.data], { type: data.type || 'application/octet-stream' });
-    form.append('file', blob, data.name);
-    form.append('process_id', data.processId || '');
-    form.append('step_index', String(data.stepIdx ?? ''));
-    form.append('nome_original', data.name || '');
-    form.append('mime', data.type || 'application/octet-stream');
-    form.append('tamanho', String(data.size || 0));
-    const r = await API.upload('/api/files', form);
-    const d = await API.json(r);
-    return d ? { ...data, id: d.id } : data;
-  }
-  return data;
-}
-
-
-// dbGetByIndex substituto — usado para buscar arquivos por processo
-
-
-// initDB não é mais necessário (SQLite no servidor), mantido como no-op
-let db = null; // compatibilidade — não usado
-
-const DB_NAME = '__sgca_api__', DB_VER = 4; // compat stubs
 
 // ── Tratamento global de erros JS ──────────────────────────────
 let _globalErrorCount = 0;
@@ -2312,11 +2245,11 @@ async function factoryReset() {
   if (!digitado) return;
 
   // — Confirmação 3: contagem regressiva com contagem de dados —
-  const [processes, fornecedores, files] = await Promise.all([
-    dbGetAll('processes'), dbGetAll('fornecedores'),
-    API.json(await API.get('/api/files?per=1')).then(d => d?.total ?? 0).catch(() => 0)
+  const [contratos, atas, fornecedores] = await Promise.all([
+    API.json(await API.get('/api/contratos?per=1')).then(d => d?.total ?? 0).catch(() => 0),
+    API.json(await API.get('/api/atas?per=1')).then(d => d?.total ?? 0).catch(() => 0),
+    listarFornecedores()
   ]);
-  const fileCount = files; // files é agora o count (número)
   const c3 = await new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
@@ -2326,9 +2259,9 @@ async function factoryReset() {
         <div style="font-size:1rem;font-weight:700;color:#dc2626;margin-bottom:14px">Última confirmação (3/3) — sem volta</div>
         <p style="font-size:.85rem;line-height:1.7;color:${txt};margin-bottom:14px">
           Serão apagados permanentemente:<br>
-          <strong>${processes.length}</strong> processo(s) &nbsp;·&nbsp;
-          <strong>${fornecedores.length}</strong> fornecedor(es) &nbsp;·&nbsp;
-          <strong>${fileCount}</strong> arquivo(s)
+          <strong>${contratos}</strong> contrato(s) &nbsp;·&nbsp;
+          <strong>${atas}</strong> ata(s) &nbsp;·&nbsp;
+          <strong>${fornecedores.length}</strong> fornecedor(es)
         </p>
         <p style="font-size:.8rem;color:${sub};margin-bottom:22px">Um backup completo será exportado automaticamente antes do wipe.</p>
         <button id="_wipe-final" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;min-width:180px;opacity:.5;cursor:not-allowed" disabled>
@@ -2387,11 +2320,13 @@ async function factoryReset() {
 async function exportBackup() {
   try {
     // Obtém contagem prévia para informar o usuário
-    const [processes, fornecedores] = await Promise.all([
-      dbGetAll('processes'), dbGetAll('fornecedores')
+    const [contratos, atas, fornecedores] = await Promise.all([
+      API.json(await API.get('/api/contratos?per=1')).then(d => d?.total ?? 0).catch(() => 0),
+      API.json(await API.get('/api/atas?per=1')).then(d => d?.total ?? 0).catch(() => 0),
+      listarFornecedores()
     ]);
     const confirmed = await customConfirm(
-      `Prestes a salvar ${processes.length} processo(s) e ${fornecedores.length} fornecedor(es).\n\n💡 Guarde o arquivo em local externo à máquina — pasta de rede, servidor municipal, OneDrive/Google Drive institucional ou repositório do POP — para garantir recuperação em caso de formatação ou falha do equipamento.`,
+      `Prestes a salvar ${contratos} contrato(s), ${atas} ata(s) e ${fornecedores.length} fornecedor(es).\n\n💡 Guarde o arquivo em local externo à máquina — pasta de rede, servidor municipal, OneDrive/Google Drive institucional ou repositório do POP — para garantir recuperação em caso de formatação ou falha do equipamento.`,
       { title: 'Exportar Backup', icon: '💾', okLabel: 'Salvar arquivo', okClass: 'btn-primary', cancelLabel: 'Cancelar' }
     );
     if (!confirmed) return;
@@ -2408,7 +2343,7 @@ async function exportBackup() {
     URL.revokeObjectURL(url);
     localStorage.setItem('sgca-last-manual-export', Date.now().toString());
     document.getElementById('backup-alert-banner').style.display = 'none';
-    toast(`Backup exportado — ${processes.length} processos, ${fornecedores.length} fornecedores.`, 'success');
+    toast(`Backup exportado — ${contratos} contratos, ${atas} atas, ${fornecedores.length} fornecedores.`, 'success');
   } catch(e) { toast('Erro ao exportar: ' + e.message, 'error'); }
 }
 
@@ -2542,7 +2477,7 @@ async function sincronizarBackup(file) {
 
     // Carrega estado atual
     const [fornAtual, auditAtual] = await Promise.all([
-      dbGetAll('fornecedores'), dbGetAll('auditGlobal')
+      listarFornecedores(), listarAuditGlobal()
     ]);
     const fornMap  = new Map(fornAtual.map(f => [f.id, f]));
     const auditIds = new Set(auditAtual.map(e => e.id));
@@ -2595,7 +2530,7 @@ async function sincronizarBackup(file) {
 
     const falhas = { fornecedores: 0, auditoria: 0 };
     for (const f of fornParaAplicar) {
-      try { await dbPut('fornecedores', f); }
+      try { await API.put(`/api/fornecedores/${f.id}`, f); }
       catch (e) { falhas.fornecedores++; console.error('Falha ao mesclar fornecedor', f.id, e); }
     }
 
@@ -2839,7 +2774,6 @@ const _CERT_MIGRA = { cnd_federal:'rfb', cnd_estadual:'pge_sp', crf_fgts:'fgts' 
 // ══════════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════════
-let processes = [];
 let currentId = null;
 let currentProcess = null;
 let fracResultado = new Map();
@@ -3075,15 +3009,6 @@ function maskMoney(el) {
 // ══════════════════════════════════════════════════════════════
 // LOAD / SAVE
 // ══════════════════════════════════════════════════════════════
-async function loadProcesses() {
-  processes = await dbGetAll('processes');
-  processes.sort((a,b) => b.createdAt - a.createdAt);
-  updateAgendaBadge();
-  try { renderNotificacoes(); } catch {}
-  const bp = document.getElementById('badge-processos');
-  if (bp) bp.textContent = processes.length;
-}
-
 let _saveIndicatorTimer = null;
 
 
@@ -3288,19 +3213,20 @@ async function buscarCep(cepInputId, fieldPrefix) {
 }
 
 async function saveFornecedor(forn, processId) {
-  const existing = await dbGet('fornecedores', forn.id);
+  const existing = await API.get(`/api/fornecedores/${forn.id}`).then(r => r?.ok ? API.json(r) : null);
   const prevProcessos = existing?.processos || [];
   const processos = processId
     ? [...new Set([...prevProcessos, processId])]
     : prevProcessos;
-  await dbPut('fornecedores', {
+  const merged = {
     ...(existing || {}),   // preserva campos manuais (obs, email, website, qsa editado etc.)
     ...forn,               // sobrescreve com dados frescos da Receita Federal
     processos,
     certidoes: existing?.certidoes || [],
     addedAt: existing?.addedAt || Date.now(),
     updatedAt: Date.now()
-  });
+  };
+  await API.put(`/api/fornecedores/${merged.id}`, merged);
 }
 // ══════════════════════════════════════════════════════════════
 // CONTRATOS
@@ -3686,7 +3612,7 @@ function limparBuscaForn() {
 }
 
 async function renderFornecedores() {
-  const all = await dbGetAll('fornecedores');
+  const all = await listarFornecedores();
   const q    = (document.getElementById('forn-search')?.value || '').toLowerCase();
   const sort = document.getElementById('forn-sort')?.value || 'recent';
 
@@ -3766,42 +3692,6 @@ const _ALL_VIEWS = ['view-dash','view-detail','view-fornecedores','view-audit','
 function _hideAllViews() { _ALL_VIEWS.forEach(id => document.getElementById(id)?.classList.remove('active')); }
 
 let _auditPage = 0;
-// ══════════════════════════════════════════════════════════════
-// AGENDA DE VENCIMENTOS (feature 4)
-// ══════════════════════════════════════════════════════════════
-
-function updateAgendaBadge() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const in3   = new Date(today); in3.setDate(in3.getDate() + 3);
-  let count = 0;
-  for (const p of processes) {
-    function check(dateStr) {
-      if (!dateStr) return;
-      const d = new Date(dateStr.length === 10 ? dateStr + 'T00:00:00' : dateStr);
-      if (!isNaN(d) && d <= in3) count++;
-    }
-    check(p.steps?.[7]?.fields?.data_encerramento);
-    check(p.steps?.[13]?.fields?.vigencia_final);
-    check(p.prazo);
-    // processos parados há mais de 15 dias
-    const lastUp = p.updatedAt || p.createdAt;
-    if (lastUp && processStatus(p) === 'progress') {
-      const diasParado = Math.floor((today - new Date(lastUp)) / 86400000);
-      if (diasParado > 15) count++;
-    }
-  }
-  const badge = document.getElementById('agenda-badge');
-  if (!badge) return;
-  if (count > 0) {
-    badge.textContent = count > 99 ? '99+' : count;
-    badge.style.display = '';
-    document.getElementById('nav-agenda').setAttribute('aria-label', `Agenda de Vencimentos — ${count} alerta(s)`);
-  } else {
-    badge.style.display = 'none';
-    document.getElementById('nav-agenda').setAttribute('aria-label', 'Agenda de Vencimentos');
-  }
-}
-
 
 let _auditLastDay = null;
 const _AUDIT_PAGE_SIZE = 50;
@@ -3971,7 +3861,7 @@ async function renderAudit(loadMore = false) {
   const fAte  = document.getElementById('audit-filter-ate')?.value;
   const fUser = (document.getElementById('audit-filter-user')?.value || '').toLowerCase();
 
-  let todos = (await dbGetAll('auditGlobal')).sort((a, b) => b.at - a.at);
+  let todos = (await listarAuditGlobal()).sort((a, b) => b.at - a.at);
   if (fDe || fAte) {
     const tsFrom = fDe ? new Date(fDe + 'T00:00:00').getTime() : null;
     const tsTo   = fAte ? new Date(fAte + 'T23:59:59').getTime() : null;
@@ -4085,7 +3975,7 @@ async function gerarRelatorioAuditoria() {
   const fAte  = document.getElementById('audit-filter-ate')?.value;
   const fUser = (document.getElementById('audit-filter-user')?.value || '').toLowerCase();
 
-  let todos = (await dbGetAll('auditGlobal')).sort((a, b) => b.at - a.at);
+  let todos = (await listarAuditGlobal()).sort((a, b) => b.at - a.at);
   if (fDe || fAte) {
     const tsFrom = fDe ? new Date(fDe + 'T00:00:00').getTime() : null;
     const tsTo   = fAte ? new Date(fAte + 'T23:59:59').getTime() : null;
@@ -4112,8 +4002,7 @@ async function gerarRelatorioAuditoria() {
 
   const tbody = lista.map(e => {
     const label = _AUDIT_EVENT_LABELS[e.evento] || e.evento;
-    const proc = e.processId ? processes.find(p => p.id === e.processId) : null;
-    const procRef = proc ? (proc.num_dl || proc.num_proc || proc.objeto?.slice(0,30) || '') : (e.processId || '—');
+    const procRef = e.processId || '—';
     return `<tr>
       <td>${fmt(e.at)}</td>
       <td>${escHtml(label)}</td>
@@ -4323,7 +4212,7 @@ function _fornViewHtml(f) {
 async function toggleFornCard(id, editMode = false, tab = 'dados') {
   if (_expandedFornId && _expandedFornId !== id) _collapseFornCard(_expandedFornId);
   if (_expandedFornId === id && !editMode) { _collapseFornCard(id); return; }
-  _currentForn = await dbGet('fornecedores', id);
+  _currentForn = await API.get(`/api/fornecedores/${id}`).then(r => r?.ok ? API.json(r) : null);
   if (!_currentForn) return;
   _expandedFornId = id;
   _fornTab = tab;
@@ -4635,7 +4524,7 @@ async function _saveFornEdit() {
     entrada: row.querySelector('.fe-qsa-entrada')?.value || ''
   })).filter(s => s.nome);
 
-  await dbPut('fornecedores', _currentForn);
+  await API.put(`/api/fornecedores/${_currentForn.id}`, _currentForn);
   const _camposForn = ['razao_social','nome_fantasia','situacao','porte','natureza_juridica','capital_social',
     'logradouro','numero','complemento','bairro','municipio','uf','cep',
     'telefone','telefone2','email','website','opcao_simples','opcao_mei','obs'];
@@ -4697,7 +4586,7 @@ function fmtDateBR(iso) {
 async function renderCertAlerts() {
   const panel = document.getElementById('cert-alert-panel');
   if (!panel) return;
-  const forns = await dbGetAll('fornecedores');
+  const forns = await listarFornecedores();
   const alerts = [];
   for (const f of forns) {
     for (const c of (f.certidoes || [])) {
@@ -4857,14 +4746,14 @@ async function saveCertEdit() {
   const obs      = document.getElementById('ce-obs').value.trim();
   if (!emissao || !validade) { toast('Informe as datas de emissão e validade.', 'error'); return; }
   const cert = { tipoId, tipoDesc, emissao, validade, obs };
-  const forn = await dbGet('fornecedores', _certEditFornId);
+  const forn = await API.get(`/api/fornecedores/${_certEditFornId}`).then(r => r?.ok ? API.json(r) : null);
   if (!forn) return;
   const certs = forn.certidoes || [];
   if (_certEditIdx === -1) certs.push(cert);
   else certs[_certEditIdx] = cert;
   forn.certidoes = certs;
   forn.updatedAt = Date.now();
-  await dbPut('fornecedores', forn);
+  await API.put(`/api/fornecedores/${forn.id}`, forn);
   _currentForn = forn;
   closeCertEdit();
   toast('Certidão salva!', 'success');
@@ -4877,11 +4766,11 @@ async function saveCertEdit() {
 async function deleteCert(fornId, idx) {
   const ok = await customConfirm('Esta ação não pode ser desfeita.', { title: 'Excluir certidão?', okLabel: 'Excluir' });
   if (!ok) return;
-  const forn = await dbGet('fornecedores', fornId);
+  const forn = await API.get(`/api/fornecedores/${fornId}`).then(r => r?.ok ? API.json(r) : null);
   if (!forn) return;
   forn.certidoes = (forn.certidoes || []).filter((_,i) => i !== idx);
   forn.updatedAt = Date.now();
-  await dbPut('fornecedores', forn);
+  await API.put(`/api/fornecedores/${forn.id}`, forn);
   _currentForn = forn;
   toast('Certidão removida.', 'success');
   if (document.getElementById('view-fornecedores').classList.contains('active')) await renderFornecedores();
@@ -4971,7 +4860,7 @@ async function gerarRelatorioFornecedores() {
   const dtGer = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
   const q = (document.getElementById('forn-search')?.value || '').toLowerCase();
 
-  const todos = await dbGetAll('fornecedores');
+  const todos = await listarFornecedores();
   const lista = q
     ? todos.filter(f => (f.razao_social||'').toLowerCase().includes(q) || (f.cnpj_digits||'').includes(q) || (f.nome_fantasia||'').toLowerCase().includes(q))
     : todos;
@@ -5408,7 +5297,7 @@ async function _auditEvento(evento, detalhe, processId) {
     processId: processId || null,
     usuario: _getAuditor()
   };
-  try { await dbPut('auditGlobal', entry); } catch (e) { console.warn('Falha ao gravar auditoria:', e); }
+  try { await API.post('/api/audit', entry); } catch (e) { console.warn('Falha ao gravar auditoria:', e); }
   return entry;
 }
 
@@ -5776,7 +5665,7 @@ async function runDiagnostico() {
   if (!el) return;
   el.innerHTML = '<p style="color:var(--gray-400);font-style:italic">Analisando…</p>';
 
-  const forns = await dbGetAll('fornecedores');
+  const forns = await listarFornecedores();
   const issues = [];
   const ok = [];
 
@@ -6256,7 +6145,7 @@ async function _buildNotificacoes() {
 
   // Certidões vencendo em 30 dias (lê fornecedores diretamente do IndexedDB)
   try {
-    const allForns = await dbGetAll('fornecedores');
+    const allForns = await listarFornecedores();
     for (const f of allForns) {
       for (const c of (f.certidoes || [])) {
         if (!c.validade) continue;
@@ -6486,7 +6375,7 @@ async function importarCsv() {
         } catch { /* ignora erro de CNPJ individual */ }
       }
 
-      await dbPut('fornecedores', forn);
+      await API.put(`/api/fornecedores/${forn.id}`, forn);
       ok++;
     } catch { erros++; }
   }
@@ -7001,7 +6890,8 @@ const _SKELETON_MIN_MS = 1500;
 // Após login bem-sucedido, _onLoginSuccess() dispara carregarDashboard().
 function carregarDashboard() {
   document.getElementById('footer-version').textContent = `v${SGCA_VERSION}`;
-  loadProcesses()
+  Promise.resolve()
+    .then(() => { try { renderNotificacoes(); } catch {} })
     .then(() => {
       checkBackupAlert();
       const u = getUser();
