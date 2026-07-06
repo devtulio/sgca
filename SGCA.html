@@ -124,23 +124,7 @@
   .nav-btn { display: none; }
   #app.sidebar-expanded-app { padding-left: calc(220px + 24px); }
 
-  /* ── Sidebar search + date ───────────────────────── */
-  .sidebar-search {
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(255,255,255,.1);
-  }
-  .sidebar-search button {
-    width: 100%; display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
-    color: rgba(255,255,255,.75); border-radius: 6px;
-    padding: 7px 10px; font-size: .78rem; cursor: pointer;
-    transition: background .15s;
-  }
-  .sidebar-search button:hover { background: rgba(255,255,255,.18); color: #fff; }
-  .sidebar-search .search-shortcut {
-    margin-left: auto; font-size: .65rem; opacity: .6;
-    background: rgba(255,255,255,.15); padding: 1px 5px; border-radius: 3px;
-  }
+  /* ── Sidebar date ───────────────────────── */
   .sidebar-date {
     padding: 8px 18px 10px;
     font-size: .7rem; color: rgba(255,255,255,.5);
@@ -1045,7 +1029,7 @@
 <a href="#app" class="skip-link">Ir para o conteúdo principal</a>
 
 
-<nav id="sidebar" aria-label="Navegação principal">
+<aside id="sidebar" aria-label="Navegação principal">
   <div class="sidebar-logo">
     <img id="sidebar-brasao" alt="" class="sidebar-brasao" style="display:none" onerror="this.style.display='none'">
     <div class="s-title">SGCA</div>
@@ -1055,7 +1039,7 @@
 
   <div class="sidebar-date" id="sidebar-date"></div>
 
-  <div class="sidebar-nav">
+  <nav class="sidebar-nav">
     <div class="nav-section">Contratações</div>
     <button class="nav-item active" id="nav-contratos" onclick="showContratos()">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span>
@@ -1088,7 +1072,7 @@
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
       Configurações
     </button>
-  </div>
+  </nav>
 
   <div class="sidebar-user">
     <div class="user-avatar" id="sidebar-avatar">?</div>
@@ -1103,7 +1087,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
     </button>
   </div>
-</nav>
+</aside>
 
 <div id="app">
   <!-- ── Dashboard ── -->
