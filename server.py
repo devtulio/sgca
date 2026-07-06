@@ -413,7 +413,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
         # Usuários (admin)
         elif p == '/api/users':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 rows = conn.execute(
                     'SELECT id,username,nome,cargo,matricula,admin,ativo,criado_em FROM users'
@@ -422,11 +422,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
         # Backup
         elif p == '/api/backup':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._export_backup()
 
         elif p == '/api/backup/db':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             import tempfile as _tf
             tmp = _tf.NamedTemporaryFile(suffix='.db', delete=False)
             tmp.close()
@@ -447,11 +447,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 except: pass
 
         elif p == '/api/backups/cfg':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._json(200, _get_backup_cfg())
 
         elif p == '/api/dialog/folder':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             global _watchdog_paused
             _watchdog_paused = True
             try:
@@ -473,7 +473,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 _watchdog_paused = False
 
         elif p == '/api/backups/db':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             cfg = _get_backup_cfg()
             bdir = cfg['path']
             files = sorted(
@@ -492,7 +492,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'items': items, 'path': bdir, 'cfg': cfg, 'last_backup': last_backup})
 
         elif p.startswith('/api/backups/db/download'):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             name = parse_qs(parsed.query).get('name', [None])[0]
             if not name or not name.startswith('DB_SGCA_BACKUP_') or not name.endswith('.db') or '/' in name or '\\' in name:
                 self._json(400, {'error': 'Nome inválido'}); return
@@ -536,28 +536,28 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._add_audit(data, s)
 
         elif p == '/api/audit/bulk':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._add_audit_bulk(data)
 
         elif p in ('/api/settings', '/api/settings/'):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._save_settings(data)
 
         elif p == '/api/users':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._create_user(data)
 
         elif p == '/api/backups/db/now':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             name = _do_db_backup()
             self._json(200, {'ok': bool(name), 'name': name})
 
         elif p == '/api/backup/restore':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._restore_backup(data)
 
         elif p == '/api/backups/db/restore':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._restore_db_backup(body)
 
         else:
@@ -581,7 +581,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/atas/[^/]+/itens/[^/]+', p):
             self._update_ata_item(p.split('/')[-3], p.split('/')[-1], data, s)
         elif p in ('/api/settings', '/api/settings/'):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._save_settings(data)
         elif p in ('/api/settings/org', '/api/settings/org/'):
             # Dados de Organização: qualquer usuário autenticado pode salvar (não é config administrativa)
@@ -603,7 +603,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'ok': True})
         elif p in ('/api/settings/smtp', '/api/settings/smtp/'):
             # Config SMTP: sensível (inclui senha), restrita a admin
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             allowed = {'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_require_tls',
                        'smtp_ignore_ssl', 'smtp_user', 'smtp_pass', 'smtp_from_name', 'smtp_to'}
             # _save_settings() já ignora valores vazios, então smtp_pass em branco preserva a senha salva
@@ -612,7 +612,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             uid = int(p.split('/')[-1])
             if not s['admin']:
                 if uid != s['user_id']:
-                    self._json(403, {'error': 'Acesso negado'}); return
+                    self._json(403, {'error': 'Acesso restrito'}); return
                 # ponytail: não-admin só pode trocar a própria senha
                 data = {k: data[k] for k in ('password', 'old_password') if k in data}
             self._update_user(uid, data, s)
@@ -625,7 +625,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         if re.fullmatch(r'/api/fornecedores/[^/]+', p):
             fid = p.split('/')[-1]
             if purge:
-                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
                     conn.execute('DELETE FROM fornecedores WHERE id=?', (fid,))
             else:
@@ -640,7 +640,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/contratos/[^/]+', p):
             cid = p.split('/')[-1]
             if purge:
-                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
                     conn.execute('DELETE FROM contratos WHERE id=?', (cid,))
             else:
@@ -655,7 +655,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/atas/[^/]+', p):
             aid = p.split('/')[-1]
             if purge:
-                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
                     conn.execute('DELETE FROM atas WHERE id=?', (aid,))
             else:
@@ -664,7 +664,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'ok': True})
 
         elif re.fullmatch(r'/api/users/[^/]+', p):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             uid = int(p.split('/')[-1])
             if uid == s['user_id']:
                 self._json(400, {'error': 'Não é possível excluir o próprio usuário'}); return
@@ -673,19 +673,19 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'ok': True})
 
         elif p == '/api/fornecedores/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 conn.execute('DELETE FROM fornecedores')
             self._json(200, {'ok': True})
 
         elif p == '/api/audit/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 conn.execute('DELETE FROM audit_global')
             self._json(200, {'ok': True})
 
         elif p == '/api/wipe':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 conn.execute('DELETE FROM fornecedores')
                 conn.execute('DELETE FROM contratos')
