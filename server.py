@@ -1,4 +1,4 @@
-# SGCA v0.2.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.3.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -80,8 +80,15 @@ def get_db():
 
 def init_db():
     with get_db() as conn:
+        # Migração: tabela 'users' (nome antigo) → 'usuarios' (padrão SGDP).
+        # SQLite atualiza sozinho as FKs de sessions/contratos/atas que apontavam
+        # para users(id); preserva cargo/matricula e todos os dados existentes.
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if 'users' in tables and 'usuarios' not in tables:
+            conn.execute('ALTER TABLE users RENAME TO usuarios')
+            conn.commit()
         conn.executescript('''
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS usuarios (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 username   TEXT NOT NULL UNIQUE COLLATE NOCASE,
                 nome       TEXT NOT NULL,
@@ -94,7 +101,7 @@ def init_db():
             );
             CREATE TABLE IF NOT EXISTS sessions (
                 token    TEXT PRIMARY KEY,
-                user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                user_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
                 expires  REAL NOT NULL
             );
             CREATE TABLE IF NOT EXISTS fornecedores (
@@ -114,7 +121,7 @@ def init_db():
                 valor_global   REAL,
                 created_at     TEXT,
                 updated_at     TEXT,
-                created_by     INTEGER REFERENCES users(id),
+                created_by     INTEGER REFERENCES usuarios(id),
                 deleted_at     TEXT
             );
             CREATE TABLE IF NOT EXISTS atas (
@@ -125,7 +132,7 @@ def init_db():
                 vigencia_final TEXT,
                 created_at     TEXT,
                 updated_at     TEXT,
-                created_by     INTEGER REFERENCES users(id),
+                created_by     INTEGER REFERENCES usuarios(id),
                 deleted_at     TEXT
             );
             CREATE TABLE IF NOT EXISTS audit_global (
@@ -163,9 +170,9 @@ def init_db():
         # Sessões são descartadas a cada início do servidor (logout automático ao fechar janela)
         conn.execute('DELETE FROM sessions')
         # Cria admin padrão se não houver usuários
-        if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
+        if conn.execute('SELECT COUNT(*) FROM usuarios').fetchone()[0] == 0:
             conn.execute(
-                'INSERT INTO users (username,nome,cargo,senha_hash,admin) VALUES (?,?,?,?,1)',
+                'INSERT INTO usuarios (username,nome,cargo,senha_hash,admin) VALUES (?,?,?,?,1)',
                 ('admin', 'Administrador', 'Agente de Contratação', _hash_password('admin123'))
             )
             conn.commit()
@@ -202,7 +209,7 @@ def get_session(token):
         row = conn.execute(
             '''SELECT s.token, s.user_id, s.expires,
                       u.nome, u.username, u.cargo, u.matricula, u.admin, u.ativo
-               FROM sessions s JOIN users u ON u.id=s.user_id
+               FROM sessions s JOIN usuarios u ON u.id=s.user_id
                WHERE s.token=? AND s.expires>? AND u.ativo=1''',
             (token, time.time())
         ).fetchone()
@@ -412,21 +419,21 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'brasao_dataurl': row['value'] if row else ''})
 
         # Usuários (admin)
-        elif p == '/api/users':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+        elif p == '/api/usuarios':
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 rows = conn.execute(
-                    'SELECT id,username,nome,cargo,matricula,admin,ativo,criado_em FROM users'
+                    'SELECT id,username,nome,cargo,matricula,admin,ativo,criado_em FROM usuarios'
                 ).fetchall()
             self._json(200, [dict(r) for r in rows])
 
         # Backup
         elif p == '/api/backup':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._export_backup()
 
         elif p == '/api/backup/db':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             import tempfile as _tf
             tmp = _tf.NamedTemporaryFile(suffix='.db', delete=False)
             tmp.close()
@@ -447,11 +454,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 except: pass
 
         elif p == '/api/backups/cfg':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._json(200, _get_backup_cfg())
 
         elif p == '/api/dialog/folder':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             global _watchdog_paused
             _watchdog_paused = True
             try:
@@ -473,7 +480,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 _watchdog_paused = False
 
         elif p == '/api/backups/db':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             cfg = _get_backup_cfg()
             bdir = cfg['path']
             files = sorted(
@@ -492,7 +499,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'items': items, 'path': bdir, 'cfg': cfg, 'last_backup': last_backup})
 
         elif p.startswith('/api/backups/db/download'):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             name = parse_qs(parsed.query).get('name', [None])[0]
             if not name or not name.startswith('DB_SGCA_BACKUP_') or not name.endswith('.db') or '/' in name or '\\' in name:
                 self._json(400, {'error': 'Nome inválido'}); return
@@ -536,28 +543,28 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._add_audit(data, s)
 
         elif p == '/api/audit/bulk':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._add_audit_bulk(data)
 
         elif p in ('/api/settings', '/api/settings/'):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._save_settings(data)
 
-        elif p == '/api/users':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+        elif p == '/api/usuarios':
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._create_user(data)
 
         elif p == '/api/backups/db/now':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             name = _do_db_backup()
             self._json(200, {'ok': bool(name), 'name': name})
 
         elif p == '/api/backup/restore':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._restore_backup(data)
 
         elif p == '/api/backups/db/restore':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._restore_db_backup(body)
 
         else:
@@ -581,7 +588,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/atas/[^/]+/itens/[^/]+', p):
             self._update_ata_item(p.split('/')[-3], p.split('/')[-1], data, s)
         elif p in ('/api/settings', '/api/settings/'):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._save_settings(data)
         elif p in ('/api/settings/org', '/api/settings/org/'):
             # Dados de Organização: qualquer usuário autenticado pode salvar (não é config administrativa)
@@ -603,16 +610,16 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'ok': True})
         elif p in ('/api/settings/smtp', '/api/settings/smtp/'):
             # Config SMTP: sensível (inclui senha), restrita a admin
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             allowed = {'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_require_tls',
                        'smtp_ignore_ssl', 'smtp_user', 'smtp_pass', 'smtp_from_name', 'smtp_to'}
             # _save_settings() já ignora valores vazios, então smtp_pass em branco preserva a senha salva
             self._save_settings({k: v for k, v in data.items() if k in allowed})
-        elif re.fullmatch(r'/api/users/[^/]+', p):
+        elif re.fullmatch(r'/api/usuarios/[^/]+', p):
             uid = int(p.split('/')[-1])
             if not s['admin']:
                 if uid != s['user_id']:
-                    self._json(403, {'error': 'Acesso negado'}); return
+                    self._json(403, {'error': 'Acesso restrito'}); return
                 # ponytail: não-admin só pode trocar a própria senha
                 data = {k: data[k] for k in ('password', 'old_password') if k in data}
             self._update_user(uid, data, s)
@@ -625,7 +632,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         if re.fullmatch(r'/api/fornecedores/[^/]+', p):
             fid = p.split('/')[-1]
             if purge:
-                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
                     conn.execute('DELETE FROM fornecedores WHERE id=?', (fid,))
             else:
@@ -640,7 +647,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/contratos/[^/]+', p):
             cid = p.split('/')[-1]
             if purge:
-                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
                     conn.execute('DELETE FROM contratos WHERE id=?', (cid,))
             else:
@@ -655,7 +662,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/atas/[^/]+', p):
             aid = p.split('/')[-1]
             if purge:
-                if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+                if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
                     conn.execute('DELETE FROM atas WHERE id=?', (aid,))
             else:
@@ -663,29 +670,29 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                     conn.execute('UPDATE atas SET deleted_at=? WHERE id=?', (_now(), aid))
             self._json(200, {'ok': True})
 
-        elif re.fullmatch(r'/api/users/[^/]+', p):
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+        elif re.fullmatch(r'/api/usuarios/[^/]+', p):
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             uid = int(p.split('/')[-1])
             if uid == s['user_id']:
                 self._json(400, {'error': 'Não é possível excluir o próprio usuário'}); return
             with get_db() as conn:
-                conn.execute('DELETE FROM users WHERE id=?', (uid,))
+                conn.execute('DELETE FROM usuarios WHERE id=?', (uid,))
             self._json(200, {'ok': True})
 
         elif p == '/api/fornecedores/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 conn.execute('DELETE FROM fornecedores')
             self._json(200, {'ok': True})
 
         elif p == '/api/audit/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 conn.execute('DELETE FROM audit_global')
             self._json(200, {'ok': True})
 
         elif p == '/api/wipe':
-            if not s['admin']: self._json(403, {'error': 'Acesso negado'}); return
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
                 conn.execute('DELETE FROM fornecedores')
                 conn.execute('DELETE FROM contratos')
@@ -727,7 +734,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
         with get_db() as conn:
             row = conn.execute(
-                'SELECT * FROM users WHERE username=? COLLATE NOCASE AND ativo=1', (username,)
+                'SELECT * FROM usuarios WHERE username=? COLLATE NOCASE AND ativo=1', (username,)
             ).fetchone()
 
         if not row or not _verify_password(password, row['senha_hash']):
@@ -831,7 +838,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         where, params = [], []
         where.append('deleted_at IS NOT NULL' if trash else 'deleted_at IS NULL')
         if q:
-            where.append('(objeto LIKE ? OR numero LIKE ?)')
+            # 'numero' só existe dentro do JSON (data), não é coluna da tabela
+            where.append("(objeto LIKE ? OR json_extract(data, '$.numero') LIKE ?)")
             params += [f'%{q}%', f'%{q}%']
         if status:
             where.append('status=?'); params.append(status)
@@ -1117,7 +1125,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         try:
             with get_db() as conn:
                 conn.execute(
-                    'INSERT INTO users (username,nome,cargo,matricula,senha_hash,admin) VALUES (?,?,?,?,?,?)',
+                    'INSERT INTO usuarios (username,nome,cargo,matricula,senha_hash,admin) VALUES (?,?,?,?,?,?)',
                     (username, nome, data.get('cargo'), data.get('matricula'),
                      _hash_password(password), int(bool(data.get('admin'))))
                 )
@@ -1128,7 +1136,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
     def _update_user(self, uid, data, s):
         with get_db() as conn:
-            if not conn.execute('SELECT 1 FROM users WHERE id=?', (uid,)).fetchone():
+            if not conn.execute('SELECT 1 FROM usuarios WHERE id=?', (uid,)).fetchone():
                 self._json(404, {'error': 'Usuário não encontrado'}); return
             fields, params = [], []
             for col in ('nome', 'cargo', 'matricula'):
@@ -1139,12 +1147,12 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 if len(data['password']) < 6:
                     self._json(400, {'error': 'Senha mínima: 6 caracteres'}); return
                 if 'old_password' in data:
-                    row = conn.execute('SELECT senha_hash FROM users WHERE id=?', (uid,)).fetchone()
+                    row = conn.execute('SELECT senha_hash FROM usuarios WHERE id=?', (uid,)).fetchone()
                     if not row or not _verify_password(data['old_password'], row['senha_hash']):
                         self._json(403, {'error': 'Senha atual incorreta'}); return
                 fields.append('senha_hash=?'); params.append(_hash_password(data['password']))
             if fields:
-                conn.execute(f'UPDATE users SET {",".join(fields)} WHERE id=?', params + [uid])
+                conn.execute(f'UPDATE usuarios SET {",".join(fields)} WHERE id=?', params + [uid])
         self._json(200, {'ok': True})
 
     # ── Backup ────────────────────────────────────────────────────────────────
