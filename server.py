@@ -1169,8 +1169,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if data.get('tipo') == 'prazo' and data.get('novaVigenciaFinal'):
                 contrato['vigenciaFinal'] = data['novaVigenciaFinal']
             if data.get('valorVariacao'):
-                contrato['valorGlobal'] = (_float(contrato.get('valorGlobal')) or 0) + _float(data['valorVariacao'])
                 valor_original = _float(contrato.get('valorOriginal')) or _float(contrato.get('valorGlobal'))
+                contrato['valorGlobal'] = (_float(contrato.get('valorGlobal')) or 0) + _float(data['valorVariacao'])
                 if valor_original:
                     acumulado = sum(_float(a.get('valorVariacao')) or 0 for a in contrato['aditivos'])
                     contrato['percentualAcumulado'] = round(abs(acumulado) / valor_original * 100, 2)
