@@ -42,6 +42,16 @@
 
 ---
 
+## [0.2.1] — 2026-07-06
+
+### Adicionado
+- **Atalho Ctrl+K** — foca o campo de busca da seção visível (Contratos ou Atas), no padrão da família SGCD/SGDP
+
+### Corrigido
+- **Badge de versão** — o fallback do badge na sidebar mostrava "1.17.0" (resquício do SGCD); corrigido para acompanhar a versão real
+
+---
+
 ## Próximos passos
 
 - Documentos gerados do domínio de Contratos/Atas (extrato, termo aditivo)
