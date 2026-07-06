@@ -1608,16 +1608,6 @@
           </div>
         </fieldset>
 
-        <fieldset style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px;margin-bottom:16px">
-          <legend style="font-size:.72rem;font-weight:700;color:var(--aubergine-mid);padding:0 6px;text-transform:uppercase;letter-spacing:.4px">Painel de informações (processo)</legend>
-          <div class="info-field">
-            <select id="s-detail-sidebar">
-              <option value="visivel">Visível — exibe informações ao lado do checklist</option>
-              <option value="oculto">Oculto — checklist ocupa toda a largura</option>
-            </select>
-            <p style="font-size:.68rem;color:var(--gray-500);margin-top:4px;line-height:1.4">Pode ser alternado a qualquer momento pelo botão "⊟ Painel" dentro do processo.</p>
-          </div>
-        </fieldset>
       </div>
 
       <!-- ── Aba: Organização ── -->
@@ -1669,22 +1659,6 @@
           </div>
         </fieldset>
 
-        <fieldset style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px;margin-bottom:16px">
-          <legend style="font-size:.72rem;font-weight:700;color:var(--aubergine-mid);padding:0 6px;text-transform:uppercase;letter-spacing:.4px">Controle de Fracionamento</legend>
-          <div class="info-field">
-            <label>Janela temporal de análise</label>
-            <select id="s-frac-janela">
-              <option value="exercicio">Exercício financeiro — 1º jan a 31 dez (recomendado)</option>
-              <option value="12">Período móvel — últimos 12 meses</option>
-              <option value="18">Período móvel — últimos 18 meses</option>
-              <option value="24">Período móvel — últimos 24 meses</option>
-            </select>
-            <p style="font-size:.68rem;color:var(--gray-500);margin-top:4px;line-height:1.4">
-              <strong>Exercício financeiro</strong> é a interpretação dominante nos TCEs e na AGU (Lei 4.320/64, Art. 34).
-              <strong>Período móvel</strong> é mais rigoroso e evita fracionamento artificial entre dezembro e janeiro.
-            </p>
-          </div>
-        </fieldset>
       </div>
 
       <!-- ── Aba: Comunicação ── -->
@@ -3796,7 +3770,7 @@ async function renderFornecedores() {
 }
 
 function setNavActive(id) {
-  document.querySelectorAll('#sidebar .nav-btn[id]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#sidebar .nav-item[id]').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
 }
@@ -5879,7 +5853,6 @@ function showSettings() {
   document.getElementById('s-cnpj-orgao').value    = u.cnpj_orgao    || '';
   document.getElementById('s-codigo-ibge').value   = u.codigo_ibge   || '';
   document.getElementById('s-uf').value            = u.uf            || '';
-  document.getElementById('s-frac-janela').value   = u.frac_janela   || 'exercicio';
   // Segurança — senha
   document.getElementById('s-senha-atual').value     = '';
   document.getElementById('s-senha-nova').value      = '';
@@ -5897,8 +5870,6 @@ function showSettings() {
   _applyTemaCor(temaCor);
   document.getElementById('s-sidebar-mode').value = u.sidebar_mode || 'compacta';
   _applySidebarMode(u.sidebar_mode || 'compacta');
-  document.getElementById('s-detail-sidebar').value = u.detail_sidebar_hidden ? 'oculto' : 'visivel';
-  _applyDetailSidebar(u.detail_sidebar_hidden);
 
   // SMTP
   const smtp = getSmtp();
@@ -5949,19 +5920,16 @@ async function saveSettings() {
     cnpj_orgao:       document.getElementById('s-cnpj-orgao').value.trim(),
     codigo_ibge:      document.getElementById('s-codigo-ibge').value.trim(),
     uf:               document.getElementById('s-uf').value.trim().toUpperCase(),
-    frac_janela:      document.getElementById('s-frac-janela').value,
     dark_mode:        document.getElementById('s-dark-mode').value,
     layout_width:     document.getElementById('s-layout-width').value,
     font_size:        document.getElementById('s-font-size').value,
     tema_cor:         document.querySelector('input[name="s-tema-cor"]:checked')?.value || 'laranja',
     sidebar_mode:        document.getElementById('s-sidebar-mode').value,
-    detail_sidebar_hidden: document.getElementById('s-detail-sidebar').value === 'oculto',
   };
   _applyLayoutWidth(u.layout_width);
   _applyFontSize(u.font_size);
   _applyTemaCor(u.tema_cor);
   _applySidebarMode(u.sidebar_mode);
-  _applyDetailSidebar(u.detail_sidebar_hidden);
   const isDark = u.dark_mode === 'dark';
   localStorage.setItem('sgca-theme', isDark ? 'dark' : 'light');
   applyTheme(isDark);
@@ -6187,15 +6155,6 @@ function _applyTemaCor(val) {
 }
 
 function _applySidebarMode() { /* ponytail: sidebar agora é sempre 220px */ }
-
-function _applyDetailSidebar(hidden) {
-  const grid = document.querySelector('.detail-grid');
-  if (!grid) return;
-  grid.classList.toggle('sidebar-hidden', !!hidden);
-  const btn = document.getElementById('btn-toggle-sidebar-detail');
-  if (btn) btn.textContent = hidden ? '⊞ Painel' : '⊟ Painel';
-}
-
 
 // ══════════════════════════════════════════════════════════════
 // E-MAIL VIA SMTP (feature 9)
