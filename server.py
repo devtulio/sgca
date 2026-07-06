@@ -838,7 +838,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         where, params = [], []
         where.append('deleted_at IS NOT NULL' if trash else 'deleted_at IS NULL')
         if q:
-            where.append('(objeto LIKE ? OR numero LIKE ?)')
+            # 'numero' só existe dentro do JSON (data), não é coluna da tabela
+            where.append("(objeto LIKE ? OR json_extract(data, '$.numero') LIKE ?)")
             params += [f'%{q}%', f'%{q}%']
         if status:
             where.append('status=?'); params.append(status)

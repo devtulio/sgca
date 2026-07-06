@@ -1104,7 +1104,7 @@
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <input type="text" id="contr-busca" placeholder="Buscar por objeto ou número…" style="flex:1;min-width:220px" oninput="renderContratos()">
+      <input type="text" id="contr-busca" placeholder="Buscar por objeto ou número…" style="flex:1;min-width:220px" oninput="_debouncedRenderContratos()">
       <select id="contr-filtro-status" onchange="renderContratos()">
         <option value="">Todos os status</option>
         <option value="vigente">Vigente</option>
@@ -1145,7 +1145,7 @@
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <input type="text" id="ata-busca" placeholder="Buscar por número…" style="flex:1;min-width:220px" oninput="renderAtas()">
+      <input type="text" id="ata-busca" placeholder="Buscar por número…" style="flex:1;min-width:220px" oninput="_debouncedRenderAtas()">
       <select id="ata-filtro-status" onchange="renderAtas()">
         <option value="">Todos os status</option>
         <option value="vigente">Vigente</option>
@@ -3254,16 +3254,14 @@ async function showContratos() {
 
 async function renderContratos() {
   const status = document.getElementById('contr-filtro-status')?.value || '';
+  const q = document.getElementById('contr-busca')?.value || '';
   const qs = new URLSearchParams();
   if (status) qs.set('status', status);
+  if (q) qs.set('q', q);
   const r = await API.get(`/api/contratos?${qs.toString()}`);
   const data = await API.json(r);
   _contratos = data?.items || [];
-
-  const q = (document.getElementById('contr-busca')?.value || '').toLowerCase();
-  const filtered = q ? _contratos.filter(c =>
-    (c.objeto || '').toLowerCase().includes(q) || (c.numero || '').toLowerCase().includes(q)
-  ) : _contratos;
+  const filtered = _contratos;
 
   const cols = { vigente: [], em_prorrogacao: [], encerrado: [], rescindido: [] };
   filtered.forEach(c => (cols[c.status] || cols.vigente).push(c));
@@ -3453,14 +3451,14 @@ async function showAtas() {
 
 async function renderAtas() {
   const status = document.getElementById('ata-filtro-status')?.value || '';
+  const q = document.getElementById('ata-busca')?.value || '';
   const qs = new URLSearchParams();
   if (status) qs.set('status', status);
+  if (q) qs.set('q', q);
   const r = await API.get(`/api/atas?${qs.toString()}`);
   const data = await API.json(r);
   _atas = data?.items || [];
-
-  const q = (document.getElementById('ata-busca')?.value || '').toLowerCase();
-  const filtered = q ? _atas.filter(a => (a.numero || '').toLowerCase().includes(q)) : _atas;
+  const filtered = _atas;
 
   const statusLabel = { vigente: 'Vigente', vencida: 'Vencida', cancelada: 'Cancelada' };
   document.getElementById('ata-lista').innerHTML = filtered.length ? filtered.map(a => `
@@ -4069,6 +4067,10 @@ function _debounce(fn, ms) {
 
 // Versão debounced para o input de busca de fornecedores (evita renderizações a cada tecla)
 const _debouncedRenderForn = _debounce(renderFornecedores, 150);
+// Contratos/Atas: busca agora vai para o servidor (Fase 7), debounce evita
+// uma requisição por tecla digitada
+const _debouncedRenderContratos = _debounce(renderContratos, 300);
+const _debouncedRenderAtas = _debounce(renderAtas, 300);
 let _lastFiltered = null;
 
 let _lastDashFilters = '';
