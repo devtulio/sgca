@@ -441,7 +441,7 @@
   .step-body textarea:focus, .step-body input:focus { border-color: var(--brand); }
   .step-body textarea { min-height: 70px; }
   .kanban-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; align-items: flex-start; }
-  .kanban-col { min-width: 260px; max-width: 300px; flex-shrink: 0; background: var(--gray-50); border-radius: 10px; padding: 10px; }
+  .kanban-col { flex: 1 1 0; min-width: 200px; background: var(--gray-50); border-radius: 10px; padding: 10px; }
   .kanban-col-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-500); margin-bottom: 8px; }
   .kanban-card { background: var(--bg-card); border: 1px solid var(--gray-200); border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; font-size: .8rem; }
   .kanban-card:hover { border-color: var(--brand); }
@@ -1599,16 +1599,6 @@
           </div>
         </fieldset>
 
-        <fieldset style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px;margin-bottom:16px">
-          <legend style="font-size:.72rem;font-weight:700;color:var(--aubergine-mid);padding:0 6px;text-transform:uppercase;letter-spacing:.4px">Barra lateral</legend>
-          <div class="info-field">
-            <select id="s-sidebar-mode">
-              <option value="compacta">Compacta — somente ícones</option>
-              <option value="expandida">Expandida — ícones com rótulos</option>
-            </select>
-            <p style="font-size:.68rem;color:var(--gray-500);margin-top:4px;line-height:1.4">Modo expandido facilita a navegação para usuários novos.</p>
-          </div>
-        </fieldset>
 
       </div>
 
@@ -5891,8 +5881,6 @@ function showSettings() {
   const radioTema = document.querySelector(`input[name="s-tema-cor"][value="${temaCor}"]`);
   if (radioTema) radioTema.checked = true;
   _applyTemaCor(temaCor);
-  document.getElementById('s-sidebar-mode').value = u.sidebar_mode || 'compacta';
-  _applySidebarMode(u.sidebar_mode || 'compacta');
 
   // SMTP
   const smtp = getSmtp();
@@ -5946,12 +5934,10 @@ async function saveSettings() {
     layout_width:     document.getElementById('s-layout-width').value,
     font_size:        document.getElementById('s-font-size').value,
     tema_cor:         document.querySelector('input[name="s-tema-cor"]:checked')?.value || 'laranja',
-    sidebar_mode:        document.getElementById('s-sidebar-mode').value,
   };
   _applyLayoutWidth(u.layout_width);
   _applyFontSize(u.font_size);
   _applyTemaCor(u.tema_cor);
-  _applySidebarMode(u.sidebar_mode);
   const isDark = u.dark_mode === 'dark';
   localStorage.setItem('sgca-theme', isDark ? 'dark' : 'light');
   applyTheme(isDark);
@@ -6176,8 +6162,6 @@ function _applyTemaCor(val) {
   localStorage.setItem('sgca_tema_cor', val || 'laranja');
 }
 
-function _applySidebarMode() { /* ponytail: sidebar agora é sempre 220px */ }
-
 // ══════════════════════════════════════════════════════════════
 // E-MAIL VIA SMTP (feature 9)
 // ══════════════════════════════════════════════════════════════
@@ -6265,7 +6249,6 @@ async function testSmtp() {
   _applyLayoutWidth(u.layout_width || 'compacto');
   _applyFontSize(u.font_size || 'normal');
   _applyTemaCor(u.tema_cor || 'laranja');
-  _applySidebarMode(u.sidebar_mode || 'compacta');
   // Dark mode: prioridade para sgca-user, fallback para sgca-theme (botão rápido)
   const savedTheme = u.dark_mode || localStorage.getItem('sgca-theme') || 'light';
   applyTheme(savedTheme === 'dark');
