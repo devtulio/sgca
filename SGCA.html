@@ -3687,9 +3687,9 @@ async function showAudit() {
 }
 
 const _LIXEIRA_TIPOS = {
-  fornecedor: { api: 'fornecedores', label: 'Fornecedor', nome: f => f.razaoSocial || f.razao || f.nome || '(sem nome)' },
-  contrato:   { api: 'contratos',    label: 'Contrato',    nome: c => `${c.numero ? c.numero + ' — ' : ''}${c.objeto || '(sem objeto)'}` },
-  ata:        { api: 'atas',        label: 'Ata de RP',    nome: a => `Ata ${a.numero || ''}` },
+  fornecedor: { api: 'fornecedores', label: 'Fornecedor', codigo: 'FORNECEDOR', nome: f => f.razaoSocial || f.razao || f.nome || '(sem nome)' },
+  contrato:   { api: 'contratos',    label: 'Contrato',    codigo: 'CONTRATO',   nome: c => `${c.numero ? c.numero + ' — ' : ''}${c.objeto || '(sem objeto)'}` },
+  ata:        { api: 'atas',        label: 'Ata de RP',    codigo: 'ATA',        nome: a => `Ata ${a.numero || ''}` },
 };
 
 async function showLixeira() {
@@ -3726,7 +3726,7 @@ async function showLixeira() {
 async function restoreLixeiraItem(tipo, id) {
   const cfg = _LIXEIRA_TIPOS[tipo];
   await API.put(`/api/${cfg.api}/${id}/restore`, {});
-  await _auditEvento(`${cfg.label.toUpperCase()}_RESTAURADO`, `${cfg.label} restaurado da lixeira`);
+  await _auditEvento(`${cfg.codigo}_RESTAURADO`, `${cfg.label} restaurado da lixeira`);
   toast(`${cfg.label} restaurado.`, 'success');
   showLixeira();
 }
@@ -3738,7 +3738,7 @@ async function purgeLixeiraItem(tipo, id, nome) {
     { title: 'Excluir definitivamente', icon: '⚠️', okLabel: 'Excluir', okClass: 'btn-danger' }
   );
   if (!ok) return;
-  await _auditEvento(`${cfg.label.toUpperCase()}_EXPURGADO`, `${cfg.label} "${nome}" excluído permanentemente`);
+  await _auditEvento(`${cfg.codigo}_EXPURGADO`, `${cfg.label} "${nome}" excluído permanentemente`);
   await API.del(`/api/${cfg.api}/${id}?purge=1`);
   toast(`${cfg.label} excluído permanentemente.`, '');
   showLixeira();
@@ -3766,8 +3766,11 @@ function _auditLimparFiltros() {
 const _AUDIT_EVENT_LABELS = {
   CONTRATO_CRIADO: 'Contrato criado', CONTRATO_EDITADO: 'Contrato editado',
   CONTRATO_ADITIVO: 'Aditivo de contrato',
+  CONTRATO_RESTAURADO: 'Contrato restaurado', CONTRATO_EXPURGADO: 'Contrato excluído definitivamente',
   ATA_CRIADA: 'Ata criada', ATA_EDITADA: 'Ata editada',
+  ATA_RESTAURADO: 'Ata restaurada', ATA_EXPURGADO: 'Ata excluída definitivamente',
   FORNECEDOR_ALTERADO: 'Fornecedor alterado', FORNECEDOR_EXCLUIDO: 'Fornecedor excluído',
+  FORNECEDOR_RESTAURADO: 'Fornecedor restaurado', FORNECEDOR_EXPURGADO: 'Fornecedor excluído definitivamente',
   DOCUMENTO_GERADO: 'Documento gerado', SYNC_BACKUP: 'Sincronização de backup'
 };
 
@@ -3775,10 +3778,16 @@ const _AUDIT_EVENT_META = {
   CONTRATO_CRIADO:      { bg: '#e8eef7', color: '#1a3a6b' },
   CONTRATO_EDITADO:     { bg: '#FFF3D8', color: '#854F0B' },
   CONTRATO_ADITIVO:     { bg: '#EEEDFE', color: '#534AB7' },
+  CONTRATO_RESTAURADO:  { bg: '#E1F5EE', color: '#0F6E56' },
+  CONTRATO_EXPURGADO:   { bg: '#FCEBEB', color: '#A32D2D' },
   ATA_CRIADA:           { bg: '#e8eef7', color: '#1a3a6b' },
   ATA_EDITADA:          { bg: '#FFF3D8', color: '#854F0B' },
+  ATA_RESTAURADO:       { bg: '#E1F5EE', color: '#0F6E56' },
+  ATA_EXPURGADO:        { bg: '#FCEBEB', color: '#A32D2D' },
   FORNECEDOR_ALTERADO:  { bg: '#E1F5EE', color: '#0F6E56' },
   FORNECEDOR_EXCLUIDO:  { bg: '#FCEBEB', color: '#A32D2D' },
+  FORNECEDOR_RESTAURADO:{ bg: '#E1F5EE', color: '#0F6E56' },
+  FORNECEDOR_EXPURGADO: { bg: '#FCEBEB', color: '#A32D2D' },
   DOCUMENTO_GERADO:     { bg: '#e8eef7', color: '#1a3a6b' },
   SYNC_BACKUP:          { bg: '#E1F5EE', color: '#0F6E56' }
 };
