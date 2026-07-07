@@ -299,6 +299,22 @@ class TestBackup(SGCATestCase):
         self.assertTrue(data['_sgca'])
         self.assertTrue(any(c['objeto'] == 'Contrato para backup' for c in data['contratos']))
 
+    def test_do_db_backup_aciona_rotacao_automaticamente(self):
+        # _do_db_backup() era chamado em vários pontos (fechar sistema, backup manual,
+        # antes de restaurar) sem nunca acionar _rotate_backups() — os arquivos só eram
+        # limpos na próxima vez que o servidor fosse reiniciado do zero, deixando a pasta
+        # de backups crescer sem limite entre reinícios.
+        admin_token = self.login()
+        self.request('PUT', '/api/settings', {'auto_backup_keep': '2'}, token=admin_token)
+        for i in range(3):
+            open(os.path.join(server.BACKUP_DIR, f'DB_SGCA_BACKUP_2020-01-0{i+1}_00-00-00.db'), 'w').close()
+            open(os.path.join(server.BACKUP_DIR, f'SIS_SGCA_BACKUP_2020-01-0{i+1}_00-00-00.json'), 'w').close()
+        server._do_db_backup()
+        db_files  = [f for f in os.listdir(server.BACKUP_DIR) if f.startswith('DB_SGCA_BACKUP_')]
+        sis_files = [f for f in os.listdir(server.BACKUP_DIR) if f.startswith('SIS_SGCA_BACKUP_')]
+        self.assertEqual(len(db_files), 2)
+        self.assertEqual(len(sis_files), 2)
+
 
 class TestAgendaAlerts(SGCATestCase):
 

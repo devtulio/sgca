@@ -5,6 +5,13 @@
 
 ---
 
+## [0.7.1] — 2026-07-07
+
+### Corrigido
+- **Rotação de backups não era acionada após criar um backup** — `_do_db_backup()` é chamado em vários pontos (encerrar o sistema, backup manual, antes de restaurar), mas `_rotate_backups()` só rodava uma vez, no início do servidor. Na prática, a pasta de backups crescia sem limite entre reinícios, ignorando o número configurado em "Backups mantidos". Corrigido chamando `_rotate_backups()` ao final de `_do_db_backup()`, cobrindo automaticamente todos os pontos que criam backup
+
+---
+
 ## [0.7.0] — 2026-07-07
 
 ### Adicionado

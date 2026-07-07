@@ -1,4 +1,4 @@
-# SGCA v0.7.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.7.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -1584,6 +1584,7 @@ def _do_db_backup(cfg=None):
         with get_db() as conn:
             conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('auto_backup_last',?)", (_now(),))
         print(f'Backup automático: {name}')
+        _rotate_backups(cfg)
         return name
     except Exception as e:
         _log.error('Falha no backup automático: %s', e)
