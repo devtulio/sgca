@@ -5,6 +5,15 @@
 
 ---
 
+## [0.8.0] — 2026-07-07
+
+### Adicionado
+- **Dashboard geral** — nova tela inicial (antes do login recair direto em Contratos), com indicadores consolidados de Contratos e Atas, gráfico de vencimentos dos próximos 6 meses e lista de próximos vencimentos (contratos, atas, garantias e sanções), com atalho na barra lateral antes da seção "Contratações"
+- **Gráfico de vencimentos também na tela de Atas** — a tela de Contratos já tinha o gráfico dos próximos 6 meses; a de Atas não tinha o mesmo recurso
+- **Bloqueio de exclusão de fornecedor vinculado** — o botão "Excluir Fornecedor" agora verifica se há contratos ou itens de ata referenciando aquele fornecedor e impede a exclusão (com aviso do total vinculado) até que os vínculos sejam resolvidos
+
+---
+
 ## [0.7.1] — 2026-07-07
 
 ### Corrigido

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.7.1</title>
+<title>Manual Operacional — SGCA v0.8.0</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       margin: 20mm 20mm 25mm;
       size: A4;
       @top-center {
-        content: "SGCA v0.7.1 — Manual Operacional";
+        content: "SGCA v0.8.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -103,14 +103,14 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.7.1</div>
+    <div class="cover-version">Versão v0.8.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
       Armazenamento local via SQLite · Autenticação server-side · Sem instalação necessária
     </div>
     <div class="nota" style="text-align:left;margin-top:24pt">
-      <strong>Sobre esta versão:</strong> o SGCA conta com os módulos de <strong>Contratos</strong> e <strong>Atas de Registro de Preços</strong> (cadastro, Kanban/lista com indicadores e gráfico de vencimentos, vínculo de contrato à ata de origem, fiscal titular e substituto, aditivos/apostilamentos com reajuste por índice, garantia contratual, anexo assinado em PDF, controle de saldo de itens, documentos gerados, exportação CSV, PNCP e relatórios consolidados), <strong>Agenda de Vencimentos</strong> unificada com resumo por e-mail e aviso individual ao fiscal titular/substituto, <strong>Sanções e Penalidades</strong> de fornecedores com aviso de compliance ao vincular a um Contrato/Ata e relatório individual ou global, além dos módulos administrativos (usuários, fornecedores, configurações, auditoria, backup).
+      <strong>Sobre esta versão:</strong> o SGCA abre em um <strong>Dashboard</strong> geral com indicadores consolidados e conta com os módulos de <strong>Contratos</strong> e <strong>Atas de Registro de Preços</strong> (cadastro, Kanban/lista com indicadores e gráfico de vencimentos, vínculo de contrato à ata de origem, fiscal titular e substituto, aditivos/apostilamentos com reajuste por índice, garantia contratual, anexo assinado em PDF, controle de saldo de itens, documentos gerados, exportação CSV, PNCP e relatórios consolidados), <strong>Agenda de Vencimentos</strong> unificada com resumo por e-mail e aviso individual ao fiscal titular/substituto, <strong>Sanções e Penalidades</strong> de fornecedores com aviso de compliance ao vincular a um Contrato/Ata e relatório individual ou global, além dos módulos administrativos (usuários, fornecedores — com exclusão protegida contra vínculos ativos —, configurações, auditoria, backup).
     </div>
     <div class="cover-legal" style="border-top:none;margin-top:6pt;padding-top:0">
       Este sistema é distribuído sob a licença <strong>MIT</strong> — software livre, de código aberto, que pode ser usado, copiado, modificado e redistribuído livremente, inclusive para fins comerciais, desde que mantido o aviso de copyright original. Veja o arquivo <code>LICENSE</code> no repositório para o texto completo.
@@ -126,17 +126,18 @@
     <div class="toc-item h2"><a href="#sec1">1. Introdução</a></div>
     <div class="toc-item h2"><a href="#sec2">2. Primeiro Acesso — Configuração Inicial</a></div>
     <div class="toc-item h2"><a href="#sec3">3. Visão Geral da Interface</a></div>
-    <div class="toc-item h2"><a href="#sec4">4. Contratos</a></div>
-    <div class="toc-item h2"><a href="#sec5">5. Atas de Registro de Preços</a></div>
-    <div class="toc-item h2"><a href="#sec6">6. Agenda de Vencimentos</a></div>
-    <div class="toc-item h2"><a href="#sec7">7. Cadastro de Fornecedores</a></div>
-    <div class="toc-item h2"><a href="#sec8">8. Login e Controle de Acesso</a></div>
-    <div class="toc-item h2"><a href="#sec9">9. Trilha de Auditoria</a></div>
-    <div class="toc-item h2"><a href="#sec10">10. Notificações</a></div>
-    <div class="toc-item h2"><a href="#sec11">11. Backup e Restauração</a></div>
-    <div class="toc-item h2"><a href="#sec12">12. Painel de Diagnóstico de Rede</a></div>
-    <div class="toc-item h2"><a href="#sec13">13. Lixeira</a></div>
-    <div class="toc-item h2"><a href="#sec14">14. Histórico de Versões</a></div>
+    <div class="toc-item h2"><a href="#sec4">4. Dashboard</a></div>
+    <div class="toc-item h2"><a href="#sec5">5. Contratos</a></div>
+    <div class="toc-item h2"><a href="#sec6">6. Atas de Registro de Preços</a></div>
+    <div class="toc-item h2"><a href="#sec7">7. Agenda de Vencimentos</a></div>
+    <div class="toc-item h2"><a href="#sec8">8. Cadastro de Fornecedores</a></div>
+    <div class="toc-item h2"><a href="#sec9">9. Login e Controle de Acesso</a></div>
+    <div class="toc-item h2"><a href="#sec10">10. Trilha de Auditoria</a></div>
+    <div class="toc-item h2"><a href="#sec11">11. Notificações</a></div>
+    <div class="toc-item h2"><a href="#sec12">12. Backup e Restauração</a></div>
+    <div class="toc-item h2"><a href="#sec13">13. Painel de Diagnóstico de Rede</a></div>
+    <div class="toc-item h2"><a href="#sec14">14. Lixeira</a></div>
+    <div class="toc-item h2"><a href="#sec15">15. Histórico de Versões</a></div>
   </div>
 </div>
 
@@ -151,53 +152,57 @@
 <h2 id="sec2">2. Primeiro Acesso — Configuração Inicial</h2>
 <p>No primeiro acesso, use o usuário <code>admin</code> e a senha <code>admin123</code>, e troque a senha imediatamente em <strong>Configurações → Segurança</strong>.</p>
 <p>Em <strong>Configurações → Organização</strong>, cadastre o nome do órgão e, opcionalmente, um brasão/logotipo — usado no cabeçalho da aplicação.</p>
-<p>Em <strong>Configurações → Comunicação</strong>, configure o servidor SMTP para habilitar notificações por e-mail (veja Seção 10).</p>
+<p>Em <strong>Configurações → Comunicação</strong>, configure o servidor SMTP para habilitar notificações por e-mail (veja Seção 11).</p>
 
 <h2 id="sec3">3. Visão Geral da Interface</h2>
-<p>A barra lateral esquerda concentra a navegação entre os módulos disponíveis: Contratos, Atas de Registro de Preços, Fornecedores, Lixeira, Auditoria, Notificações e Configurações. O tema (claro/escuro) e a densidade de exibição podem ser ajustados em Configurações → Interface. O atalho <strong>Ctrl+K</strong> foca o campo de busca da tela visível (Contratos ou Atas).</p>
+<p>A barra lateral esquerda concentra a navegação entre os módulos disponíveis: Dashboard, Contratos, Atas de Registro de Preços, Fornecedores, Agenda, Lixeira, Auditoria, Notificações e Configurações. O tema (claro/escuro) e a densidade de exibição podem ser ajustados em Configurações → Interface. O atalho <strong>Ctrl+K</strong> foca o campo de busca da tela visível (Contratos ou Atas).</p>
 
-<h2 id="sec4">4. Contratos</h2>
+<h2 id="sec4">4. Dashboard</h2>
+<p>A tela <strong>Dashboard</strong> é a primeira exibida após o login. Ela reúne uma visão consolidada de Contratos e Atas: indicadores de contratos vigentes, atas vigentes, valor total vigente, vencimentos nos próximos 7 dias (somando contratos, atas, garantias contratuais e fim de sanções) e total de fornecedores cadastrados.</p>
+<p>Abaixo dos indicadores, um gráfico mostra os vencimentos de contratos e atas distribuídos nos próximos 6 meses, e uma lista de <strong>Próximos Vencimentos</strong> traz os itens mais urgentes da Agenda de Vencimentos, com acesso direto ao respectivo cadastro. O botão <strong>Ver Agenda completa</strong> leva à tela de Agenda com todos os vencimentos.</p>
+
+<h2 id="sec5">5. Contratos</h2>
 <p>A tela <strong>Contratos</strong> (tela inicial após o login) mostra, no topo, indicadores de contratos vigentes, contratos vencendo em 30 dias, valor total vigente e atas com saldo baixo, seguidos de um gráfico com os vencimentos de contratos e atas nos próximos 6 meses — depois vem o quadro Kanban com os contratos agrupados por status: Vigente, Em prorrogação, Encerrado e Rescindido. Cada cartão exibe o número, objeto, valor e um indicador colorido de vigência (vigente, vencendo em até 60 dias, ou vencido).</p>
 <p>Clique em <strong>+ Novo Contrato</strong> para cadastrar: número, processo administrativo de origem, objeto, fornecedor contratado (vinculado ao cadastro de Fornecedores), <strong>Ata de Origem</strong> (quando o contrato decorrer de adesão a uma Ata de Registro de Preços), valor global, vigência inicial/final, fiscal titular e <strong>fiscal substituto</strong> — ambos com e-mail para aviso automático de vencimento —, gestor do contrato, dotação orçamentária, status e os dados da <strong>garantia contratual</strong> (modalidade, valor, vencimento e data de devolução). Se o fornecedor selecionado tiver uma sanção vigente que restrinja contratar com a Administração (suspensão, impedimento ou inidoneidade), um aviso aparece abaixo do campo.</p>
 <p>Ao editar um contrato já existente, a seção <strong>Aditivos e Apostilamentos</strong> fica disponível para registrar prorrogações de prazo, acréscimos/supressões de valor, alterações qualitativas, reequilíbrios e repactuações. Ao abrir um novo aditivo de prazo, o sistema já sugere a nova vigência (vigência atual + 12 meses, editável) como ponto de partida. Um aditivo de prazo atualiza automaticamente a vigência final do contrato; um aditivo de valor recalcula o valor global e exibe um alerta quando a variação acumulada se aproxima ou ultrapassa o limite legal de 25% (Art. 125, Lei nº 14.133/2021). Aditivos de reequilíbrio/repactuação permitem informar um <strong>índice</strong> (IPCA-E, IGP-M, INCC-M, INPC ou outro) e o percentual de variação — o sistema calcula automaticamente o valor de reajuste e o novo valor global antes de salvar.</p>
 <p>Também é possível anexar o <strong>PDF do contrato assinado</strong> ao registro, para consulta e download a qualquer momento.</p>
 <p>No rodapé do contrato (ao editar um já existente) ficam disponíveis dois botões: <strong>📄 Gerar Extrato</strong>, que produz o Extrato de Contrato para publicação no Diário Oficial/PNCP, e <strong>📤 Exportar PNCP</strong>, que baixa um JSON com os dados do contrato no formato esperado pelo Portal Nacional de Contratações Públicas. Cada aditivo/apostilamento registrado também tem seu próprio botão <strong>📄</strong> para gerar o respectivo termo (Aditivo de Prazo/Valor/Qualitativo ou Apostilamento de Reequilíbrio/Repactuação, conforme o tipo). Na tela de listagem, o botão <strong>Relatório</strong> gera um relatório consolidado de todos os contratos filtrados (documento A4), e o botão <strong>Exportar CSV</strong> baixa a mesma lista em planilha.</p>
 
-<h2 id="sec5">5. Atas de Registro de Preços</h2>
-<p>A tela <strong>Atas de RP</strong> mostra, no topo, indicadores de atas vigentes, atas vencendo em 30 dias, valor total registrado (soma dos itens das atas vigentes) e itens com saldo baixo — seguidos da lista de atas cadastradas com número, órgão gerenciador, status (Vigente/Vencida/Cancelada) e indicador de vigência.</p>
+<h2 id="sec6">6. Atas de Registro de Preços</h2>
+<p>A tela <strong>Atas de RP</strong> mostra, no topo, indicadores de atas vigentes, atas vencendo em 30 dias, valor total registrado (soma dos itens das atas vigentes) e itens com saldo baixo, seguidos de um gráfico com os vencimentos de contratos e atas nos próximos 6 meses — depois vem a lista de atas cadastradas com número, órgão gerenciador, status (Vigente/Vencida/Cancelada) e indicador de vigência.</p>
 <p>Cada ata pode ter vários <strong>itens registrados</strong>: descrição, unidade, quantidade registrada, preço unitário e fornecedor vinculado. Ao consumir o saldo de um item (quantidade utilizada), uma barra de progresso mostra visualmente o percentual já utilizado, destacada em vermelho quando o consumo atinge 80% ou mais da quantidade registrada.</p>
 <p>Ao editar uma ata já existente, o botão <strong>📤 Exportar PNCP</strong> no rodapé baixa um JSON com os dados da ata e de todos os seus itens (incluindo saldo disponível e fornecedor) no formato esperado pelo PNCP. O mesmo aviso de sanção vigente do fornecedor aparece ao selecioná-lo em um item da ata. Também é possível anexar o <strong>PDF da ata assinada</strong> ao registro, no mesmo padrão do anexo de Contrato. Na tela de listagem, o botão <strong>Relatório</strong> gera um relatório consolidado de todas as atas filtradas, e o botão <strong>Exportar CSV</strong> baixa a mesma lista em planilha.</p>
 
-<h2 id="sec6">6. Agenda de Vencimentos</h2>
+<h2 id="sec7">7. Agenda de Vencimentos</h2>
 <p>A tela <strong>Agenda</strong> reúne, num só lugar, os vencimentos de vigência de todos os Contratos e Atas de Registro de Preços não encerrados/cancelados, os vencimentos de <strong>garantia contratual</strong> ainda não devolvida, e o fim do prazo de <strong>sanções</strong> aplicadas a fornecedores, agrupados em Vencidos, Próximos 7 dias, Este mês e Mais adiante. Um filtro permite restringir a lista a contratos, atas, garantias ou sanções. Clicar em um evento abre diretamente o respectivo cadastro.</p>
 <p>Um selo numérico ao lado do item "Agenda" no menu lateral mostra quantos vencimentos estão a até 3 dias de distância (vencidos ou a vencer).</p>
 <p>O botão <strong>✉ Enviar por e-mail</strong> envia manualmente, a qualquer momento, um resumo de todos os vencimentos listados para o e-mail interno configurado em Configurações → Comunicação. Além disso, com o SMTP configurado, o servidor envia automaticamente um <strong>resumo diário</strong> (contratos e atas vencendo nos próximos 30 dias) para esse mesmo e-mail — mesmo sem ninguém logado no sistema. Contratos que tenham um <strong>e-mail do fiscal</strong> cadastrado também recebem, no mesmo envio diário, um aviso individual sobre o(s) contrato(s) sob sua fiscalização — mesmo que o e-mail interno não esteja configurado.</p>
 
-<h2 id="sec7">7. Cadastro de Fornecedores</h2>
+<h2 id="sec8">8. Cadastro de Fornecedores</h2>
 <p>O módulo de Fornecedores permite consultar CNPJ automaticamente (via ReceitaWS, com fallback para BrasilAPI), preencher endereço por CEP (ViaCEP), e manter o controle de certidões de regularidade fiscal e trabalhista com alertas de vencimento.</p>
 <p>Também é possível importar fornecedores em lote via CSV (botão "Importar CSV") e gerar um relatório consolidado (botão "Relatório"). O botão <strong>Relatório de Sanções</strong> gera um relatório global com as sanções de todos os fornecedores cadastrados, útil para prestação de contas.</p>
-<p>Ao expandir um fornecedor na lista, o botão <strong>📄 Ver Contratos</strong> leva direto para a tela de Contratos já filtrada pelos contratos vinculados àquele fornecedor (um selo indica o filtro ativo, removível a qualquer momento).</p>
+<p>Ao expandir um fornecedor na lista, o botão <strong>📄 Ver Contratos</strong> leva direto para a tela de Contratos já filtrada pelos contratos vinculados àquele fornecedor (um selo indica o filtro ativo, removível a qualquer momento). O botão <strong>Excluir Fornecedor</strong> move o cadastro para a Lixeira — mas fica bloqueado, com aviso explicativo, enquanto o fornecedor tiver contratos ou itens de ata vinculados, para evitar que essas referências fiquem "órfãs".</p>
 <p>A aba <strong>Sanções</strong> permite registrar internamente advertências, multas, suspensões, impedimentos de licitar e declarações de inidoneidade aplicadas ao fornecedor, com data de aplicação, prazo final (quando houver) e fundamentação/processo. Sanções sem prazo final vencido aparecem marcadas como "Vigente"; o botão <strong>📄 Relatório</strong>, na mesma aba, gera um documento formal com o histórico de sanções do fornecedor. Sanções do tipo suspensão, impedimento ou inidoneidade, enquanto vigentes, geram um aviso ao selecionar o fornecedor em um Contrato ou item de Ata, e o fim do prazo aparece na Agenda de Vencimentos.</p>
 
-<h2 id="sec8">8. Login e Controle de Acesso</h2>
+<h2 id="sec9">9. Login e Controle de Acesso</h2>
 <p>Senhas são armazenadas com PBKDF2-HMAC-SHA256 e salt aleatório por usuário. Sessões são gerenciadas pelo servidor e invalidadas automaticamente por inatividade. Novos usuários são cadastrados pelo administrador em Configurações → Usuários.</p>
 
-<h2 id="sec9">9. Trilha de Auditoria</h2>
+<h2 id="sec10">10. Trilha de Auditoria</h2>
 <p>Todas as ações relevantes do sistema (login, criação/edição/exclusão de contratos, atas e fornecedores, documentos gerados, exportações PNCP, alterações de configuração, etc.) ficam registradas em uma timeline global, agrupada por dia, com filtros por tipo de evento, período e usuário.</p>
 
-<h2 id="sec10">10. Notificações</h2>
-<p>O sistema exibe alertas in-app (ex.: certidões de fornecedores vencendo) e pode enviar notificações por e-mail quando o SMTP estiver configurado — incluindo o resumo diário e o envio manual da Agenda de Vencimentos (Seção 6).</p>
+<h2 id="sec11">11. Notificações</h2>
+<p>O sistema exibe alertas in-app (ex.: certidões de fornecedores vencendo) e pode enviar notificações por e-mail quando o SMTP estiver configurado — incluindo o resumo diário e o envio manual da Agenda de Vencimentos (Seção 7).</p>
 
-<h2 id="sec11">11. Backup e Restauração</h2>
+<h2 id="sec12">12. Backup e Restauração</h2>
 <p>O sistema realiza backup automático (JSON + banco SQLite) ao encerrar, com rotação configurável em Configurações → Backup. É possível também exportar/restaurar manualmente e sincronizar fornecedores entre instalações diferentes (mescla o que é novo, revisa conflitos, sem substituir o banco inteiro).</p>
 
-<h2 id="sec12">12. Painel de Diagnóstico de Rede</h2>
+<h2 id="sec13">13. Painel de Diagnóstico de Rede</h2>
 <p>Em Configurações → Diagnóstico, o sistema verifica IP, porta 3002, perfil de rede, regra de firewall e antivírus de terceiros, corrigindo automaticamente o que estiver ao alcance do Windows (com elevação de Administrador quando necessário), além de apontar inconsistências no cadastro de fornecedores (CNPJ duplicado ou inválido). O mesmo diagnóstico está disponível via <strong>Diagnostico SGCA.bat</strong>.</p>
 
-<h2 id="sec13">13. Lixeira</h2>
+<h2 id="sec14">14. Lixeira</h2>
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva.</p>
 
-<h2 id="sec14">14. Histórico de Versões</h2>
+<h2 id="sec15">15. Histórico de Versões</h2>
 <p>Consulte o <code>CHANGELOG.md</code> no repositório para o histórico completo de versões e alterações.</p>
 
 </div>

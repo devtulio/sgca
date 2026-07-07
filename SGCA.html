@@ -1050,8 +1050,12 @@
   <div class="sidebar-date" id="sidebar-date"></div>
 
   <nav class="sidebar-nav">
+    <button class="nav-item active" id="nav-dashboard" onclick="showDashboardGeral()">
+      <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+      Dashboard
+    </button>
     <div class="nav-section">Contratações</div>
-    <button class="nav-item active" id="nav-contratos" onclick="_filtroContratosFornecedor=null;showContratos()">
+    <button class="nav-item" id="nav-contratos" onclick="_filtroContratosFornecedor=null;showContratos()">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span>
       Contratos
     </button>
@@ -1106,9 +1110,17 @@
 
 <div id="app">
   <!-- ── Dashboard ── -->
+  <div id="view-dash" class="view active">
+    <div class="dash-top">
+      <h2>Dashboard</h2>
+    </div>
+    <div class="stats" id="dash-geral-stats"></div>
+    <div id="dash-geral-chart"></div>
+    <div id="dash-geral-vencimentos"></div>
+  </div>
 
   <!-- ── Contratos ── -->
-  <div id="view-contratos" class="view active">
+  <div id="view-contratos" class="view">
     <div class="dash-top">
       <h2>Contratos</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1179,6 +1191,7 @@
       </div>
     </div>
     <div class="stats" id="ata-dash-stats"></div>
+    <div id="ata-dash-chart"></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="ata-busca" placeholder="Buscar por número…" style="flex:1;min-width:220px" oninput="_debouncedRenderAtas()">
       <select id="ata-filtro-status" onchange="renderAtas()">
@@ -2202,7 +2215,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.7.1';
+const SGCA_VERSION = '0.8.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3363,6 +3376,80 @@ function vigBadge(iso) {
   return `<span class="badge badge-done">Vigente (${d}d)</span>`;
 }
 
+async function showDashboardGeral() {
+  _hideAllViews();
+  document.getElementById('view-dash').classList.add('active');
+  setNavActive('nav-dashboard');
+  await renderDashboardGeral();
+}
+
+async function renderDashboardGeral() {
+  const [rc, ra, rf] = await Promise.all([
+    API.get('/api/contratos?per=2000'),
+    API.get('/api/atas?per=2000'),
+    API.get('/api/fornecedores?per=2000'),
+  ]);
+  const contratos    = (await API.json(rc))?.items || [];
+  const atas         = (await API.json(ra))?.items || [];
+  const fornecedores = (await API.json(rf))?.items || [];
+
+  const contratosVigentes = contratos.filter(c => !['encerrado', 'rescindido'].includes(c.status));
+  const atasVigentes      = atas.filter(a => a.status === 'vigente');
+  const valorTotal = contratosVigentes.reduce((s, c) => s + (c.valorGlobal || 0), 0);
+
+  const eventos = await _agendaEventos();
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const em7 = new Date(hoje); em7.setDate(em7.getDate() + 7);
+  const urgentes = eventos.filter(e => e.date <= em7);
+
+  const statsEl = document.getElementById('dash-geral-stats');
+  statsEl.innerHTML = `
+    <div class="stat brand" style="cursor:pointer" onclick="showContratos()">
+      <div class="stat-top"><span class="stat-lbl">Contratos Vigentes</span></div>
+      <div class="stat-val">${contratosVigentes.length}</div>
+      <div class="stat-sub">de ${contratos.length} no total</div>
+    </div>
+    <div class="stat brand" style="cursor:pointer" onclick="showAtas()">
+      <div class="stat-top"><span class="stat-lbl">Atas Vigentes</span></div>
+      <div class="stat-val">${atasVigentes.length}</div>
+      <div class="stat-sub">de ${atas.length} no total</div>
+    </div>
+    <div class="stat done">
+      <div class="stat-top"><span class="stat-lbl">Valor Total Vigente</span></div>
+      <div class="stat-val" style="font-size:1.3rem">${fmtMoney(valorTotal) || 'R$ 0,00'}</div>
+      <div class="stat-sub">soma dos contratos vigentes</div>
+    </div>
+    <div class="stat prog" style="cursor:pointer" onclick="showAgenda()">
+      <div class="stat-top"><span class="stat-lbl">Vencendo em 7 dias</span></div>
+      <div class="stat-val">${urgentes.length}</div>
+      <div class="stat-sub">contratos, atas, garantias e sanções</div>
+    </div>
+    <div class="stat blocked" style="cursor:pointer" onclick="showFornecedores()">
+      <div class="stat-top"><span class="stat-lbl">Fornecedores Cadastrados</span></div>
+      <div class="stat-val">${fornecedores.length}</div>
+      <div class="stat-sub">ativos no cadastro</div>
+    </div>
+  `;
+
+  _renderGraficoVencimentos(contratos, atas, 'dash-geral-chart');
+
+  const proximos = eventos.slice(0, 8);
+  document.getElementById('dash-geral-vencimentos').innerHTML = `
+    <div style="background:var(--bg-card,#fff);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--gray-200)">
+      <div class="stat-lbl" style="margin-bottom:10px">Próximos vencimentos</div>
+      ${proximos.length ? proximos.map(e => `
+        <div onclick="_agendaAbrir('${e.tipo}','${e.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100);cursor:pointer">
+          <span style="font-size:.85rem;color:${e.urgente ? 'var(--danger)' : 'var(--gray-800)'}">${escHtml(e.label)}</span>
+          <span style="font-size:.78rem;color:var(--gray-500);white-space:nowrap;margin-left:12px">${e.date.toLocaleDateString('pt-BR')}</span>
+        </div>
+      `).join('') : '<p style="color:var(--gray-400);text-align:center;padding:16px 0">Nenhum vencimento próximo.</p>'}
+      <div style="text-align:right;margin-top:10px">
+        <button class="btn btn-outline btn-sm" onclick="showAgenda()">Ver Agenda completa</button>
+      </div>
+    </div>
+  `;
+}
+
 async function showContratos() {
   _hideAllViews();
   document.getElementById('view-contratos').classList.add('active');
@@ -3412,8 +3499,8 @@ async function renderContratosStats() {
   _renderGraficoVencimentos(_contratos, atas);
 }
 
-function _renderGraficoVencimentos(contratos, atas) {
-  const el = document.getElementById('contr-dash-chart');
+function _renderGraficoVencimentos(contratos, atas, containerId = 'contr-dash-chart') {
+  const el = document.getElementById(containerId);
   if (!el) return;
   const hoje = new Date(); hoje.setDate(1); hoje.setHours(0, 0, 0, 0);
   const meses = [];
@@ -4084,7 +4171,7 @@ async function showAtas() {
   renderAtasStats();
 }
 
-function renderAtasStats() {
+async function renderAtasStats() {
   const el = document.getElementById('ata-dash-stats');
   if (!el) return;
   const hoje = new Date(); hoje.setHours(0,0,0,0);
@@ -4119,6 +4206,10 @@ function renderAtasStats() {
       <div class="stat-sub">≥80% do item consumido</div>
     </div>
   `;
+
+  const rContratos = await API.get('/api/contratos?per=2000');
+  const dContratos = await API.json(rContratos);
+  _renderGraficoVencimentos(dContratos?.items || [], _atas, 'ata-dash-chart');
 }
 
 async function renderAtas() {
@@ -5131,7 +5222,27 @@ function _renderFornCardEdit() {
   </div>`, 'edit');
 }
 
+async function _fornecedorTemVinculos(fornId) {
+  const rc = await API.get(`/api/contratos?fornecedor=${fornId}&per=2000`);
+  const dc = await API.json(rc);
+  const contratos = dc?.items?.length || 0;
+
+  const ra = await API.get('/api/atas?per=2000');
+  const da = await API.json(ra);
+  const atas = (da?.items || []).filter(a => (a.itens || []).some(it => it.fornecedorId === fornId)).length;
+
+  return { contratos, atas };
+}
+
 async function _deleteForn(id, nome) {
+  const { contratos, atas } = await _fornecedorTemVinculos(id);
+  if (contratos || atas) {
+    const partes = [];
+    if (contratos) partes.push(`${contratos} contrato(s)`);
+    if (atas) partes.push(`${atas} ata(s)`);
+    toast(`Não é possível excluir: fornecedor vinculado a ${partes.join(' e ')}.`, 'error');
+    return;
+  }
   const ok = await customConfirm(
     `Excluir o fornecedor "${nome}"? Ele ficará na Lixeira por 30 dias antes da exclusão definitiva.`,
     { title: 'Excluir Fornecedor', icon: '⚠️', okLabel: 'Excluir', okClass: 'btn-danger' }
@@ -8174,7 +8285,7 @@ function carregarDashboard() {
         showSettings();
         setTimeout(() => toast('Bem-vindo ao SGCA! Configure seus dados antes de começar.', 'success'), 400);
       } else {
-        showContratos();
+        showDashboardGeral();
       }
     })
     .catch(err => console.error('Erro ao carregar dashboard:', err));

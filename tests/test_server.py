@@ -156,6 +156,18 @@ class TestContratos(SGCATestCase):
         status, listed = self.request('GET', '/api/contratos', token=token)
         self.assertTrue(any(c['id'] == cid for c in listed['items']))
 
+    def test_filtro_por_fornecedor(self):
+        token = self.login()
+        status, f1 = self.request('POST', '/api/fornecedores', {'razao_social': 'Fornecedor Filtro A'}, token=token)
+        status, f2 = self.request('POST', '/api/fornecedores', {'razao_social': 'Fornecedor Filtro B'}, token=token)
+        self.request('POST', '/api/contratos', {'objeto': 'Contrato do A', 'fornecedorId': f1['id']}, token=token)
+        self.request('POST', '/api/contratos', {'objeto': 'Contrato do B', 'fornecedorId': f2['id']}, token=token)
+
+        status, listed = self.request('GET', f"/api/contratos?fornecedor={f1['id']}", token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(listed['items']), 1)
+        self.assertEqual(listed['items'][0]['objeto'], 'Contrato do A')
+
     def test_aditivo_de_prazo_atualiza_vigencia_e_de_valor_acumula_percentual(self):
         token = self.login()
         status, created = self.request('POST', '/api/contratos', {
