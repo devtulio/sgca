@@ -1,4 +1,4 @@
-# SGCA v0.4.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.5.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -1379,7 +1379,7 @@ def _send_daily_alerts():
         cfg = {r['key']: r['value'] for r in conn.execute(
             "SELECT key,value FROM sys_settings WHERE key LIKE 'smtp_%' OR key='alert_email_last_sent'"
         ).fetchall()}
-    if not (cfg.get('smtp_host') and cfg.get('smtp_user') and cfg.get('smtp_pass') and cfg.get('smtp_to')):
+    if not (cfg.get('smtp_host') and cfg.get('smtp_user') and cfg.get('smtp_pass')):
         return
     hoje = time.strftime('%Y-%m-%d')
     if cfg.get('alert_email_last_sent') == hoje:
@@ -1406,7 +1406,7 @@ def _send_daily_alerts():
                 dias = int((ts - agora) / 86400)
                 if dias <= 30:
                     nome = item.get('numero') and f"{rotulo} {item['numero']}" or (item.get('objeto') or item.get('id'))
-                    itens.append((nome, dias))
+                    itens.append((nome, dias, item.get('fiscalEmail')))
             except Exception:
                 pass
         return itens
@@ -1422,14 +1422,13 @@ def _send_daily_alerts():
     def _linhas(titulo, itens):
         if not itens:
             return ''
-        partes = [f'<h3>{titulo}</h3><ul>']
-        for nome, dias in sorted(itens, key=lambda x: x[1]):
+        partes = [f'<h3>{titulo}</h3><ul>'] if titulo else ['<ul>']
+        for nome, dias, *_ in sorted(itens, key=lambda x: x[1]):
             txt = f'vencido há {-dias} dia(s)' if dias < 0 else ('vence hoje' if dias == 0 else f'vence em {dias} dia(s)')
             partes.append(f'<li><strong>{html_mod.escape(str(nome))}</strong> — {txt}</li>')
         partes.append('</ul>')
         return ''.join(partes)
 
-    corpo = f"<p>Resumo automático do SGCA — {hoje}</p>" + _linhas('Contratos', contratos) + _linhas('Atas de Registro de Preços', atas)
     smtp_cfg = {
         'host': cfg['smtp_host'], 'port': cfg.get('smtp_port', 587),
         'secure': cfg.get('smtp_secure') == '1', 'requireTLS': cfg.get('smtp_require_tls') != '0',
@@ -1437,11 +1436,29 @@ def _send_daily_alerts():
         'auth': {'user': cfg['smtp_user'], 'pass': cfg['smtp_pass']},
     }
     frm = {'name': cfg.get('smtp_from_name') or 'SGCA', 'email': cfg['smtp_user']}
-    try:
-        _send_email_raw(smtp_cfg, frm, cfg['smtp_to'], f'SGCA — Resumo de vencimentos ({hoje})', corpo)
-        print(f'  [ALERTAS] E-mail de resumo enviado ({len(contratos)} contrato(s), {len(atas)} ata(s))', flush=True)
-    except Exception as e:
-        _log.error('Falha ao enviar e-mail de alertas: %s', e)
+
+    if cfg.get('smtp_to'):
+        corpo = f"<p>Resumo automático do SGCA — {hoje}</p>" + _linhas('Contratos', contratos) + _linhas('Atas de Registro de Preços', atas)
+        try:
+            _send_email_raw(smtp_cfg, frm, cfg['smtp_to'], f'SGCA — Resumo de vencimentos ({hoje})', corpo)
+            print(f'  [ALERTAS] E-mail de resumo enviado ({len(contratos)} contrato(s), {len(atas)} ata(s))', flush=True)
+        except Exception as e:
+            _log.error('Falha ao enviar e-mail de alertas: %s', e)
+
+    # Notifica individualmente o fiscal de cada contrato vencendo (quando cadastrado)
+    por_fiscal = {}
+    for nome, dias, email in contratos:
+        if email:
+            por_fiscal.setdefault(email, []).append((nome, dias))
+    for email, itens in por_fiscal.items():
+        corpo_f = (f"<p>Resumo automático do SGCA — {hoje}</p>"
+                   f"<p>Contrato(s) sob sua fiscalização com vigência vencendo:</p>" + _linhas('', itens))
+        try:
+            _send_email_raw(smtp_cfg, frm, email, f'SGCA — Contrato(s) sob sua fiscalização ({hoje})', corpo_f)
+            print(f'  [ALERTAS] E-mail enviado ao fiscal {email} ({len(itens)} contrato(s))', flush=True)
+        except Exception as e:
+            _log.error('Falha ao enviar e-mail ao fiscal %s: %s', email, e)
+
     with get_db() as conn:
         conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('alert_email_last_sent',?)", (hoje,))
 

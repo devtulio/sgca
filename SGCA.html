@@ -1112,6 +1112,10 @@
     <div class="dash-top">
       <h2>Contratos</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="exportarContratosCsv()" title="Exportar contratos listados em CSV">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar CSV
+        </button>
         <button class="btn btn-primary" onclick="openContratoModal()">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
           Novo Contrato
@@ -1153,6 +1157,10 @@
     <div class="dash-top">
       <h2>Atas de Registro de Preços</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="exportarAtasCsv()" title="Exportar atas listadas em CSV">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar CSV
+        </button>
         <button class="btn btn-primary" onclick="openAtaModal()">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
           Nova Ata
@@ -1276,10 +1284,14 @@
             <input type="date" id="c-vig-final">
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
             <label>Fiscal do Contrato</label>
             <input type="text" id="c-fiscal">
+          </div>
+          <div class="info-field" style="margin:0">
+            <label>E-mail do Fiscal</label>
+            <input type="email" id="c-fiscal-email" placeholder="para alerta de vencimento" title="Recebe um alerta automático quando o contrato estiver vencendo">
           </div>
           <div class="info-field" style="margin:0">
             <label>Gestor do Contrato</label>
@@ -1298,6 +1310,39 @@
             <option value="encerrado">Encerrado</option>
             <option value="rescindido">Rescindido</option>
           </select>
+        </div>
+
+        <div style="border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Garantia Contratual</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+            <div class="info-field" style="margin:0">
+              <label>Modalidade</label>
+              <select id="c-garantia-modalidade">
+                <option value="">Nenhuma</option>
+                <option value="caucao">Caução</option>
+                <option value="seguro_garantia">Seguro-Garantia</option>
+                <option value="fianca_bancaria">Fiança Bancária</option>
+              </select>
+            </div>
+            <div class="info-field" style="margin:0">
+              <label>Valor (R$)</label>
+              <input type="text" id="c-garantia-valor" placeholder="0,00" oninput="maskMoney(this)">
+            </div>
+            <div class="info-field" style="margin:0">
+              <label>Vencimento</label>
+              <input type="date" id="c-garantia-vencimento">
+            </div>
+            <div class="info-field" style="margin:0">
+              <label>Devolvida em</label>
+              <input type="date" id="c-garantia-devolucao">
+            </div>
+          </div>
+        </div>
+
+        <div id="contrato-anexo-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Contrato Assinado (PDF)</p>
+          <div id="c-anexo-atual" style="font-size:.8rem;color:var(--gray-500);margin-bottom:8px"></div>
+          <input type="file" id="c-anexo-input" accept="application/pdf" onchange="onAnexoContratoChange(this)">
         </div>
 
         <div id="contrato-aditivos-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
@@ -1320,6 +1365,17 @@
               <input type="date" id="ad-nova-vigencia" style="display:none">
               <input type="text" id="ad-valor-variacao" placeholder="Variação (R$, use - para supressão)" style="display:none">
             </div>
+            <div id="ad-indice-wrap" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+              <select id="ad-indice">
+                <option value="IPCA-E">IPCA-E</option>
+                <option value="IGP-M">IGP-M</option>
+                <option value="INCC-M">INCC-M</option>
+                <option value="INPC">INPC</option>
+                <option value="outro">Outro</option>
+              </select>
+              <input type="text" id="ad-indice-percentual" placeholder="Variação do índice (%, ex: 4,5)" oninput="_adIndicePreview()">
+            </div>
+            <div id="ad-indice-preview" style="font-size:.72rem;color:var(--gray-500);margin-top:4px"></div>
             <textarea id="ad-justificativa" placeholder="Justificativa" style="width:100%;margin-top:8px;min-height:50px"></textarea>
             <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
               <button class="btn btn-outline btn-sm" onclick="hideNovoAditivoForm()">Cancelar</button>
@@ -1468,6 +1524,7 @@
           <option value="">Todos os tipos</option>
           <option value="contrato">Vencimento de contrato</option>
           <option value="ata">Vencimento de ata</option>
+          <option value="garantia">Vencimento de garantia</option>
         </select>
       </div>
     </div>
@@ -1668,7 +1725,7 @@
         <fieldset style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px;margin-bottom:16px">
           <legend style="font-size:.72rem;font-weight:700;color:var(--accent-light);padding:0 6px;text-transform:uppercase;letter-spacing:.4px">E-mail (SMTP)</legend>
           <p style="font-size:.75rem;color:var(--gray-500);margin-bottom:12px;line-height:1.5">Configure o servidor SMTP para envio de notificações. O servidor local (<strong>server.py</strong>) deve estar em execução. As credenciais sincronizam com o servidor (admin) e ficam disponíveis em qualquer navegador da rede.<br><br>
-          Assim que configurado, o sistema passa a enviar automaticamente um <strong>resumo diário por e-mail</strong> (contratos e atas com vigência vencendo nos próximos 30 dias) para o e-mail interno abaixo — mesmo sem ninguém logado.</p>
+          Assim que configurado, o sistema passa a enviar automaticamente um <strong>resumo diário por e-mail</strong> (contratos e atas com vigência vencendo nos próximos 30 dias) para o e-mail interno abaixo — mesmo sem ninguém logado. Contratos com <strong>e-mail do fiscal</strong> cadastrado também geram um aviso individual para o fiscal responsável, mesmo sem o e-mail interno configurado.</p>
           <div class="info-field"><label>Servidor SMTP (host)</label><input type="text" id="s-smtp-host" placeholder="ex: smtp.gmail.com"></div>
           <div class="info-field"><label>Porta</label><input type="number" id="s-smtp-port" placeholder="587" style="max-width:120px"></div>
           <div style="display:flex;gap:20px;margin:8px 0">
@@ -1684,7 +1741,7 @@
           <div class="info-field"><label>Usuário (e-mail de envio)</label><input type="email" id="s-smtp-user" placeholder="ex: licitacao@municipio.sp.gov.br"></div>
           <div class="info-field"><label>Senha</label><input type="password" id="s-smtp-pass" autocomplete="new-password"></div>
           <div class="info-field"><label>Nome do remetente</label><input type="text" id="s-smtp-from-name" placeholder="SGCA — Contratações Diretas"></div>
-          <div class="info-field"><label>E-mail interno (destinatário padrão)</label><input type="email" id="s-smtp-to" placeholder="ex: chefia@municipio.sp.gov.br"></div>
+          <div class="info-field"><label>E-mail interno (destinatário padrão, opcional)</label><input type="email" id="s-smtp-to" placeholder="ex: chefia@municipio.sp.gov.br"></div>
           <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
             <button class="btn btn-outline btn-sm" onclick="testSmtp()">🔌 Testar conexão com servidor</button>
             <span id="smtp-test-result" style="font-size:.8rem"></span>
@@ -2106,7 +2163,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.4.0';
+const SGCA_VERSION = '0.5.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3012,7 +3069,7 @@ function parseValor(v) {
 }
 function fmtMoney(v) {
   if (!v) return '';
-  const n = parseValor(v);
+  const n = typeof v === 'number' ? v : parseValor(v);
   if (!n) return v;
   return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
 }
@@ -3334,14 +3391,22 @@ async function openContratoModal(id) {
   document.getElementById('c-vig-inicial').value = c?.vigenciaInicial || '';
   document.getElementById('c-vig-final').value   = c?.vigenciaFinal || '';
   document.getElementById('c-fiscal').value      = c?.fiscalNome || '';
+  document.getElementById('c-fiscal-email').value = c?.fiscalEmail || '';
   document.getElementById('c-gestor').value      = c?.gestorNome || '';
   document.getElementById('c-dotacao').value     = c?.dotacaoOrcamentaria || '';
   document.getElementById('c-status').value      = c?.status || 'vigente';
+  document.getElementById('c-garantia-modalidade').value = c?.garantiaModalidade || '';
+  document.getElementById('c-garantia-valor').value      = c?.garantiaValor ? fmtMoney(c.garantiaValor) : '';
+  document.getElementById('c-garantia-vencimento').value = c?.garantiaVencimento || '';
+  document.getElementById('c-garantia-devolucao').value  = c?.garantiaDevolucao || '';
   document.getElementById('c-fornecedor').innerHTML = _fornecedorOptionsHtml(c?.fornecedorId);
 
   const aditivosSection = document.getElementById('contrato-aditivos-section');
   aditivosSection.style.display = c ? '' : 'none';
   document.getElementById('contrato-doc-actions').style.display = c ? 'flex' : 'none';
+  document.getElementById('contrato-anexo-section').style.display = c ? '' : 'none';
+  document.getElementById('c-anexo-input').value = '';
+  _renderAnexoContrato(c?.anexoContrato);
   hideNovoAditivoForm();
   if (c) renderAditivosList(c);
 
@@ -3364,9 +3429,14 @@ async function saveContrato() {
     vigenciaInicial: document.getElementById('c-vig-inicial').value,
     vigenciaFinal: document.getElementById('c-vig-final').value,
     fiscalNome: document.getElementById('c-fiscal').value.trim(),
+    fiscalEmail: document.getElementById('c-fiscal-email').value.trim(),
     gestorNome: document.getElementById('c-gestor').value.trim(),
     dotacaoOrcamentaria: document.getElementById('c-dotacao').value.trim(),
-    status: document.getElementById('c-status').value
+    status: document.getElementById('c-status').value,
+    garantiaModalidade: document.getElementById('c-garantia-modalidade').value,
+    garantiaValor: parseValor(document.getElementById('c-garantia-valor').value),
+    garantiaVencimento: document.getElementById('c-garantia-vencimento').value,
+    garantiaDevolucao: document.getElementById('c-garantia-devolucao').value
   };
   const r = _contratoAtualId
     ? await API.put(`/api/contratos/${_contratoAtualId}`, payload)
@@ -3389,6 +3459,7 @@ function renderAditivosList(c) {
         <div>
           <strong>${tipoLabel[a.tipo] || a.tipo}</strong> ${a.numeroTermo ? '— ' + escHtml(a.numeroTermo) : ''}
           ${a.novaVigenciaFinal ? `<br>Nova vigência final: ${fmtDateBR(a.novaVigenciaFinal)}` : ''}
+          ${a.indice ? `<br>Índice: ${escHtml(a.indice)} (${a.indicePercentual}%)` : ''}
           ${a.valorVariacao ? `<br>Variação: ${fmtMoney(a.valorVariacao)}` : ''}
           ${a.justificativa ? `<br><span style="color:var(--gray-500)">${escHtml(a.justificativa)}</span>` : ''}
         </div>
@@ -3426,8 +3497,21 @@ function hideNovoAditivoForm() {
 }
 function onAditivoTipoChange() {
   const tipo = document.getElementById('ad-tipo').value;
+  const ehIndice = tipo === 'reequilibrio' || tipo === 'repactuacao';
   document.getElementById('ad-nova-vigencia').style.display    = tipo === 'prazo' ? '' : 'none';
   document.getElementById('ad-valor-variacao').style.display   = tipo === 'valor' ? '' : 'none';
+  document.getElementById('ad-indice-wrap').style.display      = ehIndice ? 'grid' : 'none';
+  document.getElementById('ad-indice-preview').textContent = '';
+  if (!ehIndice) document.getElementById('ad-indice-percentual').value = '';
+}
+function _adIndicePreview() {
+  const percentual = parseFloat(document.getElementById('ad-indice-percentual').value.replace(',', '.')) || 0;
+  const valorAtual = parseValor(document.getElementById('c-valor').value);
+  const el = document.getElementById('ad-indice-preview');
+  if (!percentual || !valorAtual) { el.textContent = ''; return; }
+  const variacao = valorAtual * (percentual / 100);
+  const novoValor = valorAtual + variacao;
+  el.textContent = `${variacao >= 0 ? '+' : ''}${fmtMoney(variacao)} — novo valor global: ${fmtMoney(novoValor)}`;
 }
 async function saveAditivo() {
   if (!_contratoAtualId) return;
@@ -3443,6 +3527,12 @@ async function saveAditivo() {
     const raw = document.getElementById('ad-valor-variacao').value.trim();
     const sign = raw.startsWith('-') ? -1 : 1;
     payload.valorVariacao = sign * parseValor(raw.replace('-', ''));
+  }
+  if (tipo === 'reequilibrio' || tipo === 'repactuacao') {
+    const percentual = parseFloat(document.getElementById('ad-indice-percentual').value.replace(',', '.')) || 0;
+    payload.indice = document.getElementById('ad-indice').value;
+    payload.indicePercentual = percentual;
+    if (percentual) payload.valorVariacao = parseValor(document.getElementById('c-valor').value) * (percentual / 100);
   }
   const r = await API.post(`/api/contratos/${_contratoAtualId}/aditivos`, payload);
   if (!r?.ok) { toast('Erro ao salvar aditivo', 'error'); return; }
@@ -3468,6 +3558,53 @@ async function removeAditivo(aid) {
   const idx = _contratos.findIndex(c => c.id === contrato.id);
   if (idx >= 0) _contratos[idx] = contrato;
   renderAditivosList(contrato);
+}
+
+// ── Anexo do contrato assinado (PDF) ─────────────────────────────
+function _renderAnexoContrato(anexo) {
+  const el = document.getElementById('c-anexo-atual');
+  if (!el) return;
+  if (!anexo) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
+  el.innerHTML = `📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+    — enviado em ${fmt(anexo.uploadedAt)}
+    <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoContrato()" title="Remover anexo">✕</button>`;
+}
+
+async function onAnexoContratoChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') { toast('Envie um arquivo PDF.', 'error'); input.value = ''; return; }
+  if (file.size > 10 * 1024 * 1024) { toast('Arquivo muito grande (máx. 10 MB).', 'error'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
+    if (!contrato) return;
+    contrato.anexoContrato = { nome: file.name, dataurl: ev.target.result, uploadedAt: new Date().toISOString() };
+    const r = await API.put(`/api/contratos/${_contratoAtualId}`, contrato);
+    if (!r?.ok) { toast('Erro ao enviar anexo.', 'error'); return; }
+    const idx = _contratos.findIndex(c => c.id === contrato.id);
+    if (idx >= 0) _contratos[idx] = contrato; else _contratos.push(contrato);
+    await _auditEvento('CONTRATO_EDITADO', `Anexo do contrato assinado enviado (${file.name})`);
+    toast('Anexo enviado com sucesso.', 'success');
+    _renderAnexoContrato(contrato.anexoContrato);
+    input.value = '';
+  };
+  reader.onerror = () => toast('Erro ao ler o arquivo.', 'error');
+  reader.readAsDataURL(file);
+}
+
+async function removeAnexoContrato() {
+  const ok = await customConfirm('Remover o anexo do contrato assinado?', { okLabel: 'Remover' });
+  if (!ok) return;
+  const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!contrato) return;
+  contrato.anexoContrato = null;
+  const r = await API.put(`/api/contratos/${_contratoAtualId}`, contrato);
+  if (!r?.ok) { toast('Erro ao remover anexo.', 'error'); return; }
+  const idx = _contratos.findIndex(c => c.id === contrato.id);
+  if (idx >= 0) _contratos[idx] = contrato;
+  toast('Anexo removido.', 'success');
+  _renderAnexoContrato(null);
 }
 
 // ── Documentos gerados (Contrato) ───────────────────────────────
@@ -3601,6 +3738,7 @@ async function gerarTermoAditivo(aid) {
   <tr><td class="lbl">Objeto do Contrato</td><td>${blank(c.objeto)}</td></tr>
   <tr><td class="lbl">Tipo de Alteração</td><td>${escHtml(titulo)}</td></tr>
   ${a.novaVigenciaFinal ? `<tr><td class="lbl">Nova Vigência Final</td><td>${fmtDateBR(a.novaVigenciaFinal)}</td></tr>` : ''}
+  ${a.indice ? `<tr><td class="lbl">Índice de Reajuste</td><td>${escHtml(a.indice)} — variação de ${a.indicePercentual}%</td></tr>` : ''}
   ${a.valorVariacao ? `<tr><td class="lbl">Variação de Valor</td><td>${fmtMoney(Math.abs(a.valorVariacao))} (${a.valorVariacao < 0 ? 'supressão' : 'acréscimo'})</td></tr>` : ''}
   ${a.valorVariacao ? `<tr><td class="lbl">Novo Valor Global</td><td>${fmtMoney(c.valorGlobal)}</td></tr>` : ''}
 </table>
@@ -3956,6 +4094,11 @@ async function _agendaEventos() {
     const d = new Date(c.vigenciaFinal + 'T00:00:00');
     if (isNaN(d)) continue;
     events.push({ date: d, label: `Vencimento de contrato — ${c.numero ? c.numero + ' · ' : ''}${c.objeto || ''}`, tipo: 'contrato', id: c.id, urgente: d < today });
+
+    if (c.garantiaVencimento && !c.garantiaDevolucao) {
+      const dg = new Date(c.garantiaVencimento + 'T00:00:00');
+      if (!isNaN(dg)) events.push({ date: dg, label: `Vencimento de garantia contratual — ${c.numero ? c.numero + ' · ' : ''}${c.objeto || ''}`, tipo: 'garantia', id: c.id, urgente: dg < today });
+    }
   }
   for (const a of atas) {
     if (a.status === 'cancelada') continue;
@@ -3993,8 +4136,8 @@ async function updateAgendaBadge() {
 }
 
 function _agendaAbrir(tipo, id) {
-  if (tipo === 'contrato') openContratoModal(id);
-  else openAtaModal(id);
+  if (tipo === 'ata') openAtaModal(id);
+  else openContratoModal(id);
 }
 
 async function renderAgenda() {
@@ -4014,10 +4157,12 @@ async function renderAgenda() {
     return `<div style="margin-bottom:24px">
       <h3 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);margin-bottom:10px">${title}${countBadge(evs.length)}</h3>
       ${evs.map(e => {
-        const icon = e.tipo === 'contrato'
+        const icon = e.tipo === 'garantia'
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A5A00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>`
+          : e.tipo === 'contrato'
           ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
           : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5E2750" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>`;
-        const iconBg = e.tipo === 'contrato' ? '#e8eef7' : '#F3EDF8';
+        const iconBg = e.tipo === 'garantia' ? '#FFF3D8' : e.tipo === 'contrato' ? '#e8eef7' : '#F3EDF8';
         return `<div onclick="_agendaAbrir('${e.tipo}','${e.id}')" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid ${e.urgente?'var(--danger)':'var(--gray-200)'};border-radius:8px;margin-bottom:8px;cursor:pointer;background:var(--bg-card)">
           <div style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center">${icon}</div>
           <div style="flex:1">
@@ -4262,7 +4407,8 @@ const _AUDIT_EVENT_LABELS = {
   FORNECEDOR_ALTERADO: 'Fornecedor alterado', FORNECEDOR_EXCLUIDO: 'Fornecedor excluído',
   FORNECEDOR_RESTAURADO: 'Fornecedor restaurado', FORNECEDOR_EXPURGADO: 'Fornecedor excluído definitivamente',
   DOCUMENTO_GERADO: 'Documento gerado', SYNC_BACKUP: 'Sincronização de backup',
-  AGENDA_EMAIL_ENVIADO: 'Resumo de agenda enviado por e-mail', PNCP_EXPORT: 'Exportação PNCP'
+  AGENDA_EMAIL_ENVIADO: 'Resumo de agenda enviado por e-mail', PNCP_EXPORT: 'Exportação PNCP',
+  EXPORT_CSV: 'Exportação CSV'
 };
 
 const _AUDIT_EVENT_META = {
@@ -4282,7 +4428,8 @@ const _AUDIT_EVENT_META = {
   DOCUMENTO_GERADO:     { bg: '#e8eef7', color: '#1a3a6b' },
   SYNC_BACKUP:          { bg: '#E1F5EE', color: '#0F6E56' },
   AGENDA_EMAIL_ENVIADO: { bg: '#E1F5EE', color: '#0F6E56' },
-  PNCP_EXPORT:          { bg: '#e8eef7', color: '#1a3a6b' }
+  PNCP_EXPORT:          { bg: '#e8eef7', color: '#1a3a6b' },
+  EXPORT_CSV:           { bg: '#e8eef7', color: '#1a3a6b' }
 };
 
 
@@ -4598,6 +4745,7 @@ async function toggleFornCard(id, editMode = false, tab = 'dados') {
   playClick();
   if (editMode) _renderFornCardEdit();
   else if (tab === 'certs') _renderFornCardCerts();
+  else if (tab === 'sancoes') _renderFornCardSancoes();
   else _renderFornCardView();
 }
 async function openFornDetail(id, editMode = false, tab = 'dados') {
@@ -5000,15 +5148,138 @@ function _fornTabsHtml(active) {
   return `<div class="forn-tabs">
     <button class="forn-tab ${active==='dados'?'active':''}" onclick="_switchFornTab('dados')">Dados</button>
     <button class="forn-tab ${active==='certs'?'active':''}" onclick="_switchFornTab('certs')">Certidões</button>
+    <button class="forn-tab ${active==='sancoes'?'active':''}" onclick="_switchFornTab('sancoes')">Sanções</button>
   </div>`;
 }
 
 function _switchFornTab(tab) {
   _fornTab = tab;
   if (tab === 'dados') _renderFornCardView();
+  else if (tab === 'sancoes') _renderFornCardSancoes();
   else _renderFornCardCerts();
 }
 function _renderFornCerts() { _renderFornCardCerts(); }
+
+// ── Sanções / Penalidades ────────────────────────────────────
+const SANCAO_TIPOS = [
+  { id: 'advertencia',   label: 'Advertência' },
+  { id: 'multa',         label: 'Multa' },
+  { id: 'suspensao',     label: 'Suspensão Temporária' },
+  { id: 'impedimento',   label: 'Impedimento de Licitar (Art. 156, III)' },
+  { id: 'inidoneidade',  label: 'Declaração de Inidoneidade (Art. 156, IV)' }
+];
+function sancaoTipoLabel(s) { return SANCAO_TIPOS.find(t => t.id === s.tipo)?.label || s.tipo; }
+function sancaoStatus(s) {
+  if (!s.prazoFim) return 'ativa';
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  return new Date(s.prazoFim + 'T00:00:00') < hoje ? 'encerrada' : 'ativa';
+}
+
+function _renderFornCardSancoes() {
+  _fornTab = 'sancoes';
+  const f = _currentForn;
+  const sancoes = f.sancoes || [];
+  const itemsHtml = sancoes.length ? sancoes.map((s, i) => {
+    const st = sancaoStatus(s);
+    const cls = st === 'ativa' ? 'expired' : 'none';
+    return `<div class="forn-cert-item ${cls}">
+      <div style="flex:1;min-width:0">
+        <div class="forn-cert-tipo">${escHtml(sancaoTipoLabel(s))}</div>
+        <div class="forn-cert-dates">Aplicada em: ${fmtDateBR(s.dataAplicacao)}${s.prazoFim ? ' · Até: ' + fmtDateBR(s.prazoFim) : ''}
+          ${s.fundamentacao ? `<br><span style="font-style:italic">${escHtml(s.fundamentacao)}</span>` : ''}</div>
+        <span class="forn-cert-badge ${cls}">${st === 'ativa' ? 'Vigente' : 'Encerrada'}</span>
+      </div>
+      <div class="forn-cert-actions">
+        <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:.65rem" onclick="openSancaoEdit('${f.id}',${i})">✏</button>
+        <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:.65rem" onclick="deleteSancao('${f.id}',${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('') : '<p style="color:var(--gray-500);font-size:.8rem;text-align:center;padding:20px 0">Nenhuma sanção registrada.</p>';
+  _setFornCardBody(`<div class="forn-inline-body" onclick="event.stopPropagation()">
+    ${_fornTabsHtml('sancoes')}
+    <div class="forn-cert-list">${itemsHtml}</div>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="openSancaoEdit('${f.id}', -1)">+ Registrar Sanção</button>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--gray-200)">
+      <button class="btn btn-outline" onclick="_collapseFornCard('${f.id}')">Fechar</button>
+      <button class="btn btn-primary" onclick="_renderFornCardEdit()">✏ Editar</button>
+    </div>
+  </div>`, 'view');
+}
+
+let _sancaoEditFornId = null, _sancaoEditIdx = null;
+function openSancaoEdit(fornId, idx) {
+  _sancaoEditFornId = fornId;
+  _sancaoEditIdx    = idx;
+  const s = idx >= 0 ? (_currentForn?.sancoes || [])[idx] : null;
+  const titulo = idx === -1 ? 'Registrar Sanção' : 'Editar Sanção';
+  _setFornCardBody(`<div class="forn-inline-body" onclick="event.stopPropagation()">
+    <div style="font-size:.85rem;font-weight:700;color:var(--gray-700);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--gray-200)">${titulo}</div>
+    <div class="info-field">
+      <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-500)">Tipo</label>
+      <select id="sa-tipo">${SANCAO_TIPOS.map(t => `<option value="${t.id}" ${s?.tipo===t.id?'selected':''}>${escHtml(t.label)}</option>`).join('')}</select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="info-field" style="margin:0">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-500)">Data de Aplicação</label>
+        <input type="date" id="sa-data" value="${s?.dataAplicacao || ''}">
+      </div>
+      <div class="info-field" style="margin:0">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-500)">Prazo Final (se houver)</label>
+        <input type="date" id="sa-prazo" value="${s?.prazoFim || ''}">
+      </div>
+    </div>
+    <div class="info-field">
+      <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-500)">Fundamentação / Processo</label>
+      <input type="text" id="sa-fundamentacao" placeholder="ex: Processo 123/2026 — Art. 156, II" value="${escHtml(s?.fundamentacao || '')}">
+    </div>
+    <div class="info-field">
+      <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-500)">Observações</label>
+      <textarea id="sa-obs" rows="2">${escHtml(s?.obs || '')}</textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--gray-200)">
+      <button class="btn btn-outline" onclick="_renderFornCardSancoes()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSancaoEdit()">Salvar Sanção</button>
+    </div>
+  </div>`, 'view');
+}
+
+async function saveSancaoEdit() {
+  const tipo           = document.getElementById('sa-tipo').value;
+  const dataAplicacao  = document.getElementById('sa-data').value;
+  const prazoFim       = document.getElementById('sa-prazo').value;
+  const fundamentacao  = document.getElementById('sa-fundamentacao').value.trim();
+  const obs            = document.getElementById('sa-obs').value.trim();
+  if (!dataAplicacao) { toast('Informe a data de aplicação.', 'error'); return; }
+  const sancao = { tipo, dataAplicacao, prazoFim, fundamentacao, obs };
+  const forn = await API.get(`/api/fornecedores/${_sancaoEditFornId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!forn) return;
+  const sancoes = forn.sancoes || [];
+  if (_sancaoEditIdx === -1) sancoes.push(sancao);
+  else sancoes[_sancaoEditIdx] = sancao;
+  forn.sancoes = sancoes;
+  forn.updatedAt = Date.now();
+  await API.put(`/api/fornecedores/${forn.id}`, forn);
+  _currentForn = forn;
+  await _auditEvento('FORNECEDOR_ALTERADO', `Sanção registrada para ${forn.razao_social || forn.nome_fantasia}`);
+  toast('Sanção salva!', 'success');
+  playSuccess();
+  if (document.getElementById('view-fornecedores').classList.contains('active')) await renderFornecedores();
+  _renderFornCardSancoes();
+}
+
+async function deleteSancao(fornId, idx) {
+  const ok = await customConfirm('Esta ação não pode ser desfeita.', { title: 'Excluir sanção?', okLabel: 'Excluir' });
+  if (!ok) return;
+  const forn = await API.get(`/api/fornecedores/${fornId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!forn) return;
+  forn.sancoes = (forn.sancoes || []).filter((_,i) => i !== idx);
+  forn.updatedAt = Date.now();
+  await API.put(`/api/fornecedores/${forn.id}`, forn);
+  _currentForn = forn;
+  toast('Sanção removida.', 'success');
+  if (document.getElementById('view-fornecedores').classList.contains('active')) await renderFornecedores();
+  _renderFornCardSancoes();
+}
 
 
 // ── Cert Edit ─────────────────────────────────────────────
@@ -5386,6 +5657,48 @@ let _tblSort = { key: null, dir: 'asc' };
 // ══════════════════════════════════════════════════════════════
 // EXPORTAR CSV
 // ══════════════════════════════════════════════════════════════
+
+function _downloadCsv(linhas, nomeArquivo) {
+  const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function _csvCampo(v) {
+  return `"${String(v ?? '').replace(/"/g, '""')}"`;
+}
+
+async function exportarContratosCsv() {
+  if (!_contratos.length) { toast('Nenhum contrato para exportar', 'error'); return; }
+  await _loadFornecedoresCache();
+  const fornNome = id => _fornecedoresCache.find(f => f.id === id)?.razao_social || _fornecedoresCache.find(f => f.id === id)?.nome_fantasia || '';
+  const statusLabel = { vigente: 'Vigente', em_prorrogacao: 'Em prorrogação', encerrado: 'Encerrado', rescindido: 'Rescindido' };
+  const cabecalho = ['Número', 'Processo', 'Objeto', 'Fornecedor', 'Status', 'Valor Global', 'Vigência Inicial', 'Vigência Final', 'Fiscal', 'Gestor', 'Dotação Orçamentária'];
+  const linhas = [cabecalho.join(';')].concat(_contratos.map(c => [
+    c.numero, c.processoOrigem, c.objeto, fornNome(c.fornecedorId),
+    statusLabel[c.status] || c.status, c.valorGlobal != null ? String(c.valorGlobal).replace('.', ',') : '',
+    c.vigenciaInicial, c.vigenciaFinal, c.fiscalNome, c.gestorNome, c.dotacaoOrcamentaria
+  ].map(_csvCampo).join(';')));
+  _downloadCsv(linhas, `contratos_${new Date().toISOString().slice(0, 10)}.csv`);
+  await _auditEvento('EXPORT_CSV', `Exportação CSV de ${_contratos.length} contrato(s)`);
+  toast('CSV exportado com sucesso', 'success');
+}
+
+async function exportarAtasCsv() {
+  if (!_atas.length) { toast('Nenhuma ata para exportar', 'error'); return; }
+  const statusLabel = { vigente: 'Vigente', vencida: 'Vencida', cancelada: 'Cancelada' };
+  const cabecalho = ['Número', 'Processo', 'Órgão Gerenciador', 'Status', 'Data de Assinatura', 'Vigência Final', 'Itens Registrados'];
+  const linhas = [cabecalho.join(';')].concat(_atas.map(a => [
+    a.numero, a.processoOrigem, a.orgaoGerenciador,
+    statusLabel[a.status] || a.status, a.dataAssinatura, a.vigenciaFinal, (a.itens || []).length
+  ].map(_csvCampo).join(';')));
+  _downloadCsv(linhas, `atas_${new Date().toISOString().slice(0, 10)}.csv`);
+  await _auditEvento('EXPORT_CSV', `Exportação CSV de ${_atas.length} ata(s)`);
+  toast('CSV exportado com sucesso', 'success');
+}
 
 // AUTORIZAÇÃO DE ABERTURA — Lei 14.133/2021
 // ══════════════════════════════════════════════════════════════

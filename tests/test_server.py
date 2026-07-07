@@ -314,6 +314,26 @@ class TestAgendaAlerts(SGCATestCase):
                 conn.execute('DELETE FROM sys_settings WHERE key=?', (k,))
         self.assertIsNotNone(row)
 
+    def test_send_daily_alerts_notifica_fiscal_sem_email_interno_configurado(self):
+        import datetime
+        token = self.login()
+        vig = (datetime.date.today() + datetime.timedelta(days=5)).isoformat()
+        self.request('POST', '/api/contratos',
+                     {'objeto': 'Contrato com fiscal', 'vigenciaFinal': vig, 'status': 'vigente',
+                      'fiscalEmail': 'fiscal@teste.com'}, token=token)
+
+        with server.get_db() as conn:
+            conn.execute("DELETE FROM sys_settings WHERE key='alert_email_last_sent'")
+            # SMTP configurado, mas SEM e-mail interno (smtp_to) — só o aviso ao fiscal deve ser tentado
+            for k, v in [('smtp_host', 'smtp.invalido.test'), ('smtp_user', 'a@a.com'), ('smtp_pass', 'x')]:
+                conn.execute('INSERT OR REPLACE INTO sys_settings (key,value) VALUES (?,?)', (k, v))
+        server._send_daily_alerts()
+        with server.get_db() as conn:
+            row = conn.execute("SELECT value FROM sys_settings WHERE key='alert_email_last_sent'").fetchone()
+            for k in ('smtp_host', 'smtp_user', 'smtp_pass', 'alert_email_last_sent'):
+                conn.execute('DELETE FROM sys_settings WHERE key=?', (k,))
+        self.assertIsNotNone(row)
+
 
 class TestHealth(SGCATestCase):
 
