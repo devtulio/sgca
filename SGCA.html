@@ -1176,6 +1176,7 @@
         </button>
       </div>
     </div>
+    <div class="stats" id="ata-dash-stats"></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="ata-busca" placeholder="Buscar por número…" style="flex:1;min-width:220px" oninput="_debouncedRenderAtas()">
       <select id="ata-filtro-status" onchange="renderAtas()">
@@ -2179,7 +2180,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.6.1';
+const SGCA_VERSION = '0.6.2';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3362,7 +3363,7 @@ async function renderContratosStats() {
   const dAtas = await API.json(rAtas);
   const atas = dAtas?.items || [];
   const atasSaldoBaixo = atas.filter(a => a.status !== 'cancelada' &&
-    (a.itens || []).some(it => it.qtdRegistrada && (it.qtdUtilizada || 0) / it.qtdRegistrada >= 0.8));
+    (a.itens || []).some(it => it.quantidadeRegistrada && (it.quantidadeUtilizada || 0) / it.quantidadeRegistrada >= 0.8));
 
   el.innerHTML = `
     <div class="stat brand">
@@ -3935,6 +3936,44 @@ async function showAtas() {
   document.getElementById('view-atas').classList.add('active');
   setNavActive('nav-atas');
   await renderAtas();
+  renderAtasStats();
+}
+
+function renderAtasStats() {
+  const el = document.getElementById('ata-dash-stats');
+  if (!el) return;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const em30 = new Date(hoje); em30.setDate(em30.getDate() + 30);
+
+  const vigentes = _atas.filter(a => a.status === 'vigente');
+  const vencendo = vigentes.filter(a => a.vigenciaFinal && new Date(a.vigenciaFinal + 'T00:00:00') <= em30);
+  const valorTotal = vigentes.reduce((s, a) => s + (a.itens || []).reduce((si, it) =>
+    si + (it.quantidadeRegistrada || 0) * (it.precoUnitario || 0), 0), 0);
+  const itensSaldoBaixo = vigentes.reduce((s, a) => s + (a.itens || []).filter(it =>
+    it.quantidadeRegistrada && (it.quantidadeUtilizada || 0) / it.quantidadeRegistrada >= 0.8).length, 0);
+
+  el.innerHTML = `
+    <div class="stat brand">
+      <div class="stat-top"><span class="stat-lbl">Atas Vigentes</span></div>
+      <div class="stat-val">${vigentes.length}</div>
+      <div class="stat-sub">de ${_atas.length} no total</div>
+    </div>
+    <div class="stat prog" style="cursor:pointer" onclick="showAgenda()">
+      <div class="stat-top"><span class="stat-lbl">Vencendo em 30 dias</span></div>
+      <div class="stat-val">${vencendo.length}</div>
+      <div class="stat-sub">atas</div>
+    </div>
+    <div class="stat done">
+      <div class="stat-top"><span class="stat-lbl">Valor Total Registrado</span></div>
+      <div class="stat-val" style="font-size:1.3rem">${fmtMoney(valorTotal) || 'R$ 0,00'}</div>
+      <div class="stat-sub">soma dos itens das atas vigentes</div>
+    </div>
+    <div class="stat blocked">
+      <div class="stat-top"><span class="stat-lbl">Itens com saldo baixo</span></div>
+      <div class="stat-val">${itensSaldoBaixo}</div>
+      <div class="stat-sub">≥80% do item consumido</div>
+    </div>
+  `;
 }
 
 async function renderAtas() {
@@ -4020,6 +4059,7 @@ async function saveAta() {
   toast('Ata salva com sucesso', 'success');
   closeAtaModal();
   renderAtas();
+  renderAtasStats();
   updateAgendaBadge();
 }
 
@@ -4079,6 +4119,7 @@ async function saveAtaItem() {
   toast('Item registrado', 'success');
   hideNovoItemForm();
   renderItensList(ata);
+  renderAtasStats();
 }
 async function removeAtaItem(iid) {
   if (!_ataAtualId) return;
@@ -4091,6 +4132,7 @@ async function removeAtaItem(iid) {
   const idx = _atas.findIndex(a => a.id === ata.id);
   if (idx >= 0) _atas[idx] = ata;
   renderItensList(ata);
+  renderAtasStats();
 }
 
 // ── Exportação PNCP (Ata de Registro de Preços) ─────────────────

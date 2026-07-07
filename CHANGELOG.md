@@ -5,6 +5,16 @@
 
 ---
 
+## [0.6.2] — 2026-07-07
+
+### Adicionado
+- **Indicadores na tela de Atas** — atas vigentes, vencendo em 30 dias, valor total registrado e itens com saldo baixo, no mesmo padrão visual dos indicadores de Contratos
+
+### Corrigido
+- **Indicador "Atas com saldo baixo" (tela de Contratos) sempre mostrava 0** — o cálculo usava os nomes de campo `qtdRegistrada`/`qtdUtilizada`, mas os itens de ata são salvos como `quantidadeRegistrada`/`quantidadeUtilizada`; o indicador nunca correspondia a dados reais desde que foi introduzido na v0.6.0
+
+---
+
 ## [0.6.1] — 2026-07-07
 
 ### Corrigido

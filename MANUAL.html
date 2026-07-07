@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.6.1</title>
+<title>Manual Operacional — SGCA v0.6.2</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       margin: 20mm 20mm 25mm;
       size: A4;
       @top-center {
-        content: "SGCA v0.6.1 — Manual Operacional";
+        content: "SGCA v0.6.2 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -103,7 +103,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.6.1</div>
+    <div class="cover-version">Versão v0.6.2</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -164,7 +164,7 @@
 <p>No rodapé do contrato (ao editar um já existente) ficam disponíveis dois botões: <strong>📄 Gerar Extrato</strong>, que produz o Extrato de Contrato para publicação no Diário Oficial/PNCP, e <strong>📤 Exportar PNCP</strong>, que baixa um JSON com os dados do contrato no formato esperado pelo Portal Nacional de Contratações Públicas. Cada aditivo/apostilamento registrado também tem seu próprio botão <strong>📄</strong> para gerar o respectivo termo (Aditivo de Prazo/Valor/Qualitativo ou Apostilamento de Reequilíbrio/Repactuação, conforme o tipo). Na tela de listagem, o botão <strong>Relatório</strong> gera um relatório consolidado de todos os contratos filtrados (documento A4), e o botão <strong>Exportar CSV</strong> baixa a mesma lista em planilha.</p>
 
 <h2 id="sec5">5. Atas de Registro de Preços</h2>
-<p>A tela <strong>Atas de RP</strong> lista as atas cadastradas com número, órgão gerenciador, status (Vigente/Vencida/Cancelada) e indicador de vigência.</p>
+<p>A tela <strong>Atas de RP</strong> mostra, no topo, indicadores de atas vigentes, atas vencendo em 30 dias, valor total registrado (soma dos itens das atas vigentes) e itens com saldo baixo — seguidos da lista de atas cadastradas com número, órgão gerenciador, status (Vigente/Vencida/Cancelada) e indicador de vigência.</p>
 <p>Cada ata pode ter vários <strong>itens registrados</strong>: descrição, unidade, quantidade registrada, preço unitário e fornecedor vinculado. Ao consumir o saldo de um item (quantidade utilizada), uma barra de progresso mostra visualmente o percentual já utilizado, destacada em vermelho quando o consumo atinge 80% ou mais da quantidade registrada.</p>
 <p>Ao editar uma ata já existente, o botão <strong>📤 Exportar PNCP</strong> no rodapé baixa um JSON com os dados da ata e de todos os seus itens (incluindo saldo disponível e fornecedor) no formato esperado pelo PNCP. O mesmo aviso de sanção vigente do fornecedor aparece ao selecioná-lo em um item da ata. Na tela de listagem, o botão <strong>Relatório</strong> gera um relatório consolidado de todas as atas filtradas, e o botão <strong>Exportar CSV</strong> baixa a mesma lista em planilha.</p>
 
