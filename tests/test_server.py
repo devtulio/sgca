@@ -11,6 +11,7 @@ import sys
 import tempfile
 import threading
 import unittest
+import urllib.parse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server  # noqa: E402
@@ -168,6 +169,16 @@ class TestContratos(SGCATestCase):
         self.assertEqual(len(listed['items']), 1)
         self.assertEqual(listed['items'][0]['objeto'], 'Contrato do A')
 
+    def test_filtro_por_fiscal(self):
+        token = self.login()
+        self.request('POST', '/api/contratos', {'objeto': 'Contrato do fiscal X', 'fiscalNome': 'Fiscal X'}, token=token)
+        self.request('POST', '/api/contratos', {'objeto': 'Contrato do fiscal Y', 'fiscalNome': 'Fiscal Y'}, token=token)
+
+        status, listed = self.request('GET', '/api/contratos?fiscal=' + urllib.parse.quote('Fiscal X'), token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(listed['items']), 1)
+        self.assertEqual(listed['items'][0]['objeto'], 'Contrato do fiscal X')
+
     def test_aditivo_de_prazo_atualiza_vigencia_e_de_valor_acumula_percentual(self):
         token = self.login()
         status, created = self.request('POST', '/api/contratos', {
@@ -249,6 +260,16 @@ class TestAudit(SGCATestCase):
         status, data = self.request('GET', '/api/audit', token=token)
         self.assertEqual(status, 200)
         self.assertTrue(any(e['type'] == 'TESTE' for e in data['items']))
+
+    def test_filtro_de_auditoria_por_processo(self):
+        token = self.login()
+        self.request('POST', '/api/audit', {'type': 'CONTRATO_EDITADO', 'label': 'Contrato editado', 'processId': 'abc-123'}, token=token)
+        self.request('POST', '/api/audit', {'type': 'CONTRATO_EDITADO', 'label': 'Contrato editado', 'processId': 'xyz-999'}, token=token)
+
+        status, data = self.request('GET', '/api/audit?processId=abc-123', token=token)
+        self.assertEqual(status, 200)
+        self.assertTrue(all(e['process_id'] == 'abc-123' for e in data['items']))
+        self.assertTrue(any(e['process_id'] == 'abc-123' for e in data['items']))
 
     def test_bulk_de_auditoria_exige_admin(self):
         # cria usuário não-admin e confirma que /api/audit/bulk nega acesso

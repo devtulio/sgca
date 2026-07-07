@@ -1,4 +1,4 @@
-# SGCA v0.8.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.9.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -400,15 +400,17 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         # é que fica restrita a admin, só no frontend.
         elif p == '/api/audit':
             page = int(qp('page', 1)); per = min(int(qp('per', 50)), 2000)
-            q    = (qp('q') or '').strip()
-            tipo = qp('tipo') or ''
-            de   = qp('de') or ''
-            ate  = qp('ate') or ''
+            q         = (qp('q') or '').strip()
+            tipo      = qp('tipo') or ''
+            de        = qp('de') or ''
+            ate       = qp('ate') or ''
+            processId = qp('processId') or qp('process_id') or ''
             where, params = [], []
             if q:    where.append('(user_nome LIKE ? OR detail LIKE ?)'); params += [f'%{q}%', f'%{q}%']
             if tipo: where.append('type=?'); params.append(tipo)
             if de:   where.append('ts >= ?'); params.append(de)
             if ate:  where.append('ts <= ?'); params.append(ate + 'T23:59:59')
+            if processId: where.append('process_id=?'); params.append(processId)
             w = ('WHERE ' + ' AND '.join(where)) if where else ''
             with get_db() as conn:
                 total = conn.execute(f'SELECT COUNT(*) FROM audit_global {w}', params).fetchone()[0]
@@ -849,6 +851,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         q          = qp('q', '')
         status     = qp('status', '')
         fornecedor = qp('fornecedor', '')
+        fiscal     = qp('fiscal', '')
         page   = int(qp('page', 1))
         per    = min(int(qp('per', 500)), 2000)
         trash  = qp('trash') == '1'
@@ -863,6 +866,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             where.append('status=?'); params.append(status)
         if fornecedor:
             where.append('fornecedor_id=?'); params.append(fornecedor)
+        if fiscal:
+            where.append("json_extract(data, '$.fiscalNome')=?"); params.append(fiscal)
 
         wc = ('WHERE ' + ' AND '.join(where)) if where else ''
         order = 'deleted_at DESC' if trash else 'vigencia_final ASC'

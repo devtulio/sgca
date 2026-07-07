@@ -1150,6 +1150,9 @@
         <option value="encerrado">Encerrado</option>
         <option value="rescindido">Rescindido</option>
       </select>
+      <select id="contr-filtro-fiscal" onchange="renderContratos()">
+        <option value="">Todos os fiscais</option>
+      </select>
     </div>
     <div class="kanban-board" id="contr-kanban">
       <div class="kanban-col">
@@ -1384,9 +1387,9 @@
         </div>
 
         <div id="contrato-anexo-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
-          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Contrato Assinado (PDF)</p>
+          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Anexos (PDF)</p>
           <div id="c-anexo-atual" style="font-size:.8rem;color:var(--gray-500);margin-bottom:8px"></div>
-          <input type="file" id="c-anexo-input" accept="application/pdf" onchange="onAnexoContratoChange(this)">
+          <input type="file" id="c-anexo-input" accept="application/pdf" multiple onchange="onAnexoContratoChange(this)">
         </div>
 
         <div id="contrato-aditivos-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
@@ -1433,6 +1436,7 @@
         <div id="contrato-doc-actions" style="display:none;gap:8px">
           <button class="btn btn-outline btn-sm" onclick="gerarExtratoContrato()">📄 Gerar Extrato</button>
           <button class="btn btn-outline btn-sm" onclick="exportarPNCPContrato()">📤 Exportar PNCP</button>
+          <button class="btn btn-outline btn-sm" onclick="abrirHistoricoRegistro(_contratoAtualId, 'Histórico do Contrato', this)">🕘 Histórico</button>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" onclick="closeContratoModal()">Cancelar</button>
@@ -1484,9 +1488,9 @@
         </div>
 
         <div id="ata-anexo-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
-          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Ata Assinada (PDF)</p>
+          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Anexos (PDF)</p>
           <div id="a-anexo-atual" style="font-size:.8rem;color:var(--gray-500);margin-bottom:8px"></div>
-          <input type="file" id="a-anexo-input" accept="application/pdf" onchange="onAnexoAtaChange(this)">
+          <input type="file" id="a-anexo-input" accept="application/pdf" multiple onchange="onAnexoAtaChange(this)">
         </div>
 
         <div id="ata-itens-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
@@ -1512,8 +1516,9 @@
         </div>
       </div>
       <div class="modal-footer" style="justify-content:space-between">
-        <div id="ata-doc-actions" style="display:none">
+        <div id="ata-doc-actions" style="display:none;gap:8px">
           <button class="btn btn-outline btn-sm" onclick="exportarPNCPAta()">📤 Exportar PNCP</button>
+          <button class="btn btn-outline btn-sm" onclick="abrirHistoricoRegistro(_ataAtualId, 'Histórico da Ata', this)">🕘 Histórico</button>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" onclick="closeAtaModal()">Cancelar</button>
@@ -2215,7 +2220,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.8.0';
+const SGCA_VERSION = '0.9.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3396,6 +3401,7 @@ async function renderDashboardGeral() {
   const contratosVigentes = contratos.filter(c => !['encerrado', 'rescindido'].includes(c.status));
   const atasVigentes      = atas.filter(a => a.status === 'vigente');
   const valorTotal = contratosVigentes.reduce((s, c) => s + (c.valorGlobal || 0), 0);
+  const semFiscal = contratosVigentes.filter(c => !(c.fiscalNome || '').trim());
 
   const eventos = await _agendaEventos();
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
@@ -3429,6 +3435,11 @@ async function renderDashboardGeral() {
       <div class="stat-val">${fornecedores.length}</div>
       <div class="stat-sub">ativos no cadastro</div>
     </div>
+    <div class="stat blocked" style="cursor:pointer" onclick="showContratos()">
+      <div class="stat-top"><span class="stat-lbl">Contratos sem Fiscal</span></div>
+      <div class="stat-val">${semFiscal.length}</div>
+      <div class="stat-sub">exigência do Art. 117, Lei 14.133/2021</div>
+    </div>
   `;
 
   _renderGraficoVencimentos(contratos, atas, 'dash-geral-chart');
@@ -3456,6 +3467,7 @@ async function showContratos() {
   setNavActive('nav-contratos');
   await renderContratos();
   renderContratosStats();
+  _popularFiltroFiscal();
 }
 
 async function renderContratosStats() {
@@ -3558,12 +3570,25 @@ function _renderChipFiltroFornecedor() {
   </span>`;
 }
 
+async function _popularFiltroFiscal() {
+  const sel = document.getElementById('contr-filtro-fiscal');
+  if (!sel) return;
+  const atual = sel.value;
+  const r = await API.get('/api/contratos?per=2000');
+  const d = await API.json(r);
+  const nomes = [...new Set((d?.items || []).map(c => c.fiscalNome).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  sel.innerHTML = '<option value="">Todos os fiscais</option>' +
+    nomes.map(n => `<option value="${escHtml(n)}" ${n === atual ? 'selected' : ''}>${escHtml(n)}</option>`).join('');
+}
+
 async function renderContratos() {
   const status = document.getElementById('contr-filtro-status')?.value || '';
   const q = document.getElementById('contr-busca')?.value || '';
+  const fiscal = document.getElementById('contr-filtro-fiscal')?.value || '';
   const qs = new URLSearchParams();
   if (status) qs.set('status', status);
   if (q) qs.set('q', q);
+  if (fiscal) qs.set('fiscal', fiscal);
   if (_filtroContratosFornecedor) qs.set('fornecedor', _filtroContratosFornecedor.id);
   _renderChipFiltroFornecedor();
   const r = await API.get(`/api/contratos?${qs.toString()}`);
@@ -3614,6 +3639,15 @@ async function _loadAtasCache() {
   _atasCache = data?.items || [];
 }
 
+function _sugerirProximoNumero(items, ano) {
+  let max = 0;
+  for (const item of items) {
+    const m = /^(\d+)\/(\d{4})$/.exec((item.numero || '').trim());
+    if (m && parseInt(m[2], 10) === ano) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return max ? `${String(max + 1).padStart(3, '0')}/${ano}` : `001/${ano}`;
+}
+
 async function openContratoModal(id) {
   await _loadFornecedoresCache();
   await _loadAtasCache();
@@ -3629,7 +3663,13 @@ async function openContratoModal(id) {
   }
 
   document.getElementById('contrato-modal-title').textContent = c ? 'Editar Contrato' : 'Novo Contrato';
-  document.getElementById('c-numero').value      = c?.numero || '';
+  if (c) {
+    document.getElementById('c-numero').value = c.numero || '';
+  } else {
+    const rAll = await API.get('/api/contratos?per=2000');
+    const dAll = await API.json(rAll);
+    document.getElementById('c-numero').value = _sugerirProximoNumero(dAll?.items || [], new Date().getFullYear());
+  }
   document.getElementById('c-processo').value    = c?.processoOrigem || '';
   document.getElementById('c-objeto').value      = c?.objeto || '';
   document.getElementById('c-valor').value       = c?.valorGlobal ? fmtMoney(c.valorGlobal) : '';
@@ -3655,7 +3695,7 @@ async function openContratoModal(id) {
   document.getElementById('contrato-doc-actions').style.display = c ? 'flex' : 'none';
   document.getElementById('contrato-anexo-section').style.display = c ? '' : 'none';
   document.getElementById('c-anexo-input').value = '';
-  _renderAnexoContrato(c?.anexoContrato);
+  _renderAnexosContrato(c?.anexosContrato || (c?.anexoContrato ? [c.anexoContrato] : []));
   hideNovoAditivoForm();
   if (c) renderAditivosList(c);
 
@@ -3666,11 +3706,26 @@ function closeContratoModal() {
   _contratoAtualId = null;
 }
 
+function _numeroJaExiste(items, numero, excludeId) {
+  const alvo = (numero || '').trim().toLowerCase();
+  if (!alvo) return false;
+  return items.some(item => item.id !== excludeId && (item.numero || '').trim().toLowerCase() === alvo);
+}
+
 async function saveContrato() {
   const objeto = document.getElementById('c-objeto').value.trim();
   if (!objeto) { toast('Informe o objeto do contrato', 'error'); return; }
+  const numero = document.getElementById('c-numero').value.trim();
+  if (numero) {
+    const rDup = await API.get('/api/contratos?per=2000');
+    const dDup = await API.json(rDup);
+    if (_numeroJaExiste(dDup?.items || [], numero, _contratoAtualId)) {
+      toast(`Já existe um contrato com o número "${numero}".`, 'error');
+      return;
+    }
+  }
   const payload = {
-    numero: document.getElementById('c-numero').value.trim(),
+    numero,
     processoOrigem: document.getElementById('c-processo').value.trim(),
     objeto,
     fornecedorId: document.getElementById('c-fornecedor').value || null,
@@ -3695,7 +3750,7 @@ async function saveContrato() {
     : await API.post('/api/contratos', payload);
   if (!r?.ok) { toast('Erro ao salvar contrato', 'error'); return; }
   const saved = await API.json(r);
-  await _auditEvento(_contratoAtualId ? 'CONTRATO_EDITADO' : 'CONTRATO_CRIADO', `Contrato ${saved.numero || ''} — ${saved.objeto}`);
+  await _auditEvento(_contratoAtualId ? 'CONTRATO_EDITADO' : 'CONTRATO_CRIADO', `Contrato ${saved.numero || ''} — ${saved.objeto}`, saved.id);
   toast('Contrato salvo com sucesso', 'success');
   closeContratoModal();
   renderContratos();
@@ -3801,7 +3856,7 @@ async function saveAditivo() {
   const contrato = await API.json(r);
   const idx = _contratos.findIndex(c => c.id === contrato.id);
   if (idx >= 0) _contratos[idx] = contrato; else _contratos.push(contrato);
-  await _auditEvento('CONTRATO_ADITIVO', `Aditivo de ${tipo} no contrato ${contrato.numero || contrato.id}`);
+  await _auditEvento('CONTRATO_ADITIVO', `Aditivo de ${tipo} no contrato ${contrato.numero || contrato.id}`, contrato.id);
   toast('Aditivo registrado', 'success');
   hideNovoAditivoForm();
   document.getElementById('c-vig-final').value = contrato.vigenciaFinal || '';
@@ -3824,97 +3879,122 @@ async function removeAditivo(aid) {
 }
 
 // ── Anexo do contrato assinado (PDF) ─────────────────────────────
-function _renderAnexoContrato(anexo) {
+function _lerArquivoComoDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function _renderAnexosContrato(anexos) {
   const el = document.getElementById('c-anexo-atual');
   if (!el) return;
-  if (!anexo) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
-  el.innerHTML = `📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
-    — enviado em ${fmt(anexo.uploadedAt)}
-    <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoContrato()" title="Remover anexo">✕</button>`;
+  if (!anexos || !anexos.length) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
+  el.innerHTML = anexos.map((anexo, i) => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+      <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoContrato(${i})" title="Remover anexo">✕</button>
+    </div>`).join('');
 }
 
 async function onAnexoContratoChange(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.type !== 'application/pdf') { toast('Envie um arquivo PDF.', 'error'); input.value = ''; return; }
-  if (file.size > 10 * 1024 * 1024) { toast('Arquivo muito grande (máx. 10 MB).', 'error'); input.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = async ev => {
-    const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
-    if (!contrato) return;
-    contrato.anexoContrato = { nome: file.name, dataurl: ev.target.result, uploadedAt: new Date().toISOString() };
-    const r = await API.put(`/api/contratos/${_contratoAtualId}`, contrato);
-    if (!r?.ok) { toast('Erro ao enviar anexo.', 'error'); return; }
-    const idx = _contratos.findIndex(c => c.id === contrato.id);
-    if (idx >= 0) _contratos[idx] = contrato; else _contratos.push(contrato);
-    await _auditEvento('CONTRATO_EDITADO', `Anexo do contrato assinado enviado (${file.name})`);
-    toast('Anexo enviado com sucesso.', 'success');
-    _renderAnexoContrato(contrato.anexoContrato);
-    input.value = '';
-  };
-  reader.onerror = () => toast('Erro ao ler o arquivo.', 'error');
-  reader.readAsDataURL(file);
+  const files = [...input.files];
+  if (!files.length) return;
+  for (const file of files) {
+    if (file.type !== 'application/pdf') { toast(`"${file.name}" não é um PDF.`, 'error'); input.value = ''; return; }
+    if (file.size > 10 * 1024 * 1024) { toast(`"${file.name}" é muito grande (máx. 10 MB).`, 'error'); input.value = ''; return; }
+  }
+  const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!contrato) return;
+  const anexos = contrato.anexosContrato || (contrato.anexoContrato ? [contrato.anexoContrato] : []);
+  for (const file of files) {
+    anexos.push({ nome: file.name, dataurl: await _lerArquivoComoDataUrl(file), uploadedAt: new Date().toISOString() });
+  }
+  contrato.anexosContrato = anexos;
+  contrato.anexoContrato = null; // migra de vez do formato antigo (anexo único) para o array
+  const r = await API.put(`/api/contratos/${_contratoAtualId}`, contrato);
+  if (!r?.ok) { toast('Erro ao enviar anexo(s).', 'error'); return; }
+  const idx = _contratos.findIndex(c => c.id === contrato.id);
+  if (idx >= 0) _contratos[idx] = contrato; else _contratos.push(contrato);
+  await _auditEvento('CONTRATO_EDITADO', `${files.length} anexo(s) enviado(s) ao contrato`, contrato.id);
+  toast('Anexo(s) enviado(s) com sucesso.', 'success');
+  _renderAnexosContrato(anexos);
+  input.value = '';
 }
 
-async function removeAnexoContrato() {
-  const ok = await customConfirm('Remover o anexo do contrato assinado?', { okLabel: 'Remover' });
+async function removeAnexoContrato(idx) {
+  const ok = await customConfirm('Remover este anexo?', { okLabel: 'Remover' });
   if (!ok) return;
   const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
   if (!contrato) return;
+  const anexos = contrato.anexosContrato || (contrato.anexoContrato ? [contrato.anexoContrato] : []);
+  anexos.splice(idx, 1);
+  contrato.anexosContrato = anexos;
   contrato.anexoContrato = null;
   const r = await API.put(`/api/contratos/${_contratoAtualId}`, contrato);
   if (!r?.ok) { toast('Erro ao remover anexo.', 'error'); return; }
-  const idx = _contratos.findIndex(c => c.id === contrato.id);
-  if (idx >= 0) _contratos[idx] = contrato;
+  const cidx = _contratos.findIndex(c => c.id === contrato.id);
+  if (cidx >= 0) _contratos[cidx] = contrato;
   toast('Anexo removido.', 'success');
-  _renderAnexoContrato(null);
+  _renderAnexosContrato(anexos);
 }
 
 // ── Anexo da ata assinada (PDF) ───────────────────────────────────
-function _renderAnexoAta(anexo) {
+function _renderAnexosAta(anexos) {
   const el = document.getElementById('a-anexo-atual');
   if (!el) return;
-  if (!anexo) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
-  el.innerHTML = `📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
-    — enviado em ${fmt(anexo.uploadedAt)}
-    <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoAta()" title="Remover anexo">✕</button>`;
+  if (!anexos || !anexos.length) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
+  el.innerHTML = anexos.map((anexo, i) => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+      <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoAta(${i})" title="Remover anexo">✕</button>
+    </div>`).join('');
 }
 
 async function onAnexoAtaChange(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.type !== 'application/pdf') { toast('Envie um arquivo PDF.', 'error'); input.value = ''; return; }
-  if (file.size > 10 * 1024 * 1024) { toast('Arquivo muito grande (máx. 10 MB).', 'error'); input.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = async ev => {
-    const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
-    if (!ata) return;
-    ata.anexoAta = { nome: file.name, dataurl: ev.target.result, uploadedAt: new Date().toISOString() };
-    const r = await API.put(`/api/atas/${_ataAtualId}`, ata);
-    if (!r?.ok) { toast('Erro ao enviar anexo.', 'error'); return; }
-    const idx = _atas.findIndex(a => a.id === ata.id);
-    if (idx >= 0) _atas[idx] = ata; else _atas.push(ata);
-    await _auditEvento('ATA_EDITADA', `Anexo da ata assinada enviado (${file.name})`);
-    toast('Anexo enviado com sucesso.', 'success');
-    _renderAnexoAta(ata.anexoAta);
-    input.value = '';
-  };
-  reader.onerror = () => toast('Erro ao ler o arquivo.', 'error');
-  reader.readAsDataURL(file);
+  const files = [...input.files];
+  if (!files.length) return;
+  for (const file of files) {
+    if (file.type !== 'application/pdf') { toast(`"${file.name}" não é um PDF.`, 'error'); input.value = ''; return; }
+    if (file.size > 10 * 1024 * 1024) { toast(`"${file.name}" é muito grande (máx. 10 MB).`, 'error'); input.value = ''; return; }
+  }
+  const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!ata) return;
+  const anexos = ata.anexosAta || (ata.anexoAta ? [ata.anexoAta] : []);
+  for (const file of files) {
+    anexos.push({ nome: file.name, dataurl: await _lerArquivoComoDataUrl(file), uploadedAt: new Date().toISOString() });
+  }
+  ata.anexosAta = anexos;
+  ata.anexoAta = null; // migra de vez do formato antigo (anexo único) para o array
+  const r = await API.put(`/api/atas/${_ataAtualId}`, ata);
+  if (!r?.ok) { toast('Erro ao enviar anexo(s).', 'error'); return; }
+  const idx = _atas.findIndex(a => a.id === ata.id);
+  if (idx >= 0) _atas[idx] = ata; else _atas.push(ata);
+  await _auditEvento('ATA_EDITADA', `${files.length} anexo(s) enviado(s) à ata`, ata.id);
+  toast('Anexo(s) enviado(s) com sucesso.', 'success');
+  _renderAnexosAta(anexos);
+  input.value = '';
 }
 
-async function removeAnexoAta() {
-  const ok = await customConfirm('Remover o anexo da ata assinada?', { okLabel: 'Remover' });
+async function removeAnexoAta(idx) {
+  const ok = await customConfirm('Remover este anexo?', { okLabel: 'Remover' });
   if (!ok) return;
   const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
   if (!ata) return;
+  const anexos = ata.anexosAta || (ata.anexoAta ? [ata.anexoAta] : []);
+  anexos.splice(idx, 1);
+  ata.anexosAta = anexos;
   ata.anexoAta = null;
   const r = await API.put(`/api/atas/${_ataAtualId}`, ata);
   if (!r?.ok) { toast('Erro ao remover anexo.', 'error'); return; }
-  const idx = _atas.findIndex(a => a.id === ata.id);
-  if (idx >= 0) _atas[idx] = ata;
+  const aidx = _atas.findIndex(a => a.id === ata.id);
+  if (aidx >= 0) _atas[aidx] = ata;
   toast('Anexo removido.', 'success');
-  _renderAnexoAta(null);
+  _renderAnexosAta(anexos);
 }
 
 // ── Documentos gerados (Contrato) ───────────────────────────────
@@ -3999,7 +4079,7 @@ ${_qrFooterReport('Extrato de Contrato')}
 </html>`;
 
   const win = window.open('', '_blank', 'width=900,height=700');
-  await _gerarDocumento(win, html, `Extrato de Contrato — ${c.numero || c.id}`);
+  await _gerarDocumento(win, html, `Extrato de Contrato — ${c.numero || c.id}`, c.id);
 }
 
 async function gerarTermoAditivo(aid) {
@@ -4080,7 +4160,7 @@ ${_qrFooterReport(titulo)}
 </html>`;
 
   const win = window.open('', '_blank', 'width=900,height=700');
-  await _gerarDocumento(win, html, `${titulo} — Contrato ${c.numero || c.id}`);
+  await _gerarDocumento(win, html, `${titulo} — Contrato ${c.numero || c.id}`, c.id);
 }
 
 // ── Exportação PNCP (Contrato) ──────────────────────────────────
@@ -4154,7 +4234,7 @@ async function exportarPNCPContrato() {
   } else {
     toast('JSON PNCP exportado com todos os campos preenchidos.', 'success');
   }
-  await _auditEvento('PNCP_EXPORT', `Exportação PNCP — Contrato ${c.numero || c.objeto?.slice(0,40)}`);
+  await _auditEvento('PNCP_EXPORT', `Exportação PNCP — Contrato ${c.numero || c.objeto?.slice(0,40)}`, c.id);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4255,7 +4335,13 @@ async function openAtaModal(id) {
   }
 
   document.getElementById('ata-modal-title').textContent = a ? 'Editar Ata de Registro de Preços' : 'Nova Ata de Registro de Preços';
-  document.getElementById('a-numero').value           = a?.numero || '';
+  if (a) {
+    document.getElementById('a-numero').value = a.numero || '';
+  } else {
+    const rAll = await API.get('/api/atas?per=2000');
+    const dAll = await API.json(rAll);
+    document.getElementById('a-numero').value = _sugerirProximoNumero(dAll?.items || [], new Date().getFullYear());
+  }
   document.getElementById('a-processo').value         = a?.processoOrigem || '';
   document.getElementById('a-orgao-gerenciador').value = a?.orgaoGerenciador || '';
   document.getElementById('a-data-assinatura').value  = a?.dataAssinatura || '';
@@ -4267,7 +4353,7 @@ async function openAtaModal(id) {
   document.getElementById('ata-doc-actions').style.display = a ? 'flex' : 'none';
   document.getElementById('ata-anexo-section').style.display = a ? '' : 'none';
   document.getElementById('a-anexo-input').value = '';
-  _renderAnexoAta(a?.anexoAta);
+  _renderAnexosAta(a?.anexosAta || (a?.anexoAta ? [a.anexoAta] : []));
   hideNovoItemForm();
   if (a) renderItensList(a);
 
@@ -4281,6 +4367,12 @@ function closeAtaModal() {
 async function saveAta() {
   const numero = document.getElementById('a-numero').value.trim();
   if (!numero) { toast('Informe o número da ata', 'error'); return; }
+  const rDup = await API.get('/api/atas?per=2000');
+  const dDup = await API.json(rDup);
+  if (_numeroJaExiste(dDup?.items || [], numero, _ataAtualId)) {
+    toast(`Já existe uma ata com o número "${numero}".`, 'error');
+    return;
+  }
   const payload = {
     numero,
     processoOrigem: document.getElementById('a-processo').value.trim(),
@@ -4294,7 +4386,7 @@ async function saveAta() {
     : await API.post('/api/atas', payload);
   if (!r?.ok) { toast('Erro ao salvar ata', 'error'); return; }
   const saved = await API.json(r);
-  await _auditEvento(_ataAtualId ? 'ATA_EDITADA' : 'ATA_CRIADA', `Ata ${saved.numero}`);
+  await _auditEvento(_ataAtualId ? 'ATA_EDITADA' : 'ATA_CRIADA', `Ata ${saved.numero}`, saved.id);
   toast('Ata salva com sucesso', 'success');
   closeAtaModal();
   renderAtas();
@@ -4439,7 +4531,7 @@ async function exportarPNCPAta() {
   } else {
     toast('JSON PNCP exportado com todos os campos preenchidos.', 'success');
   }
-  await _auditEvento('PNCP_EXPORT', `Exportação PNCP — Ata ${a.numero || a.id}`);
+  await _auditEvento('PNCP_EXPORT', `Exportação PNCP — Ata ${a.numero || a.id}`, a.id);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -6430,14 +6522,14 @@ async function _getBrasaoB64() {
   } catch { window._BRASAO_CACHE = ''; }
   return window._BRASAO_CACHE;
 }
-async function _gerarDocumento(win, html, docNome) {
+async function _gerarDocumento(win, html, docNome, processId) {
   // Fix #1: window.open retorna null quando bloqueador de popup está ativo
   if (!win) {
     toast('Popup bloqueado pelo navegador. Permita popups para este site e tente novamente.', 'danger');
     return;
   }
   if (docNome) {
-    _auditEvento('DOCUMENTO_GERADO', docNome);
+    _auditEvento('DOCUMENTO_GERADO', docNome, processId);
   }
 
   const custom = localStorage.getItem('sgca-brasao-dataurl');
@@ -7784,16 +7876,33 @@ async function importarCsv() {
 // ══════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════
-// FEATURE 6 — HISTÓRICO DE EDIÇÕES POR CAMPO
+// HISTÓRICO DO REGISTRO — reaproveita a trilha de auditoria já existente,
+// filtrada pelo processId (id do contrato/ata), num popover simples.
 // ══════════════════════════════════════════════════════════════
-// Cache por processo: evita hit repetido ao abrir histórico de campos diferentes no mesmo processo
-let _fieldHistCache = { pid: null, data: [] };
-
-
 function fecharFieldHist() {
   const panel = document.getElementById('field-hist-panel');
   if (panel) panel.style.display = 'none';
-  _fieldHistCache = { pid: null, data: [] };
+}
+
+async function abrirHistoricoRegistro(id, titulo, btnEl) {
+  const panel = document.getElementById('field-hist-panel');
+  const rect = btnEl.getBoundingClientRect();
+  panel.style.top  = `${Math.min(rect.bottom + 6, window.innerHeight - 300)}px`;
+  panel.style.left = `${Math.min(rect.left, window.innerWidth - 320)}px`;
+  document.getElementById('field-hist-title').textContent = titulo;
+  document.getElementById('field-hist-list').innerHTML = '<p style="padding:12px;font-size:.78rem;color:var(--gray-400)">Carregando…</p>';
+  panel.style.display = 'block';
+
+  const r = await API.get(`/api/audit?processId=${id}&per=50`);
+  const d = await API.json(r);
+  const itens = d?.items || [];
+  document.getElementById('field-hist-list').innerHTML = itens.length ? itens.map(a => `
+    <div style="padding:8px 12px;border-bottom:1px solid var(--gray-100)">
+      <div style="font-size:.78rem;font-weight:600;color:var(--gray-700)">${escHtml(_AUDIT_EVENT_LABELS[a.type] || a.type)}</div>
+      ${a.detail ? `<div style="font-size:.75rem;color:var(--gray-500)">${escHtml(a.detail)}</div>` : ''}
+      <div style="font-size:.68rem;color:var(--gray-400);margin-top:2px">${fmtDataHoraAudit(a.ts)} · ${escHtml(a.user_nome || '')}</div>
+    </div>
+  `).join('') : '<p style="padding:12px;font-size:.78rem;color:var(--gray-400);text-align:center">Nenhum evento registrado para este item.</p>';
 }
 
 

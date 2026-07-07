@@ -5,6 +5,18 @@
 
 ---
 
+## [0.9.0] — 2026-07-07
+
+### Adicionado
+- **Numeração automática sugerida** — ao criar um novo Contrato ou Ata, o número já vem preenchido com o próximo sequencial do ano corrente, editável
+- **Validação de número duplicado** — não é mais possível salvar um Contrato ou Ata com um número já usado no mesmo cadastro
+- **Múltiplos anexos por Contrato/Ata** — o que antes era um único PDF agora é uma lista de anexos, cada um com seu próprio link de download e remoção (registros já existentes com o anexo antigo continuam acessíveis)
+- **Filtro por Fiscal** na tela de Contratos, no mesmo padrão do filtro por fornecedor
+- **Alerta de "Contratos sem Fiscal"** no Dashboard geral — designação de fiscal é exigência do Art. 117, Lei 14.133/2021
+- **Histórico do registro** — botão "🕘 Histórico" no Contrato e na Ata mostra a trilha de auditoria (criação, edições, aditivos, anexos, exportações) filtrada só para aquele registro, reaproveitando a auditoria global já existente (novo filtro `processId` em `GET /api/audit`)
+
+---
+
 ## [0.8.0] — 2026-07-07
 
 ### Adicionado
