@@ -1051,7 +1051,7 @@
 
   <nav class="sidebar-nav">
     <div class="nav-section">Contratações</div>
-    <button class="nav-item active" id="nav-contratos" onclick="showContratos()">
+    <button class="nav-item active" id="nav-contratos" onclick="_filtroContratosFornecedor=null;showContratos()">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span>
       Contratos
     </button>
@@ -1127,6 +1127,8 @@
       </div>
     </div>
     <div class="stats" id="contr-dash-stats"></div>
+    <div id="contr-dash-chart"></div>
+    <div id="contr-filtro-fornecedor-chip"></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contr-busca" placeholder="Buscar por objeto ou número…" style="flex:1;min-width:220px" oninput="_debouncedRenderContratos()">
       <select id="contr-filtro-status" onchange="renderContratos()">
@@ -1197,6 +1199,10 @@
         <button class="btn btn-outline" onclick="gerarRelatorioFornecedores()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           Relatório
+        </button>
+        <button class="btn btn-outline" onclick="gerarRelatorioSancoesGlobal()" title="Relatório de sanções de todos os fornecedores">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Relatório de Sanções
         </button>
         <button class="btn btn-outline" onclick="abrirModalCsv()" title="Importar fornecedores de arquivo CSV">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1311,6 +1317,16 @@
           <div class="info-field" style="margin:0">
             <label>Gestor do Contrato</label>
             <input type="text" id="c-gestor">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="info-field" style="margin:0">
+            <label>Fiscal Substituto</label>
+            <input type="text" id="c-fiscal-substituto">
+          </div>
+          <div class="info-field" style="margin:0">
+            <label>E-mail do Fiscal Substituto</label>
+            <input type="email" id="c-fiscal-substituto-email" placeholder="para alerta de vencimento" title="Recebe um alerta automático quando o contrato estiver vencendo">
           </div>
         </div>
         <div class="info-field">
@@ -1452,6 +1468,12 @@
               <option value="cancelada">Cancelada</option>
             </select>
           </div>
+        </div>
+
+        <div id="ata-anexo-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Ata Assinada (PDF)</p>
+          <div id="a-anexo-atual" style="font-size:.8rem;color:var(--gray-500);margin-bottom:8px"></div>
+          <input type="file" id="a-anexo-input" accept="application/pdf" onchange="onAnexoAtaChange(this)">
         </div>
 
         <div id="ata-itens-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
@@ -2180,7 +2202,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.6.2';
+const SGCA_VERSION = '0.7.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3387,6 +3409,66 @@ async function renderContratosStats() {
       <div class="stat-sub">≥80% do item consumido</div>
     </div>
   `;
+  _renderGraficoVencimentos(_contratos, atas);
+}
+
+function _renderGraficoVencimentos(contratos, atas) {
+  const el = document.getElementById('contr-dash-chart');
+  if (!el) return;
+  const hoje = new Date(); hoje.setDate(1); hoje.setHours(0, 0, 0, 0);
+  const meses = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(hoje); d.setMonth(d.getMonth() + i);
+    meses.push({ ano: d.getFullYear(), mes: d.getMonth(), label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''), count: 0 });
+  }
+  const contar = vig => {
+    if (!vig) return;
+    const d = new Date(vig + 'T00:00:00');
+    const m = meses.find(mm => mm.ano === d.getFullYear() && mm.mes === d.getMonth());
+    if (m) m.count++;
+  };
+  contratos.filter(c => !['encerrado', 'rescindido'].includes(c.status)).forEach(c => contar(c.vigenciaFinal));
+  atas.filter(a => a.status !== 'cancelada').forEach(a => contar(a.vigenciaFinal));
+
+  const max = Math.max(1, ...meses.map(m => m.count));
+  const barW = 40, gap = 24, chartH = 90, topPad = 16;
+  const svgW = meses.length * (barW + gap);
+  const bars = meses.map((m, i) => {
+    const h = Math.round((m.count / max) * chartH);
+    const x = i * (barW + gap);
+    return `
+      <text x="${x + barW / 2}" y="${topPad + chartH - h - 8}" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--gray-700)">${m.count || ''}</text>
+      <rect x="${x}" y="${topPad + chartH - h}" width="${barW}" height="${Math.max(h, 2)}" rx="4" style="fill:var(--brand)"></rect>
+      <text x="${x + barW / 2}" y="${topPad + chartH + 20}" text-anchor="middle" font-size="11" style="fill:var(--gray-500);text-transform:capitalize">${m.label}</text>
+    `;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="background:var(--bg-card,#fff);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--gray-200);margin-bottom:24px">
+      <div class="stat-lbl" style="margin-bottom:10px">Vencimentos de contratos e atas — próximos 6 meses</div>
+      <svg viewBox="0 0 ${svgW} ${topPad + chartH + 32}" width="100%" height="150" style="overflow:visible;display:block">${bars}</svg>
+    </div>
+  `;
+}
+
+let _filtroContratosFornecedor = null;
+function verContratosDoFornecedor(fornId, fornNome) {
+  _filtroContratosFornecedor = { id: fornId, nome: fornNome };
+  showContratos();
+}
+function limparFiltroFornecedorContratos() {
+  _filtroContratosFornecedor = null;
+  renderContratos();
+  renderContratosStats();
+}
+function _renderChipFiltroFornecedor() {
+  const el = document.getElementById('contr-filtro-fornecedor-chip');
+  if (!el) return;
+  if (!_filtroContratosFornecedor) { el.innerHTML = ''; return; }
+  el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--brand-light);color:var(--brand);border-radius:99px;padding:4px 6px 4px 12px;font-size:.78rem;margin-bottom:10px">
+    Contratos de <strong>${escHtml(_filtroContratosFornecedor.nome)}</strong>
+    <button class="btn btn-ghost btn-icon btn-sm" style="padding:2px" onclick="limparFiltroFornecedorContratos()" title="Limpar filtro">✕</button>
+  </span>`;
 }
 
 async function renderContratos() {
@@ -3395,6 +3477,8 @@ async function renderContratos() {
   const qs = new URLSearchParams();
   if (status) qs.set('status', status);
   if (q) qs.set('q', q);
+  if (_filtroContratosFornecedor) qs.set('fornecedor', _filtroContratosFornecedor.id);
+  _renderChipFiltroFornecedor();
   const r = await API.get(`/api/contratos?${qs.toString()}`);
   const data = await API.json(r);
   _contratos = data?.items || [];
@@ -3466,6 +3550,8 @@ async function openContratoModal(id) {
   document.getElementById('c-vig-final').value   = c?.vigenciaFinal || '';
   document.getElementById('c-fiscal').value      = c?.fiscalNome || '';
   document.getElementById('c-fiscal-email').value = c?.fiscalEmail || '';
+  document.getElementById('c-fiscal-substituto').value       = c?.fiscalSubstitutoNome || '';
+  document.getElementById('c-fiscal-substituto-email').value = c?.fiscalSubstitutoEmail || '';
   document.getElementById('c-gestor').value      = c?.gestorNome || '';
   document.getElementById('c-dotacao').value     = c?.dotacaoOrcamentaria || '';
   document.getElementById('c-status').value      = c?.status || 'vigente';
@@ -3507,6 +3593,8 @@ async function saveContrato() {
     vigenciaFinal: document.getElementById('c-vig-final').value,
     fiscalNome: document.getElementById('c-fiscal').value.trim(),
     fiscalEmail: document.getElementById('c-fiscal-email').value.trim(),
+    fiscalSubstitutoNome: document.getElementById('c-fiscal-substituto').value.trim(),
+    fiscalSubstitutoEmail: document.getElementById('c-fiscal-substituto-email').value.trim(),
     gestorNome: document.getElementById('c-gestor').value.trim(),
     dotacaoOrcamentaria: document.getElementById('c-dotacao').value.trim(),
     status: document.getElementById('c-status').value,
@@ -3564,9 +3652,18 @@ function showNovoAditivoForm() {
   document.getElementById('contrato-aditivo-form').style.display = '';
   document.getElementById('ad-tipo').value = 'prazo';
   document.getElementById('ad-numero-termo').value = '';
-  document.getElementById('ad-nova-vigencia').value = '';
   document.getElementById('ad-valor-variacao').value = '';
   document.getElementById('ad-justificativa').value = '';
+  // Prorrogação assistida: sugere a vigência atual +12 meses como ponto de
+  // partida (editável) em vez de deixar o campo em branco.
+  const vigAtual = document.getElementById('c-vig-final').value;
+  if (vigAtual) {
+    const d = new Date(vigAtual + 'T00:00:00');
+    d.setFullYear(d.getFullYear() + 1);
+    document.getElementById('ad-nova-vigencia').value = d.toISOString().slice(0, 10);
+  } else {
+    document.getElementById('ad-nova-vigencia').value = '';
+  }
   onAditivoTipoChange();
 }
 function hideNovoAditivoForm() {
@@ -3686,6 +3783,53 @@ async function removeAnexoContrato() {
   _renderAnexoContrato(null);
 }
 
+// ── Anexo da ata assinada (PDF) ───────────────────────────────────
+function _renderAnexoAta(anexo) {
+  const el = document.getElementById('a-anexo-atual');
+  if (!el) return;
+  if (!anexo) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
+  el.innerHTML = `📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+    — enviado em ${fmt(anexo.uploadedAt)}
+    <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoAta()" title="Remover anexo">✕</button>`;
+}
+
+async function onAnexoAtaChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') { toast('Envie um arquivo PDF.', 'error'); input.value = ''; return; }
+  if (file.size > 10 * 1024 * 1024) { toast('Arquivo muito grande (máx. 10 MB).', 'error'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
+    if (!ata) return;
+    ata.anexoAta = { nome: file.name, dataurl: ev.target.result, uploadedAt: new Date().toISOString() };
+    const r = await API.put(`/api/atas/${_ataAtualId}`, ata);
+    if (!r?.ok) { toast('Erro ao enviar anexo.', 'error'); return; }
+    const idx = _atas.findIndex(a => a.id === ata.id);
+    if (idx >= 0) _atas[idx] = ata; else _atas.push(ata);
+    await _auditEvento('ATA_EDITADA', `Anexo da ata assinada enviado (${file.name})`);
+    toast('Anexo enviado com sucesso.', 'success');
+    _renderAnexoAta(ata.anexoAta);
+    input.value = '';
+  };
+  reader.onerror = () => toast('Erro ao ler o arquivo.', 'error');
+  reader.readAsDataURL(file);
+}
+
+async function removeAnexoAta() {
+  const ok = await customConfirm('Remover o anexo da ata assinada?', { okLabel: 'Remover' });
+  if (!ok) return;
+  const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!ata) return;
+  ata.anexoAta = null;
+  const r = await API.put(`/api/atas/${_ataAtualId}`, ata);
+  if (!r?.ok) { toast('Erro ao remover anexo.', 'error'); return; }
+  const idx = _atas.findIndex(a => a.id === ata.id);
+  if (idx >= 0) _atas[idx] = ata;
+  toast('Anexo removido.', 'success');
+  _renderAnexoAta(null);
+}
+
 // ── Documentos gerados (Contrato) ───────────────────────────────
 async function gerarExtratoContrato() {
   const c = _contratos.find(x => x.id === _contratoAtualId);
@@ -3740,6 +3884,7 @@ async function gerarExtratoContrato() {
   <tr><td class="lbl">Objeto</td><td>${blank(c.objeto)}</td></tr>
   <tr><td class="lbl">Gestor do Contrato</td><td>${blank(c.gestorNome)}</td></tr>
   <tr><td class="lbl">Fiscal do Contrato</td><td>${blank(c.fiscalNome)}</td></tr>
+  ${c.fiscalSubstitutoNome ? `<tr><td class="lbl">Fiscal Substituto</td><td>${escHtml(c.fiscalSubstitutoNome)}</td></tr>` : ''}
   ${c.dotacaoOrcamentaria ? `<tr><td class="lbl">Dotação Orçamentária</td><td>${escHtml(c.dotacaoOrcamentaria)}</td></tr>` : ''}
 </table>
 
@@ -4029,6 +4174,9 @@ async function openAtaModal(id) {
   const itensSection = document.getElementById('ata-itens-section');
   itensSection.style.display = a ? '' : 'none';
   document.getElementById('ata-doc-actions').style.display = a ? 'flex' : 'none';
+  document.getElementById('ata-anexo-section').style.display = a ? '' : 'none';
+  document.getElementById('a-anexo-input').value = '';
+  _renderAnexoAta(a?.anexoAta);
   hideNovoItemForm();
   if (a) renderItensList(a);
 
@@ -4921,9 +5069,12 @@ function _renderFornCardView() {
   _setFornCardBody(`<div class="forn-inline-body" onclick="event.stopPropagation()">
     ${_fornTabsHtml('dados')}
     ${_fornViewHtml(f)}
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--gray-200)">
-      <button class="btn btn-outline" onclick="_collapseFornCard('${f.id}')">Fechar</button>
-      <button class="btn btn-primary" onclick="_renderFornCardEdit()">✏ Editar</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--gray-200)">
+      <button class="btn btn-outline btn-sm" onclick="verContratosDoFornecedor('${f.id}', '${escHtml(f.razao_social || f.nome_fantasia || '').replace(/'/g,"\\'")}')">📄 Ver Contratos</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="_collapseFornCard('${f.id}')">Fechar</button>
+        <button class="btn btn-primary" onclick="_renderFornCardEdit()">✏ Editar</button>
+      </div>
     </div>
   </div>`, 'view');
 }
@@ -5416,6 +5567,72 @@ ${_qrFooterReport('Relatório de Sanções')}
 </body></html>`;
 
   _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, `Relatório de Sanções — ${f.razao_social || f.id}`);
+}
+
+async function gerarRelatorioSancoesGlobal() {
+  const todos = await listarFornecedores();
+  const u = getUser();
+  const now = new Date();
+  const dtGer = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+
+  const linhas = [];
+  for (const f of todos) {
+    for (const s of (f.sancoes || [])) {
+      linhas.push({ forn: f.razao_social || f.nome_fantasia || '(sem nome)', s });
+    }
+  }
+  linhas.sort((a, b) => (a.s.dataAplicacao || '').localeCompare(b.s.dataAplicacao || ''));
+
+  const tbody = linhas.length ? linhas.map(({ forn, s }) => {
+    const st = sancaoStatus(s);
+    return `<tr>
+      <td>${escHtml(forn)}</td>
+      <td>${escHtml(sancaoTipoLabel(s))}</td>
+      <td>${fmtDateBR(s.dataAplicacao)}</td>
+      <td>${s.prazoFim ? fmtDateBR(s.prazoFim) : '—'}</td>
+      <td>${st === 'ativa' ? 'Vigente' : 'Encerrada'}</td>
+      <td>${escHtml(s.fundamentacao || '—')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="text-align:center;padding:20pt;color:#888">Nenhuma sanção registrada.</td></tr>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>${_nomeArquivoDoc(null, 'RELATORIO GLOBAL DE SANCOES')}</title>
+<style>${_DOC_CSS}
+  body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #000; background: #fff; padding: 2cm 2.5cm; }
+  .header { text-align: center; margin-bottom: 20pt; border-bottom: 2px solid #000; padding-bottom: 12pt; }
+  .header img { height: 90pt; width: auto; margin-bottom: 6pt; }
+  .header h1 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title { text-align: center; margin: 14pt 0 10pt; }
+  .doc-title h3 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title .sub { font-size: 10pt; color: #444; margin-top: 4pt; }
+  .meta { font-size: 9pt; color: #555; margin-bottom: 10pt; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8pt; font-size: 9pt; table-layout: fixed; }
+  th { background: #1a1a2e; color: #fff; padding: 5pt 7pt; text-align: left; vertical-align: middle; font-weight: 700; font-size: 9pt; }
+  td { padding: 4pt 7pt; vertical-align: middle; font-size: 8.5pt; border-bottom: 1px solid #e8e8e8; word-wrap: break-word; overflow-wrap: break-word; }
+  .btn-print { display: block; margin: 0 auto 20pt; padding: 8pt 24pt; background: #1a3a6b; color: #fff; border: none; border-radius: 4px; font-size: 11pt; cursor: pointer; }
+</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${escHtml(u.orgao || '')}</h1>
+  <h2>${escHtml(u.municipio || '')}</h2>
+</div>
+<div class="doc-title">
+  <h3>Relatório Global de Sanções e Penalidades</h3>
+  <div class="sub">Todos os fornecedores cadastrados</div>
+</div>
+<div class="meta">Gerado em: ${dtGer} &nbsp;·&nbsp; Total: ${linhas.length} sanção${linhas.length !== 1 ? 'ões' : ''}</div>
+<table>
+  <colgroup>
+    <col style="width:22%"><col style="width:22%"><col style="width:13%"><col style="width:13%"><col style="width:10%"><col style="width:20%">
+  </colgroup>
+  <thead><tr><th>Fornecedor</th><th>Tipo</th><th>Aplicada em</th><th>Prazo Final</th><th>Situação</th><th>Fundamentação</th></tr></thead>
+  <tbody>${tbody}</tbody>
+</table>
+${_qrFooterReport('Relatório Global de Sanções')}
+</body></html>`;
+
+  _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, 'Relatório Global de Sanções');
 }
 
 let _sancaoEditFornId = null, _sancaoEditIdx = null;

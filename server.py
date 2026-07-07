@@ -1,4 +1,4 @@
-# SGCA v0.6.2 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.7.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -846,8 +846,9 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
     def _list_contratos(self, qs):
         def qp(k, d=None): v = qs.get(k); return v[0] if v else d
-        q      = qp('q', '')
-        status = qp('status', '')
+        q          = qp('q', '')
+        status     = qp('status', '')
+        fornecedor = qp('fornecedor', '')
         page   = int(qp('page', 1))
         per    = min(int(qp('per', 500)), 2000)
         trash  = qp('trash') == '1'
@@ -860,6 +861,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             params += [f'%{q}%', f'%{q}%']
         if status:
             where.append('status=?'); params.append(status)
+        if fornecedor:
+            where.append('fornecedor_id=?'); params.append(fornecedor)
 
         wc = ('WHERE ' + ' AND '.join(where)) if where else ''
         order = 'deleted_at DESC' if trash else 'vigencia_final ASC'
@@ -1410,7 +1413,7 @@ def _send_daily_alerts():
                 dias = int((ts - agora) / 86400)
                 if dias <= 30:
                     nome = item.get('numero') and f"{rotulo} {item['numero']}" or (item.get('objeto') or item.get('id'))
-                    itens.append((nome, dias, item.get('fiscalEmail')))
+                    itens.append((nome, dias, item.get('fiscalEmail'), item.get('fiscalSubstitutoEmail')))
             except Exception:
                 pass
         return itens
@@ -1449,11 +1452,13 @@ def _send_daily_alerts():
         except Exception as e:
             _log.error('Falha ao enviar e-mail de alertas: %s', e)
 
-    # Notifica individualmente o fiscal de cada contrato vencendo (quando cadastrado)
+    # Notifica individualmente o fiscal (titular e substituto) de cada contrato vencendo
     por_fiscal = {}
-    for nome, dias, email in contratos:
+    for nome, dias, email, email_substituto in contratos:
         if email:
             por_fiscal.setdefault(email, []).append((nome, dias))
+        if email_substituto:
+            por_fiscal.setdefault(email_substituto, []).append((nome, dias))
     for email, itens in por_fiscal.items():
         corpo_f = (f"<p>Resumo automático do SGCA — {hoje}</p>"
                    f"<p>Contrato(s) sob sua fiscalização com vigência vencendo:</p>" + _linhas('', itens))

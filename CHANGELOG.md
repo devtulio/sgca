@@ -5,6 +5,18 @@
 
 ---
 
+## [0.7.0] — 2026-07-07
+
+### Adicionado
+- **Anexo de PDF na Ata** (ata assinada digitalizada) — mesmo padrão de upload/download já usado no Contrato
+- **Fiscal Substituto** no Contrato (nome + e-mail) — Art. 117, §2º da Lei 14.133/2021; recebe o mesmo aviso automático de vencimento que o fiscal titular
+- **Atalho "Ver Contratos"** no card do fornecedor — abre a tela de Contratos já filtrada pelos contratos daquele fornecedor, com selo removível indicando o filtro ativo (novo parâmetro `fornecedor` no `GET /api/contratos`)
+- **Prorrogação assistida** — ao abrir "+ Novo Aditivo" (tipo Prazo), o campo de nova vigência já vem preenchido com a vigência atual + 12 meses, editável
+- **Relatório global de Sanções** — botão na tela de Fornecedores gera um relatório consolidado com as sanções de todos os fornecedores, além do relatório já existente por fornecedor individual
+- **Gráfico de vencimentos dos próximos 6 meses** na tela de Contratos, combinando contratos e atas por mês (SVG simples, sem biblioteca de gráficos)
+
+---
+
 ## [0.6.2] — 2026-07-07
 
 ### Adicionado

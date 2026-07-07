@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.6.2-blue) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.7.0-blue) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -23,10 +23,12 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Garantia Contratual** — modalidade, valor, vencimento e devolução, com alerta na Agenda de Vencimentos
 - **Sanções e Penalidades** — registro interno por fornecedor (advertência, multa, suspensão, impedimento, inidoneidade), com aviso ao selecionar um fornecedor sancionado em um Contrato/Ata e entrada do fim do prazo na Agenda de Vencimentos
 - **Reajuste por índice** (IPCA-E, IGP-M, INCC-M, INPC) em aditivos de repactuação/reequilíbrio, com cálculo automático do novo valor global
-- **Anexo do contrato assinado (PDF)** vinculado ao registro do contrato
+- **Anexo assinado (PDF)** vinculado ao registro do contrato e da ata
 - **Vínculo Contrato ↔ Ata de Registro de Preços** — campo "Ata de Origem" para contratações por adesão
-- **Relatórios consolidados** de Contratos, Atas e Sanções por fornecedor, no mesmo padrão A4 usado nos demais documentos
-- **Indicadores nas telas de Contratos e de Atas** — vigentes, vencendo em 30 dias, valor total e saldo baixo
+- **Fiscal Substituto** — titular e substituto no Contrato, ambos recebendo o aviso automático de vencimento
+- **Relatórios consolidados** de Contratos, Atas e Sanções (por fornecedor ou global), no mesmo padrão A4 usado nos demais documentos
+- **Indicadores e gráfico de vencimentos** nas telas de Contratos e de Atas — vigentes, vencendo em 30 dias, valor total, saldo baixo e vencimentos dos próximos 6 meses
+- **Atalho "Ver Contratos"** a partir do cadastro do fornecedor, e prorrogação assistida (sugestão automática de nova vigência ao criar aditivo de prazo)
 - **Autenticação multiusuário** com hashing PBKDF2-HMAC-SHA256 e gestão de usuários pelo admin
 - **Cadastro de fornecedores** com consulta automática de CNPJ via ReceitaWS/BrasilAPI, controle de certidões com alertas de vencimento e exclusão (lixeira)
 - **Importação de fornecedores via CSV** e relatório consolidado
