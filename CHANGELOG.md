@@ -5,6 +5,13 @@
 
 ---
 
+## [0.9.2] — 2026-07-07
+
+### Corrigido
+- **Brasão do município podia ser perdido silenciosamente** — o perfil de navegador dedicado do Modo Pessoal (que guarda o brasão e demais preferências salvas só no navegador, quando a sincronização com o servidor falha) era criado em `%TEMP%\SGCA-Profile`, uma pasta que o Windows e ferramentas de limpeza de disco podem apagar a qualquer momento. Agora o perfil fica em `browser-profile/`, ao lado de `sgca.db` e `backups/`, junto com os demais dados persistentes da aplicação
+
+---
+
 ## [0.9.1] — 2026-07-07
 
 ### Adicionado

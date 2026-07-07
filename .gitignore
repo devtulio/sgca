@@ -16,6 +16,7 @@ __pycache__/
 # Runtime — pastas de dados
 backups/
 uploads/
+browser-profile/
 
 # Arquivos institucionais (não versionar)
 brasao.png

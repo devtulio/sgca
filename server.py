@@ -1,4 +1,4 @@
-# SGCA v0.9.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.9.2 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,6 +37,7 @@ _BASE         = os.path.dirname(os.path.abspath(__file__))
 DB_PATH       = os.path.join(_BASE, 'sgca.db')
 UPLOADS_DIR   = os.path.join(_BASE, 'uploads')
 BACKUP_DIR    = os.path.join(_BASE, 'backups')
+PROFILE_DIR   = os.path.join(_BASE, 'browser-profile')
 LOG_PATH      = os.path.join(_BASE, 'sgca_errors.log')
 BACKUP_KEEP   = 7        # número de backups automáticos mantidos
 SESSION_TTL   = 15   # 15s — renovado pelo ping a cada 5s; expira rápido se browser fechar
@@ -1685,7 +1686,7 @@ if __name__ == '__main__':
             if browser:
                 threading.Thread(target=httpd.serve_forever, daemon=True).start()
                 time.sleep(1)
-                profile_dir = os.path.join(os.environ.get('TEMP', os.path.expanduser('~')), 'SGCA-Profile')
+                profile_dir = PROFILE_DIR
                 proc = subprocess.Popen([
                     browser,
                     f'--app=http://localhost:{PORT}/SGCA.html',
