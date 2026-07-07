@@ -261,6 +261,20 @@ class TestSettingsAndUsers(SGCATestCase):
         self.assertEqual(status, 200)
         self.assertEqual(data.get('tema'), 'escuro')
 
+    def test_settings_geral_nao_inclui_brasao_dataurl(self):
+        # brasao_dataurl pode ter alguns MB (imagem em base64) e tem endpoint
+        # próprio (/api/settings/brasao) — não deve viajar no GET /api/settings
+        # geral, consultado a cada login, sob risco de deixar essa rota lenta
+        # o bastante para 401ar durante a sessão curta (SESSION_TTL).
+        admin_token = self.login()
+        self.request('PUT', '/api/settings/brasao', {'brasao_dataurl': 'data:image/png;base64,AAAA'}, token=admin_token)
+        status, data = self.request('GET', '/api/settings', token=admin_token)
+        self.assertEqual(status, 200)
+        self.assertNotIn('brasao_dataurl', data)
+        status, data = self.request('GET', '/api/settings/brasao', token=admin_token)
+        self.assertEqual(status, 200)
+        self.assertEqual(data.get('brasao_dataurl'), 'data:image/png;base64,AAAA')
+
     def test_usuario_comum_nao_pode_criar_usuario(self):
         admin_token = self.login()
         self.request('POST', '/api/usuarios', {

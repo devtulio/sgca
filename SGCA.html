@@ -2179,7 +2179,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.6.0';
+const SGCA_VERSION = '0.6.1';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -6627,15 +6627,28 @@ function _onLoginSuccess() {
         localStorage.setItem('sgca-user', JSON.stringify(merged));
         await _syncSmtpFromServer(remote);
         console.log('[SGCA] sgca-smtp após sync:', localStorage.getItem('sgca-smtp'));
-        // Brasão: servidor é sempre a fonte de verdade (endpoint dedicado trata remoção explícita)
-        if (remote.brasao_dataurl) localStorage.setItem('sgca-brasao-dataurl', remote.brasao_dataurl);
-        else localStorage.removeItem('sgca-brasao-dataurl');
-        window._BRASAO_CACHE = null;
       } else {
         console.warn('[SGCA] GET /api/settings falhou — dados de Organização/SMTP não serão sincronizados nesta sessão.');
       }
     } catch (e) { console.error('[SGCA] Erro em _onLoginSuccess:', e); }
     _atualizarSidebarUsuario();
+  })();
+  // Brasão: busca separada do endpoint dedicado (fora do /api/settings, que é
+  // consultado a cada login — não vale a pena carregar uns MB de base64 nele).
+  // Endpoint próprio evita que uma falha aqui atrapalhe o resto da sincronização,
+  // e vice-versa; servidor é sempre a fonte de verdade (remoção explícita já
+  // é tratada por PUT /api/settings/brasao).
+  (async () => {
+    try {
+      const r = await API.get('/api/settings/brasao');
+      if (r && r.ok) {
+        const { brasao_dataurl } = await r.json();
+        if (brasao_dataurl) localStorage.setItem('sgca-brasao-dataurl', brasao_dataurl);
+        else localStorage.removeItem('sgca-brasao-dataurl');
+        window._BRASAO_CACHE = null;
+        _atualizarSidebarUsuario();
+      }
+    } catch (e) { console.error('[SGCA] Erro ao sincronizar brasão:', e); }
   })();
   if (typeof carregarDashboard === 'function') carregarDashboard();
 }

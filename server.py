@@ -1,4 +1,4 @@
-# SGCA v0.6.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.6.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -420,8 +420,12 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
         # Configurações do sistema
         elif p == '/api/settings':
+            # brasao_dataurl fica de fora: pode ter alguns MB (imagem em base64) e tem
+            # endpoint dedicado (/api/settings/brasao) — incluí-lo aqui deixava essa
+            # rota lenta o bastante para, sob a sessão de 15s, ocasionalmente 401ar
+            # durante a rajada de requisições do login e derrubar a sincronização.
             with get_db() as conn:
-                rows = conn.execute('SELECT key,value FROM sys_settings').fetchall()
+                rows = conn.execute("SELECT key,value FROM sys_settings WHERE key != 'brasao_dataurl'").fetchall()
             result = {r['key']: r['value'] for r in rows}
             print(f"  [SETTINGS] GET /api/settings de {s.get('nome') or s.get('user_id')} — chaves retornadas: {sorted(result.keys())}", flush=True)
             self._json(200, result)

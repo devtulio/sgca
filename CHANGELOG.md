@@ -5,6 +5,13 @@
 
 ---
 
+## [0.6.1] — 2026-07-07
+
+### Corrigido
+- **Brasão customizado não se mantinha entre reinícios do sistema** — o `GET /api/settings` geral (consultado a cada login) incluía o `brasao_dataurl`, um base64 de alguns MB, deixando essa rota lenta o bastante para ocasionalmente sofrer 401 durante a rajada de requisições do login, sob a sessão curta (`SESSION_TTL`= 15s). Como `_onLoginSuccess()` tratava essa falha em silêncio, o brasão simplesmente não voltava para o navegador — obrigando o usuário a reenviar e salvar o arquivo a cada início. Corrigido excluindo `brasao_dataurl` do `GET /api/settings` geral (já existia um endpoint dedicado, `/api/settings/brasao`, criado para isso mas nunca consultado pelo frontend) e buscando o brasão nessa rota separada, dissociado do restante da sincronização
+
+---
+
 ## [0.6.0] — 2026-07-07
 
 ### Adicionado
