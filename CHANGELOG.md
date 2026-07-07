@@ -5,6 +5,14 @@
 
 ---
 
+## [0.9.3] — 2026-07-07
+
+### Adicionado
+- **Rate limit de login** — bloqueia com HTTP 429 após 5 tentativas falhas em 5 minutos (janela deslizante, por usuário); login correto limpa o contador. Gap encontrado na auditoria de servidor: nenhum dos 3 sistemas tinha proteção contra força bruta
+
+### Removido
+- **`MAX_UPLOAD`/`ALLOWED_EXTS`** — constantes declaradas mas nunca usadas, resíduo do clone do SGCD (SGCA não tem feature de anexo de arquivo/assinatura que precisasse desses limites)
+
 ## [0.9.2] — 2026-07-07
 
 ### Corrigido
