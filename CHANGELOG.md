@@ -72,6 +72,15 @@ Todas as mudanças foram testadas em ambiente isolado (cópia do projeto, banco 
 
 ---
 
+## [0.3.1] — 2026-07-06
+
+### Alterado
+- **Trilha de Auditoria** — timeline agrupada por dia (buscava até 2000 registros de uma vez, filtro 100% no cliente) substituída por tabela com filtros server-side (busca, tipo, período) e paginação via servidor, igual ao SGDP
+  - Menu "Auditoria" agora só aparece para administradores
+  - `/api/audit` ganhou filtros (q/tipo/de/ate), mas continua sem restrição de admin — usado também pelo histórico de alterações por campo, aberto a qualquer usuário logado
+
+---
+
 ## Próximos passos
 
 - Documentos gerados do domínio de Contratos/Atas (extrato, termo aditivo)
