@@ -81,6 +81,17 @@ Todas as mudanças foram testadas em ambiente isolado (cópia do projeto, banco 
 
 ---
 
+## [0.3.2] — 2026-07-06
+
+### Corrigido
+- **Vocabulário de eventos de auditoria era o do SGCD, não o de contratos/atas** — mapa de rótulos (`_AUDIT_EVENT_LABELS`) tinha só eventos herdados do clone (ETAPA_*, PROCESSO_*, CERTIDAO_* etc.), nenhum deles emitido de fato pelo SGCA; eventos reais (`CONTRATO_CRIADO`, `CONTRATO_EDITADO`, `CONTRATO_ADITIVO`, `ATA_CRIADA`, `ATA_EDITADA`, `FORNECEDOR_EXCLUIDO`, `SYNC_BACKUP`) apareciam crus na tabela. Corrigido trocando pelo vocabulário correto
+
+### Alterado
+- Dropdown "Tipo" trocado de lista fixa no HTML para geração dinâmica a partir do mapa de rótulos, evitando desincronia futura
+- Coluna "Tipo" renomeada para "Ação", alinhando com o SGDP
+
+---
+
 ## Próximos passos
 
 - Documentos gerados do domínio de Contratos/Atas (extrato, termo aditivo)
