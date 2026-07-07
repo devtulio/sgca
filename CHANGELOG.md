@@ -17,8 +17,15 @@
 
 ### Corrigido
 - **`fmtMoney()` inflava por 10x valores monetários com centavos** — a função reaproveitava `parseValor()` (feito para strings já formatadas em pt-BR) mesmo quando recebia um número puro do banco; `String(15000.5)` vira `"15000.5"`, e a lógica de striping de separador de milhar tratava o ponto decimal como separador de milhar, multiplicando o valor por 10 ao reexibir. Afetava toda exibição de Valor Global, variação de aditivos e preço unitário de item de ata sempre que o valor tinha centavos — e, mais grave, corrompia o valor permanentemente se o contrato fosse salvo novamente nesse estado (o campo já formatado incorretamente era reinterpretado por `parseValor` no submit)
-- **`openContratoModal`/`openAtaModal` exibiam dados desatualizados quando o registro já estava em cache local** (`_contratos`/`_atas`) — o fallback para buscar da API só era acionado quando o item não existia no cache; se existia porém estava desatualizado (ex.: alterado em outra aba, ou via Agenda logo após uma edição), o modal mostrava os valores antigos
 - **`toggleFornCard` não reconhecia a aba "sancoes"** — introduzido durante o desenvolvimento desta versão e corrigido antes do release
+
+---
+
+## [0.5.1] — 2026-07-07
+
+### Corrigido
+- **`openContratoModal`/`openAtaModal` exibiam dados desatualizados quando o registro já estava em cache local** (`_contratos`/`_atas`) — o fallback para buscar da API só era acionado quando o item não existia no cache; se existia porém estava desatualizado (ex.: alterado em outra aba, ou reaberto pela Agenda logo após uma edição feita por outro caminho), o modal mostrava os valores antigos. Agora sempre busca da API ao abrir o modal, e mantém o cache local sincronizado com o resultado
+- **Remover o anexo do contrato assinado não funcionava** — `delete contrato.anexoContrato` seguido de `PUT` não removia o campo no servidor, pois `_update_contrato` faz um merge raso (`dict.update()`) que só sobrescreve chaves presentes no payload, nunca remove as ausentes. Corrigido enviando `anexoContrato: null` explicitamente em vez de apagar a chave
 
 ---
 

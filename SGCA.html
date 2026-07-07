@@ -2163,7 +2163,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.5.0';
+const SGCA_VERSION = '0.5.1';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3375,12 +3375,14 @@ async function _loadFornecedoresCache() {
 async function openContratoModal(id) {
   await _loadFornecedoresCache();
   _contratoAtualId = id || null;
-  let c = id ? _contratos.find(x => x.id === id) : null;
-  if (id && !c) {
-    // Não passou pela listagem (ex: aberto direto da Agenda) — busca na API
+  let c = null;
+  if (id) {
+    // Sempre busca da API (não confia no cache local, que pode estar desatualizado
+    // se o registro foi editado por outro caminho desde o último carregamento da lista)
     const r = await API.get(`/api/contratos/${id}`);
     c = await API.json(r);
-    if (c) _contratos.push(c);
+    const idx = _contratos.findIndex(x => x.id === id);
+    if (c) { if (idx >= 0) _contratos[idx] = c; else _contratos.push(c); }
   }
 
   document.getElementById('contrato-modal-title').textContent = c ? 'Editar Contrato' : 'Novo Contrato';
@@ -3889,12 +3891,14 @@ function _autoVigenciaAta(dataAssinatura) {
 async function openAtaModal(id) {
   await _loadFornecedoresCache();
   _ataAtualId = id || null;
-  let a = id ? _atas.find(x => x.id === id) : null;
-  if (id && !a) {
-    // Não passou pela listagem (ex: aberto direto da Agenda) — busca na API
+  let a = null;
+  if (id) {
+    // Sempre busca da API (não confia no cache local, que pode estar desatualizado
+    // se o registro foi editado por outro caminho desde o último carregamento da lista)
     const r = await API.get(`/api/atas/${id}`);
     a = await API.json(r);
-    if (a) _atas.push(a);
+    const idx = _atas.findIndex(x => x.id === id);
+    if (a) { if (idx >= 0) _atas[idx] = a; else _atas.push(a); }
   }
 
   document.getElementById('ata-modal-title').textContent = a ? 'Editar Ata de Registro de Preços' : 'Nova Ata de Registro de Preços';
