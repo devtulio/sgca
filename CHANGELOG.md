@@ -102,8 +102,16 @@ Verificação sistemática (script comparando eventos emitidos no código vs map
 
 ---
 
-## Próximos passos
+## [0.4.0] — 2026-07-06
 
-- Documentos gerados do domínio de Contratos/Atas (extrato, termo aditivo)
-- Agenda de Vencimentos unificada (contratos + atas vencendo)
-- Exportação PNCP de contratos/atas
+### Adicionado
+- **Agenda de Vencimentos** unificada — lista contratos e atas com vigência vencendo, agrupados por urgência; botão "Enviar por e-mail" (resumo manual) e alerta automático diário por e-mail (`_send_daily_alerts()`, dedupe via `alert_email_last_sent`), com badge de contagem no menu
+- **Documentos gerados**: "Gerar Extrato" (Contrato) e "Gerar Termo" por aditivo/apostilamento (prazo, valor, qualitativo, reequilíbrio, repactuação), no mesmo padrão visual A4 (`_DOC_CSS`) e rodapé de autenticação (QR) do SGCD
+- **Exportação PNCP** — botão "Exportar PNCP" em Contratos e Atas, gerando JSON no formato esperado pelo portal, com lista de `_pendencias` para campos obrigatórios ainda não preenchidos
+
+### Corrigido
+- `_getBrasaoB64()` estava quebrado (tentava extrair base64 de uma função já removida na Fase 2); reescrito para buscar `brasao.png` de forma assíncrona com cache em memória
+- Campo de fornecedor errado (`razaoSocial`/`razao`) usado em 3 pontos do código de Contrato/Ata; corrigido para os nomes reais (`razao_social`/`nome_fantasia`)
+- `openContratoModal`/`openAtaModal` só encontravam o registro se a tela de lista já tivesse sido visitada antes (cache local); agora buscam da API quando necessário — corrige navegação direta da Agenda de Vencimentos para o modal
+
+---

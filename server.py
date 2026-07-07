@@ -1,4 +1,4 @@
-# SGCA v0.3.3 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.4.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -1372,6 +1372,79 @@ def _send_email_raw(smtp, frm, to, subj, html, plain=''):
             if smtp.get('requireTLS', True): s.starttls(context=ctx)
             s.login(user, pw); s.send_message(msg)
 
+def _send_daily_alerts():
+    """Resumo diário por e-mail de contratos e atas vencendo.
+    Só envia se SMTP estiver configurado no servidor e ainda não tiver enviado hoje."""
+    with get_db() as conn:
+        cfg = {r['key']: r['value'] for r in conn.execute(
+            "SELECT key,value FROM sys_settings WHERE key LIKE 'smtp_%' OR key='alert_email_last_sent'"
+        ).fetchall()}
+    if not (cfg.get('smtp_host') and cfg.get('smtp_user') and cfg.get('smtp_pass') and cfg.get('smtp_to')):
+        return
+    hoje = time.strftime('%Y-%m-%d')
+    if cfg.get('alert_email_last_sent') == hoje:
+        return
+
+    agora = time.time()
+
+    def _vencimentos(tabela, rotulo):
+        with get_db() as conn:
+            rows = conn.execute(f"SELECT data FROM {tabela} WHERE deleted_at IS NULL").fetchall()
+        itens = []
+        for row in rows:
+            try:
+                item = json.loads(row['data'])
+            except Exception:
+                continue
+            if item.get('status') in ('encerrado', 'rescindido', 'cancelada'):
+                continue
+            vig = item.get('vigenciaFinal')
+            if not vig:
+                continue
+            try:
+                ts = time.mktime(time.strptime(vig[:10], '%Y-%m-%d'))
+                dias = int((ts - agora) / 86400)
+                if dias <= 30:
+                    nome = item.get('numero') and f"{rotulo} {item['numero']}" or (item.get('objeto') or item.get('id'))
+                    itens.append((nome, dias))
+            except Exception:
+                pass
+        return itens
+
+    contratos = _vencimentos('contratos', 'Contrato')
+    atas      = _vencimentos('atas', 'Ata')
+
+    if not contratos and not atas:
+        with get_db() as conn:
+            conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('alert_email_last_sent',?)", (hoje,))
+        return
+
+    def _linhas(titulo, itens):
+        if not itens:
+            return ''
+        partes = [f'<h3>{titulo}</h3><ul>']
+        for nome, dias in sorted(itens, key=lambda x: x[1]):
+            txt = f'vencido há {-dias} dia(s)' if dias < 0 else ('vence hoje' if dias == 0 else f'vence em {dias} dia(s)')
+            partes.append(f'<li><strong>{html_mod.escape(str(nome))}</strong> — {txt}</li>')
+        partes.append('</ul>')
+        return ''.join(partes)
+
+    corpo = f"<p>Resumo automático do SGCA — {hoje}</p>" + _linhas('Contratos', contratos) + _linhas('Atas de Registro de Preços', atas)
+    smtp_cfg = {
+        'host': cfg['smtp_host'], 'port': cfg.get('smtp_port', 587),
+        'secure': cfg.get('smtp_secure') == '1', 'requireTLS': cfg.get('smtp_require_tls') != '0',
+        'ignoreSSL': cfg.get('smtp_ignore_ssl') == '1',
+        'auth': {'user': cfg['smtp_user'], 'pass': cfg['smtp_pass']},
+    }
+    frm = {'name': cfg.get('smtp_from_name') or 'SGCA', 'email': cfg['smtp_user']}
+    try:
+        _send_email_raw(smtp_cfg, frm, cfg['smtp_to'], f'SGCA — Resumo de vencimentos ({hoje})', corpo)
+        print(f'  [ALERTAS] E-mail de resumo enviado ({len(contratos)} contrato(s), {len(atas)} ata(s))', flush=True)
+    except Exception as e:
+        _log.error('Falha ao enviar e-mail de alertas: %s', e)
+    with get_db() as conn:
+        conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('alert_email_last_sent',?)", (hoje,))
+
 _last_trash_purge = 0
 
 def _purge_old_trash():
@@ -1397,6 +1470,8 @@ def _watchdog():
         if time.time() - _last_trash_purge > 3600:
             try: _purge_old_trash()
             except Exception as e: _log.error('Erro ao esvaziar lixeira: %s', e)
+        try: _send_daily_alerts()
+        except Exception as e: _log.error('Erro ao enviar alertas por e-mail: %s', e)
 
 # ── Backup automático do banco ─────────────────────────────────────────────────
 

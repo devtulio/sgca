@@ -286,6 +286,35 @@ class TestBackup(SGCATestCase):
         self.assertTrue(any(c['objeto'] == 'Contrato para backup' for c in data['contratos']))
 
 
+class TestAgendaAlerts(SGCATestCase):
+
+    def test_send_daily_alerts_detecta_vencimento_e_marca_enviado(self):
+        import datetime
+        token = self.login()
+        vig = (datetime.date.today() + datetime.timedelta(days=5)).isoformat()
+        self.request('POST', '/api/contratos', {'objeto': 'Contrato vencendo', 'vigenciaFinal': vig, 'status': 'vigente'}, token=token)
+
+        with server.get_db() as conn:
+            conn.execute("DELETE FROM sys_settings WHERE key='alert_email_last_sent'")
+        # sem SMTP configurado: não deve marcar como enviado (retorna cedo)
+        server._send_daily_alerts()
+        with server.get_db() as conn:
+            row = conn.execute("SELECT value FROM sys_settings WHERE key='alert_email_last_sent'").fetchone()
+        self.assertIsNone(row)
+
+        # com SMTP "configurado" (host inválido de propósito — só testa que a lógica roda até o fim)
+        with server.get_db() as conn:
+            for k, v in [('smtp_host', 'smtp.invalido.test'), ('smtp_user', 'a@a.com'),
+                         ('smtp_pass', 'x'), ('smtp_to', 'dest@teste.com')]:
+                conn.execute('INSERT OR REPLACE INTO sys_settings (key,value) VALUES (?,?)', (k, v))
+        server._send_daily_alerts()
+        with server.get_db() as conn:
+            row = conn.execute("SELECT value FROM sys_settings WHERE key='alert_email_last_sent'").fetchone()
+            for k in ('smtp_host', 'smtp_user', 'smtp_pass', 'smtp_to', 'alert_email_last_sent'):
+                conn.execute('DELETE FROM sys_settings WHERE key=?', (k,))
+        self.assertIsNotNone(row)
+
+
 class TestHealth(SGCATestCase):
 
     def test_health_check(self):

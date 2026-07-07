@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.3.3-blue) ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.4.0-blue) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -16,22 +16,19 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 
 - **Contratos** — cadastro, Kanban por status (Vigente/Em prorrogação/Encerrado/Rescindido), vínculo com fornecedor, aditivos e apostilamentos com alerta de limite legal de 25% (Art. 125, Lei nº 14.133/2021)
 - **Atas de Registro de Preços** — cadastro, itens registrados com controle de saldo (quantidade utilizada vs. registrada) e alerta visual de esgotamento; vigência final calculada automaticamente a partir da data de assinatura (+12 meses), editável manualmente
+- **Documentos gerados** — Extrato de Contrato e Termo Aditivo/Apostilamento (um por tipo: prazo, valor, qualitativo, reequilíbrio, repactuação), no mesmo padrão visual A4 do SGCD
+- **Exportação PNCP** — JSON de Contratos e de Atas no formato esperado pelo Portal Nacional de Contratações Públicas, com aviso de campos pendentes
+- **Agenda de Vencimentos** unificada — contratos e atas vencendo, agrupados por urgência, com envio manual ou automático (resumo diário) por e-mail
 - **Autenticação multiusuário** com hashing PBKDF2-HMAC-SHA256 e gestão de usuários pelo admin
 - **Cadastro de fornecedores** com consulta automática de CNPJ via ReceitaWS/BrasilAPI, controle de certidões com alertas de vencimento e exclusão (lixeira)
 - **Importação de fornecedores via CSV** e relatório consolidado
-- **Configurações** — dados do órgão, brasão, tema claro/escuro, teste de conexão SMTP
+- **Configurações** — dados do órgão, brasão, tema claro/escuro, SMTP
 - **Notificações in-app** — alertas de certidões de fornecedores vencendo
 - **Trilha de auditoria global** — tabela com filtros por tipo de evento, período e usuário (vocabulário próprio do domínio de contratos/atas)
 - **Backup automático** ao encerrar o sistema (JSON + banco de dados SQLite) com rotação configurável
 - **Sincronização de fornecedores entre agentes/máquinas** — mescla dados de outra instalação sem substituir o banco inteiro
 - **Lixeira** — fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias
 - **Diagnóstico e correção automática de rede** — verifica IP, porta, perfil de rede e firewall
-
-## Em Desenvolvimento
-
-- **Documentos gerados** do domínio de Contratos/Atas (extrato de contrato, termo aditivo, termo de apostilamento)
-- **Agenda de Vencimentos** unificada (contratos e atas vencendo) e alerta automático por e-mail
-- **Exportação PNCP** de contratos e atas
 
 > Fora de escopo por decisão de projeto: controle de empenhos/pagamentos (fica a cargo do sistema contábil/financeiro do órgão).
 
