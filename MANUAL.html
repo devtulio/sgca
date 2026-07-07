@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.9.0</title>
+<title>Manual Operacional — SGCA v0.9.1</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       margin: 20mm 20mm 25mm;
       size: A4;
       @top-center {
-        content: "SGCA v0.9.0 — Manual Operacional";
+        content: "SGCA v0.9.1 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -103,7 +103,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.9.0</div>
+    <div class="cover-version">Versão v0.9.1</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -164,7 +164,7 @@
 
 <h2 id="sec5">5. Contratos</h2>
 <p>A tela <strong>Contratos</strong> mostra, no topo, indicadores de contratos vigentes, contratos vencendo em 30 dias, valor total vigente e atas com saldo baixo, seguidos de um gráfico com os vencimentos de contratos e atas nos próximos 6 meses — depois vem o quadro Kanban com os contratos agrupados por status: Vigente, Em prorrogação, Encerrado e Rescindido. Cada cartão exibe o número, objeto, valor e um indicador colorido de vigência (vigente, vencendo em até 60 dias, ou vencido). Um filtro por <strong>Fiscal</strong>, ao lado do filtro por status, restringe a lista aos contratos de um fiscal específico.</p>
-<p>Clique em <strong>+ Novo Contrato</strong> para cadastrar: número (sugerido automaticamente com base no maior número já cadastrado no ano corrente, editável — o sistema impede salvar dois contratos com o mesmo número), processo administrativo de origem, objeto, fornecedor contratado (vinculado ao cadastro de Fornecedores), <strong>Ata de Origem</strong> (quando o contrato decorrer de adesão a uma Ata de Registro de Preços), valor global, vigência inicial/final, fiscal titular e <strong>fiscal substituto</strong> — ambos com e-mail para aviso automático de vencimento —, gestor do contrato, dotação orçamentária, status e os dados da <strong>garantia contratual</strong> (modalidade, valor, vencimento e data de devolução). Se o fornecedor selecionado tiver uma sanção vigente que restrinja contratar com a Administração (suspensão, impedimento ou inidoneidade), um aviso aparece abaixo do campo.</p>
+<p>Clique em <strong>+ Novo Contrato</strong> para cadastrar: número (sugerido automaticamente com base no maior número já cadastrado no ano corrente, editável — o sistema impede salvar dois contratos com o mesmo número), processo administrativo de origem, objeto, fornecedor contratado (vinculado ao cadastro de Fornecedores), <strong>Ata de Origem</strong> (quando o contrato decorrer de adesão a uma Ata de Registro de Preços), valor global, vigência inicial/final (ao informar a vigência inicial, a vigência final é sugerida automaticamente como +12 meses, editável), fiscal titular e <strong>fiscal substituto</strong> — ambos com e-mail para aviso automático de vencimento —, gestor do contrato, dotação orçamentária, status e os dados da <strong>garantia contratual</strong> (modalidade, valor, vencimento e data de devolução). Se o fornecedor selecionado tiver uma sanção vigente que restrinja contratar com a Administração (suspensão, impedimento ou inidoneidade), um aviso aparece abaixo do campo.</p>
 <p>Ao editar um contrato já existente, a seção <strong>Aditivos e Apostilamentos</strong> fica disponível para registrar prorrogações de prazo, acréscimos/supressões de valor, alterações qualitativas, reequilíbrios e repactuações. Ao abrir um novo aditivo de prazo, o sistema já sugere a nova vigência (vigência atual + 12 meses, editável) como ponto de partida. Um aditivo de prazo atualiza automaticamente a vigência final do contrato; um aditivo de valor recalcula o valor global e exibe um alerta quando a variação acumulada se aproxima ou ultrapassa o limite legal de 25% (Art. 125, Lei nº 14.133/2021). Aditivos de reequilíbrio/repactuação permitem informar um <strong>índice</strong> (IPCA-E, IGP-M, INCC-M, INPC ou outro) e o percentual de variação — o sistema calcula automaticamente o valor de reajuste e o novo valor global antes de salvar.</p>
 <p>Também é possível anexar um ou mais <strong>PDFs do contrato assinado</strong> ao registro (termo, portaria de nomeação do fiscal, planilha orçamentária etc.), cada um com seu próprio link de download e botão de remoção.</p>
 <p>No rodapé do contrato (ao editar um já existente) ficam disponíveis: <strong>📄 Gerar Extrato</strong>, que produz o Extrato de Contrato para publicação no Diário Oficial/PNCP; <strong>📤 Exportar PNCP</strong>, que baixa um JSON com os dados do contrato no formato esperado pelo Portal Nacional de Contratações Públicas; e <strong>🕘 Histórico</strong>, que mostra a trilha de auditoria (criação, edições, aditivos, anexos, exportações) filtrada só para aquele contrato. Cada aditivo/apostilamento registrado também tem seu próprio botão <strong>📄</strong> para gerar o respectivo termo (Aditivo de Prazo/Valor/Qualitativo ou Apostilamento de Reequilíbrio/Repactuação, conforme o tipo). Na tela de listagem, o botão <strong>Relatório</strong> gera um relatório consolidado de todos os contratos filtrados (documento A4), e o botão <strong>Exportar CSV</strong> baixa a mesma lista em planilha.</p>

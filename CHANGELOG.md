@@ -5,6 +5,17 @@
 
 ---
 
+## [0.9.1] — 2026-07-07
+
+### Adicionado
+- **Vigência automática no Contrato** — ao informar a Vigência Inicial, a Vigência Final é sugerida automaticamente como +12 meses (editável), no mesmo mecanismo já usado na Ata de Registro de Preços (Data de Assinatura → Vigência Final)
+
+### Corrigido
+- **Documentos gerados ainda mencionavam "Sistema de Gestão de Contratação Direta" (SGCD)** — o rodapé compartilhado por praticamente todo documento impresso (`_qrFooterReport()`: Extrato de Contrato, Termos Aditivos, todos os Relatórios) e o Relatório de Trilha de Auditoria diziam o nome do sistema de origem do clone em vez de "Sistema de Gestão de Contratos e Atas"
+- **Exportação PNCP de Contrato nunca identificava o vínculo com Ata de Registro de Preços** — o código verificava um campo `ataId`, que nunca existiu; o campo real é `ataOrigemId` (introduzido na v0.7.0). Na prática, `categoriaProcesso` e `tipoContratoId` sempre assumiam o valor de contratação direta, mesmo para contratos vinculados a uma ata. Corrigido usando o nome de campo certo, e o rótulo genérico "Contratação Direta" foi trocado por "Contrato Administrativo" para não presumir uma modalidade específica de licitação
+
+---
+
 ## [0.9.0] — 2026-07-07
 
 ### Adicionado

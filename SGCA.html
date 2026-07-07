@@ -1314,7 +1314,7 @@
           </div>
           <div class="info-field" style="margin:0">
             <label>Vigência Inicial</label>
-            <input type="date" id="c-vig-inicial">
+            <input type="date" id="c-vig-inicial" onchange="_autoVigenciaContrato(this.value)">
           </div>
           <div class="info-field" style="margin:0">
             <label>Vigência Final</label>
@@ -2220,7 +2220,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.9.0';
+const SGCA_VERSION = '0.9.1';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3648,6 +3648,13 @@ function _sugerirProximoNumero(items, ano) {
   return max ? `${String(max + 1).padStart(3, '0')}/${ano}` : `001/${ano}`;
 }
 
+function _autoVigenciaContrato(vigenciaInicial) {
+  if (!vigenciaInicial) return;
+  const d = new Date(vigenciaInicial + 'T00:00:00');
+  d.setFullYear(d.getFullYear() + 1);
+  document.getElementById('c-vig-final').value = d.toISOString().slice(0, 10);
+}
+
 async function openContratoModal(id) {
   await _loadFornecedoresCache();
   await _loadAtasCache();
@@ -4193,8 +4200,8 @@ async function exportarPNCPContrato() {
     numeroContrato: c.numero || null,
     anoContrato: c.createdAt ? new Date(c.createdAt).getFullYear() : new Date().getFullYear(),
     processo: c.processoOrigem || null,
-    tipoContratoId: c.ataId ? 12 : 1, // 1=Contrato ; 12=Contrato decorrente de Ata de Registro de Preços
-    categoriaProcesso: c.ataId ? 'Ata de Registro de Preços' : 'Contratação Direta',
+    tipoContratoId: c.ataOrigemId ? 12 : 1, // 1=Contrato ; 12=Contrato decorrente de Ata de Registro de Preços
+    categoriaProcesso: c.ataOrigemId ? 'Ata de Registro de Preços' : 'Contrato Administrativo',
     objetoContrato: c.objeto || '',
     dataAssinatura: c.vigenciaInicial || null,
     dataVigenciaInicio: c.vigenciaInicial || null,
@@ -5032,7 +5039,7 @@ async function gerarRelatorioAuditoria() {
 </div>
 <div class="doc-title">
   <h3>Relatório de Trilha de Auditoria</h3>
-  <div class="sub">Sistema de Gestão de Contratação Direta — SGCA &nbsp;·&nbsp; Lei Federal nº 14.133/2021</div>
+  <div class="sub">Sistema de Gestão de Contratos e Atas — SGCA &nbsp;·&nbsp; Lei Federal nº 14.133/2021</div>
 </div>
 <div class="meta">
   ${filtrosAtivos ? `Filtros aplicados: ${escHtml(filtrosAtivos)} &nbsp;·&nbsp; ` : ''}Gerado em: ${dtGerFmt} &nbsp;·&nbsp; ${lista.length} registro${lista.length !== 1 ? 's' : ''}
@@ -8197,7 +8204,7 @@ function _qrFooterReport(label) {
 <div style="margin-top:28pt;border-top:1px solid #ccc;padding-top:8pt;display:flex;align-items:center;gap:16pt">
   ${svgB64 ? `<img src="${svgB64}" width="64" height="64" alt="QR" style="flex-shrink:0;border:1px solid #eee">` : ''}
   <div style="font-size:7.5pt;color:#666;line-height:1.6">
-    Documento gerado pelo <strong>SGCA</strong> — Sistema de Gestão de Contratação Direta &nbsp;·&nbsp; v${SGCA_VERSION}<br>
+    Documento gerado pelo <strong>SGCA</strong> — Sistema de Gestão de Contratos e Atas &nbsp;·&nbsp; v${SGCA_VERSION}<br>
     Lei Federal nº 14.133/2021 &nbsp;·&nbsp; ${dtFmt} &nbsp;·&nbsp; Código de autenticidade: <strong>${cod}</strong>
   </div>
 </div>`;
