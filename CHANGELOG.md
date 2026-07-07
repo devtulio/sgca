@@ -5,6 +5,21 @@
 
 ---
 
+## [0.6.0] — 2026-07-07
+
+### Adicionado
+- **Aviso de sanção vigente ao vincular fornecedor** — ao selecionar um fornecedor em um Contrato ou item de Ata, um aviso aparece se ele tiver suspensão, impedimento de licitar ou declaração de inidoneidade vigente (Art. 156, Lei 14.133/2021)
+- **Relatório consolidado de Contratos e de Atas** — botão "Relatório" nas telas de listagem, no mesmo padrão A4 já usado no relatório de Fornecedores
+- **Indicadores na tela de Contratos** — contratos vigentes, vencendo em 30 dias, valor total vigente e atas com saldo baixo, reaproveitando o componente `.stat` (já existente no CSS mas até então sem uso)
+- **Fim de sanção na Agenda de Vencimentos** — sanções com prazo final cadastrado (suspensão, impedimento, inidoneidade) agora geram um evento na Agenda, levando direto à aba Sanções do fornecedor
+- **Vínculo Contrato ↔ Ata de Registro de Preços** — campo "Ata de Origem" no Contrato, para casos de contratação por adesão; aparece também no Extrato de Contrato quando preenchido
+- **Relatório de Sanções por fornecedor** — botão "📄 Relatório" na aba Sanções, gera um documento formal com o histórico de sanções aplicadas
+
+### Corrigido
+- **Nome do sistema errado nos relatórios impressos** — o relatório de Fornecedores ainda dizia "Sistema de Gestão de Contratação Direta" (herança do clone do SGCD); corrigido para "Sistema de Gestão de Contratos e Atas"
+
+---
+
 ## [0.5.0] — 2026-07-07
 
 ### Adicionado

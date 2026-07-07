@@ -1112,6 +1112,10 @@
     <div class="dash-top">
       <h2>Contratos</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="gerarRelatorioContratos()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Relatório
+        </button>
         <button class="btn btn-outline" onclick="exportarContratosCsv()" title="Exportar contratos listados em CSV">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
@@ -1122,6 +1126,7 @@
         </button>
       </div>
     </div>
+    <div class="stats" id="contr-dash-stats"></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contr-busca" placeholder="Buscar por objeto ou número…" style="flex:1;min-width:220px" oninput="_debouncedRenderContratos()">
       <select id="contr-filtro-status" onchange="renderContratos()">
@@ -1157,6 +1162,10 @@
     <div class="dash-top">
       <h2>Atas de Registro de Preços</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="gerarRelatorioAtas()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Relatório
+        </button>
         <button class="btn btn-outline" onclick="exportarAtasCsv()" title="Exportar atas listadas em CSV">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
@@ -1268,7 +1277,12 @@
         </div>
         <div class="info-field">
           <label>Contratado (Fornecedor)</label>
-          <select id="c-fornecedor"><option value="">Selecionar…</option></select>
+          <select id="c-fornecedor" onchange="_checkFornecedorSancao(this.value, 'c-fornecedor-aviso')"><option value="">Selecionar…</option></select>
+          <div id="c-fornecedor-aviso"></div>
+        </div>
+        <div class="info-field">
+          <label>Ata de Origem (adesão a Ata de Registro de Preços)</label>
+          <select id="c-ata-origem"><option value="">Nenhuma (contratação direta)</option></select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
@@ -1450,8 +1464,9 @@
               <input type="text" id="it-unidade" placeholder="Unidade">
               <input type="number" id="it-qtd" placeholder="Qtd. registrada">
               <input type="text" id="it-preco" placeholder="Preço unit. (R$)" oninput="maskMoney(this)">
-              <select id="it-fornecedor"><option value="">Fornecedor…</option></select>
+              <select id="it-fornecedor" onchange="_checkFornecedorSancao(this.value, 'it-fornecedor-aviso')"><option value="">Fornecedor…</option></select>
             </div>
+            <div id="it-fornecedor-aviso"></div>
             <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
               <button class="btn btn-outline btn-sm" onclick="hideNovoItemForm()">Cancelar</button>
               <button class="btn btn-primary btn-sm" onclick="saveAtaItem()">Salvar</button>
@@ -1525,6 +1540,7 @@
           <option value="contrato">Vencimento de contrato</option>
           <option value="ata">Vencimento de ata</option>
           <option value="garantia">Vencimento de garantia</option>
+          <option value="sancao">Fim de sanção</option>
         </select>
       </div>
     </div>
@@ -2163,7 +2179,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.5.1';
+const SGCA_VERSION = '0.6.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3329,6 +3345,47 @@ async function showContratos() {
   document.getElementById('view-contratos').classList.add('active');
   setNavActive('nav-contratos');
   await renderContratos();
+  renderContratosStats();
+}
+
+async function renderContratosStats() {
+  const el = document.getElementById('contr-dash-stats');
+  if (!el) return;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const em30 = new Date(hoje); em30.setDate(em30.getDate() + 30);
+
+  const vigentes = _contratos.filter(c => !['encerrado','rescindido'].includes(c.status));
+  const vencendo = vigentes.filter(c => c.vigenciaFinal && new Date(c.vigenciaFinal + 'T00:00:00') <= em30);
+  const valorTotal = vigentes.reduce((s, c) => s + (c.valorGlobal || 0), 0);
+
+  const rAtas = await API.get('/api/atas?per=2000');
+  const dAtas = await API.json(rAtas);
+  const atas = dAtas?.items || [];
+  const atasSaldoBaixo = atas.filter(a => a.status !== 'cancelada' &&
+    (a.itens || []).some(it => it.qtdRegistrada && (it.qtdUtilizada || 0) / it.qtdRegistrada >= 0.8));
+
+  el.innerHTML = `
+    <div class="stat brand">
+      <div class="stat-top"><span class="stat-lbl">Contratos Vigentes</span></div>
+      <div class="stat-val">${vigentes.length}</div>
+      <div class="stat-sub">de ${_contratos.length} no total</div>
+    </div>
+    <div class="stat prog" style="cursor:pointer" onclick="showAgenda()">
+      <div class="stat-top"><span class="stat-lbl">Vencendo em 30 dias</span></div>
+      <div class="stat-val">${vencendo.length}</div>
+      <div class="stat-sub">contratos</div>
+    </div>
+    <div class="stat done">
+      <div class="stat-top"><span class="stat-lbl">Valor Total Vigente</span></div>
+      <div class="stat-val" style="font-size:1.3rem">${fmtMoney(valorTotal) || 'R$ 0,00'}</div>
+      <div class="stat-sub">soma dos contratos vigentes</div>
+    </div>
+    <div class="stat blocked" style="cursor:pointer" onclick="showAtas()">
+      <div class="stat-top"><span class="stat-lbl">Atas com saldo baixo</span></div>
+      <div class="stat-val">${atasSaldoBaixo.length}</div>
+      <div class="stat-sub">≥80% do item consumido</div>
+    </div>
+  `;
 }
 
 async function renderContratos() {
@@ -3372,8 +3429,22 @@ async function _loadFornecedoresCache() {
   _fornecedoresCache = data?.items || [];
 }
 
+function _ataOptionsHtml(selectedId) {
+  return '<option value="">Nenhuma (contratação direta)</option>' + _atasCache.map(a =>
+    `<option value="${a.id}" ${a.id === selectedId ? 'selected' : ''}>Ata ${escHtml(a.numero || a.id)}${a.orgaoGerenciador ? ' — ' + escHtml(a.orgaoGerenciador) : ''}</option>`
+  ).join('');
+}
+
+let _atasCache = [];
+async function _loadAtasCache() {
+  const r = await API.get('/api/atas?per=2000');
+  const data = await API.json(r);
+  _atasCache = data?.items || [];
+}
+
 async function openContratoModal(id) {
   await _loadFornecedoresCache();
+  await _loadAtasCache();
   _contratoAtualId = id || null;
   let c = null;
   if (id) {
@@ -3402,6 +3473,8 @@ async function openContratoModal(id) {
   document.getElementById('c-garantia-vencimento').value = c?.garantiaVencimento || '';
   document.getElementById('c-garantia-devolucao').value  = c?.garantiaDevolucao || '';
   document.getElementById('c-fornecedor').innerHTML = _fornecedorOptionsHtml(c?.fornecedorId);
+  _checkFornecedorSancao(c?.fornecedorId || '', 'c-fornecedor-aviso');
+  document.getElementById('c-ata-origem').innerHTML = _ataOptionsHtml(c?.ataOrigemId);
 
   const aditivosSection = document.getElementById('contrato-aditivos-section');
   aditivosSection.style.display = c ? '' : 'none';
@@ -3427,6 +3500,7 @@ async function saveContrato() {
     processoOrigem: document.getElementById('c-processo').value.trim(),
     objeto,
     fornecedorId: document.getElementById('c-fornecedor').value || null,
+    ataOrigemId: document.getElementById('c-ata-origem').value || null,
     valorGlobal: parseValor(document.getElementById('c-valor').value),
     vigenciaInicial: document.getElementById('c-vig-inicial').value,
     vigenciaFinal: document.getElementById('c-vig-final').value,
@@ -3449,6 +3523,7 @@ async function saveContrato() {
   toast('Contrato salvo com sucesso', 'success');
   closeContratoModal();
   renderContratos();
+  renderContratosStats();
   updateAgendaBadge();
 }
 
@@ -3547,6 +3622,7 @@ async function saveAditivo() {
   document.getElementById('c-vig-final').value = contrato.vigenciaFinal || '';
   document.getElementById('c-valor').value = contrato.valorGlobal ? fmtMoney(contrato.valorGlobal) : '';
   renderAditivosList(contrato);
+  renderContratosStats();
   updateAgendaBadge();
 }
 async function removeAditivo(aid) {
@@ -3615,6 +3691,7 @@ async function gerarExtratoContrato() {
   if (!c) return;
   const u = getUser();
   const forn = _fornecedoresCache.find(f => f.id === c.fornecedorId);
+  const ataOrigem = _atasCache.find(a => a.id === c.ataOrigemId);
   const hoje = new Date().toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' });
   const blank = txt => txt || '_'.repeat(40);
   const vigencia = c.vigenciaInicial && c.vigenciaFinal
@@ -3654,6 +3731,7 @@ async function gerarExtratoContrato() {
 <table class="field-table">
   <tr><td class="lbl">Nº do Contrato</td><td>${blank(c.numero)}</td></tr>
   <tr><td class="lbl">Processo Administrativo</td><td>${blank(c.processoOrigem)}</td></tr>
+  ${ataOrigem ? `<tr><td class="lbl">Ata de Origem</td><td>Ata ${escHtml(ataOrigem.numero || ataOrigem.id)} — adesão a Registro de Preços</td></tr>` : ''}
   <tr><td class="lbl">Vigência</td><td>${blank(vigencia)}</td></tr>
   <tr><td class="lbl">Valor Global</td><td>${c.valorGlobal ? fmtMoney(c.valorGlobal) : blank('')}</td></tr>
   <tr><td class="lbl">Contratante</td><td>${blank(u.orgao)}${u.cnpj_orgao ? ' — CNPJ: ' + escHtml(u.cnpj_orgao) : ''}</td></tr>
@@ -3976,6 +4054,7 @@ function showNovoItemForm() {
   document.getElementById('it-qtd').value = '';
   document.getElementById('it-preco').value = '';
   document.getElementById('it-fornecedor').innerHTML = _fornecedorOptionsHtml(null);
+  document.getElementById('it-fornecedor-aviso').innerHTML = '';
 }
 function hideNovoItemForm() {
   const f = document.getElementById('ata-item-form');
@@ -4086,9 +4165,10 @@ async function exportarPNCPAta() {
 // AGENDA DE VENCIMENTOS (unificada — contratos + atas)
 // ══════════════════════════════════════════════════════════════
 async function _agendaEventos() {
-  const [rc, ra] = await Promise.all([API.get('/api/contratos'), API.get('/api/atas')]);
+  const [rc, ra, rf] = await Promise.all([API.get('/api/contratos'), API.get('/api/atas'), API.get('/api/fornecedores?per=2000')]);
   const contratos = (await API.json(rc))?.items || [];
   const atas       = (await API.json(ra))?.items || [];
+  const fornecedores = (await API.json(rf))?.items || [];
   const today = new Date(); today.setHours(0,0,0,0);
 
   const events = [];
@@ -4110,6 +4190,15 @@ async function _agendaEventos() {
     const d = new Date(a.vigenciaFinal + 'T00:00:00');
     if (isNaN(d)) continue;
     events.push({ date: d, label: `Vencimento de ata — Ata ${a.numero || ''}`, tipo: 'ata', id: a.id, urgente: d < today });
+  }
+  for (const f of fornecedores) {
+    for (const s of (f.sancoes || [])) {
+      if (!s.prazoFim) continue;
+      const d = new Date(s.prazoFim + 'T00:00:00');
+      if (isNaN(d)) continue;
+      const nome = f.razao_social || f.nome_fantasia || '(sem nome)';
+      events.push({ date: d, label: `Fim de sanção — ${sancaoTipoLabel(s)} · ${nome}`, tipo: 'sancao', id: f.id, urgente: d < today });
+    }
   }
   events.sort((a,b) => a.date - b.date);
   return events;
@@ -4141,6 +4230,7 @@ async function updateAgendaBadge() {
 
 function _agendaAbrir(tipo, id) {
   if (tipo === 'ata') openAtaModal(id);
+  else if (tipo === 'sancao') openFornDetail(id, false, 'sancoes');
   else openContratoModal(id);
 }
 
@@ -4165,8 +4255,10 @@ async function renderAgenda() {
           ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A5A00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>`
           : e.tipo === 'contrato'
           ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
+          : e.tipo === 'sancao'
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A32D2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
           : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5E2750" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>`;
-        const iconBg = e.tipo === 'garantia' ? '#FFF3D8' : e.tipo === 'contrato' ? '#e8eef7' : '#F3EDF8';
+        const iconBg = e.tipo === 'garantia' ? '#FFF3D8' : e.tipo === 'contrato' ? '#e8eef7' : e.tipo === 'sancao' ? '#FCEBEB' : '#F3EDF8';
         return `<div onclick="_agendaAbrir('${e.tipo}','${e.id}')" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid ${e.urgente?'var(--danger)':'var(--gray-200)'};border-radius:8px;margin-bottom:8px;cursor:pointer;background:var(--bg-card)">
           <div style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center">${icon}</div>
           <div style="flex:1">
@@ -5179,6 +5271,18 @@ function sancaoStatus(s) {
   return new Date(s.prazoFim + 'T00:00:00') < hoje ? 'encerrada' : 'ativa';
 }
 
+// Tipos que impedem/restringem contratar com a Administração enquanto vigentes (Art. 156, Lei 14.133/2021)
+const _SANCOES_RESTRITIVAS = ['suspensao', 'impedimento', 'inidoneidade'];
+function _checkFornecedorSancao(fornecedorId, avisoElId) {
+  const el = document.getElementById(avisoElId);
+  if (!el) return;
+  const forn = _fornecedoresCache.find(f => f.id === fornecedorId);
+  const ativas = (forn?.sancoes || []).filter(s => _SANCOES_RESTRITIVAS.includes(s.tipo) && sancaoStatus(s) === 'ativa');
+  if (!ativas.length) { el.innerHTML = ''; return; }
+  const labels = ativas.map(sancaoTipoLabel).join(', ');
+  el.innerHTML = `<div style="margin-top:6px;padding:6px 10px;border-radius:6px;background:var(--danger-light);color:var(--danger);font-size:.78rem">⚠ Fornecedor com sanção vigente: <strong>${escHtml(labels)}</strong> — verifique se a contratação é permitida antes de prosseguir.</div>`;
+}
+
 function _renderFornCardSancoes() {
   _fornTab = 'sancoes';
   const f = _currentForn;
@@ -5202,12 +5306,74 @@ function _renderFornCardSancoes() {
   _setFornCardBody(`<div class="forn-inline-body" onclick="event.stopPropagation()">
     ${_fornTabsHtml('sancoes')}
     <div class="forn-cert-list">${itemsHtml}</div>
-    <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="openSancaoEdit('${f.id}', -1)">+ Registrar Sanção</button>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-outline" style="flex:1" onclick="openSancaoEdit('${f.id}', -1)">+ Registrar Sanção</button>
+      <button class="btn btn-outline" onclick="gerarRelatorioSancoesForn('${f.id}')" title="Gerar relatório de sanções">📄 Relatório</button>
+    </div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--gray-200)">
       <button class="btn btn-outline" onclick="_collapseFornCard('${f.id}')">Fechar</button>
       <button class="btn btn-primary" onclick="_renderFornCardEdit()">✏ Editar</button>
     </div>
   </div>`, 'view');
+}
+
+async function gerarRelatorioSancoesForn(fornId) {
+  const f = await API.get(`/api/fornecedores/${fornId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!f) return;
+  const u = getUser();
+  const now = new Date();
+  const dtGer = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  const sancoes = (f.sancoes || []).slice().sort((a,b) => (a.dataAplicacao||'').localeCompare(b.dataAplicacao||''));
+
+  const tbody = sancoes.length ? sancoes.map(s => {
+    const st = sancaoStatus(s);
+    return `<tr>
+      <td>${escHtml(sancaoTipoLabel(s))}</td>
+      <td>${fmtDateBR(s.dataAplicacao)}</td>
+      <td>${s.prazoFim ? fmtDateBR(s.prazoFim) : '—'}</td>
+      <td>${st === 'ativa' ? 'Vigente' : 'Encerrada'}</td>
+      <td>${escHtml(s.fundamentacao || '—')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;padding:20pt;color:#888">Nenhuma sanção registrada para este fornecedor.</td></tr>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>${_nomeArquivoDoc(null, 'RELATORIO DE SANCOES - ' + (f.razao_social || f.id))}</title>
+<style>${_DOC_CSS}
+  body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #000; background: #fff; padding: 2cm 2.5cm; }
+  .header { text-align: center; margin-bottom: 20pt; border-bottom: 2px solid #000; padding-bottom: 12pt; }
+  .header img { height: 90pt; width: auto; margin-bottom: 6pt; }
+  .header h1 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title { text-align: center; margin: 14pt 0 10pt; }
+  .doc-title h3 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title .sub { font-size: 10pt; color: #444; margin-top: 4pt; }
+  .meta { font-size: 9pt; color: #555; margin-bottom: 10pt; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8pt; font-size: 9pt; table-layout: fixed; }
+  th { background: #1a1a2e; color: #fff; padding: 5pt 7pt; text-align: left; vertical-align: middle; font-weight: 700; font-size: 9pt; }
+  td { padding: 4pt 7pt; vertical-align: middle; font-size: 8.5pt; border-bottom: 1px solid #e8e8e8; word-wrap: break-word; overflow-wrap: break-word; }
+  .btn-print { display: block; margin: 0 auto 20pt; padding: 8pt 24pt; background: #1a3a6b; color: #fff; border: none; border-radius: 4px; font-size: 11pt; cursor: pointer; }
+</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${escHtml(u.orgao || '')}</h1>
+  <h2>${escHtml(u.municipio || '')}</h2>
+</div>
+<div class="doc-title">
+  <h3>Relatório de Sanções e Penalidades</h3>
+  <div class="sub">${escHtml(f.razao_social || f.nome_fantasia || '(sem nome)')}${f.cnpj ? ' — CNPJ: ' + escHtml(f.cnpj) : ''}</div>
+</div>
+<div class="meta">Gerado em: ${dtGer} &nbsp;·&nbsp; Total: ${sancoes.length} sanção${sancoes.length !== 1 ? 'ões' : ''}</div>
+<table>
+  <colgroup>
+    <col style="width:26%"><col style="width:16%"><col style="width:16%"><col style="width:14%"><col style="width:28%">
+  </colgroup>
+  <thead><tr><th>Tipo</th><th>Aplicada em</th><th>Prazo Final</th><th>Situação</th><th>Fundamentação</th></tr></thead>
+  <tbody>${tbody}</tbody>
+</table>
+${_qrFooterReport('Relatório de Sanções')}
+</body></html>`;
+
+  _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, `Relatório de Sanções — ${f.razao_social || f.id}`);
 }
 
 let _sancaoEditFornId = null, _sancaoEditIdx = null;
@@ -5602,7 +5768,7 @@ async function gerarRelatorioFornecedores() {
 </div>
 <div class="doc-title">
   <h3>Relatório de Fornecedores Cadastrados</h3>
-  <div class="sub">Sistema de Gestão de Contratação Direta — Lei Federal nº 14.133/2021</div>
+  <div class="sub">Sistema de Gestão de Contratos e Atas — Lei Federal nº 14.133/2021</div>
 </div>
 <div class="meta">
   ${q ? `Filtro: "${escHtml(q)}" &nbsp;·&nbsp; ` : ''}Gerado em: ${dtGer} &nbsp;·&nbsp; Total: ${lista.length} fornecedor${lista.length !== 1 ? 'es' : ''}
@@ -5626,6 +5792,136 @@ ${_qrFooterReport('Relatório de Fornecedores')}
 </body></html>`;
 
   _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, 'Relatório de Fornecedores');
+}
+
+async function gerarRelatorioContratos() {
+  const u = getUser();
+  const now = new Date();
+  const dtGer = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  const statusLabel = { vigente: 'Vigente', em_prorrogacao: 'Em prorrogação', encerrado: 'Encerrado', rescindido: 'Rescindido' };
+  const fornNome = id => _fornecedoresCache.find(f => f.id === id)?.razao_social || _fornecedoresCache.find(f => f.id === id)?.nome_fantasia || '—';
+  const fmtDate = s => s ? new Date(s+'T00:00:00').toLocaleDateString('pt-BR') : '—';
+
+  await _loadFornecedoresCache();
+  const q      = document.getElementById('contr-busca')?.value || '';
+  const status = document.getElementById('contr-filtro-status')?.value || '';
+
+  const tbody = _contratos.length ? _contratos.map(c => `
+    <tr>
+      <td>${escHtml(c.numero || '—')}</td>
+      <td>${escHtml(c.objeto || '—')}</td>
+      <td>${escHtml(fornNome(c.fornecedorId))}</td>
+      <td>${statusLabel[c.status] || c.status || '—'}</td>
+      <td>${c.valorGlobal ? fmtMoney(c.valorGlobal) : '—'}</td>
+      <td>${fmtDate(c.vigenciaFinal)}</td>
+    </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:20pt;color:#888">Nenhum contrato encontrado.</td></tr>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>${_nomeArquivoDoc(null, 'RELATORIO DE CONTRATOS')}</title>
+<style>${_DOC_CSS}
+  body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #000; background: #fff; padding: 2cm 2.5cm; }
+  .header { text-align: center; margin-bottom: 20pt; border-bottom: 2px solid #000; padding-bottom: 12pt; }
+  .header img { height: 90pt; width: auto; margin-bottom: 6pt; }
+  .header h1 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title { text-align: center; margin: 14pt 0 10pt; }
+  .doc-title h3 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title .sub { font-size: 10pt; color: #444; margin-top: 4pt; }
+  .meta { font-size: 9pt; color: #555; margin-bottom: 10pt; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8pt; font-size: 9pt; table-layout: fixed; }
+  th { background: #1a1a2e; color: #fff; padding: 5pt 7pt; text-align: left; vertical-align: middle; font-weight: 700; font-size: 9pt; }
+  td { padding: 4pt 7pt; vertical-align: middle; font-size: 8.5pt; border-bottom: 1px solid #e8e8e8; word-wrap: break-word; overflow-wrap: break-word; }
+  .btn-print { display: block; margin: 0 auto 20pt; padding: 8pt 24pt; background: #1a3a6b; color: #fff; border: none; border-radius: 4px; font-size: 11pt; cursor: pointer; }
+</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${escHtml(u.orgao || '')}</h1>
+  <h2>${escHtml(u.municipio || '')}</h2>
+</div>
+<div class="doc-title">
+  <h3>Relatório de Contratos</h3>
+  <div class="sub">Sistema de Gestão de Contratos e Atas — Lei Federal nº 14.133/2021</div>
+</div>
+<div class="meta">
+  ${q ? `Busca: "${escHtml(q)}" &nbsp;·&nbsp; ` : ''}${status ? `Status: ${statusLabel[status]} &nbsp;·&nbsp; ` : ''}Gerado em: ${dtGer} &nbsp;·&nbsp; Total: ${_contratos.length} contrato${_contratos.length !== 1 ? 's' : ''}
+</div>
+<table>
+  <colgroup>
+    <col style="width:12%"><col style="width:28%"><col style="width:22%"><col style="width:14%"><col style="width:12%"><col style="width:12%">
+  </colgroup>
+  <thead><tr>
+    <th>Número</th><th>Objeto</th><th>Fornecedor</th><th>Status</th><th>Valor Global</th><th>Vigência Final</th>
+  </tr></thead>
+  <tbody>${tbody}</tbody>
+</table>
+${_qrFooterReport('Relatório de Contratos')}
+</body></html>`;
+
+  _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, 'Relatório de Contratos');
+}
+
+async function gerarRelatorioAtas() {
+  const u = getUser();
+  const now = new Date();
+  const dtGer = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  const statusLabel = { vigente: 'Vigente', vencida: 'Vencida', cancelada: 'Cancelada' };
+  const fmtDate = s => s ? new Date(s+'T00:00:00').toLocaleDateString('pt-BR') : '—';
+
+  const q      = document.getElementById('ata-busca')?.value || '';
+  const status = document.getElementById('ata-filtro-status')?.value || '';
+
+  const tbody = _atas.length ? _atas.map(a => `
+    <tr>
+      <td>${escHtml(a.numero || '—')}</td>
+      <td>${escHtml(a.orgaoGerenciador || '—')}</td>
+      <td>${statusLabel[a.status] || a.status || '—'}</td>
+      <td>${fmtDate(a.dataAssinatura)}</td>
+      <td>${fmtDate(a.vigenciaFinal)}</td>
+      <td>${(a.itens || []).length}</td>
+    </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:20pt;color:#888">Nenhuma ata encontrada.</td></tr>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>${_nomeArquivoDoc(null, 'RELATORIO DE ATAS')}</title>
+<style>${_DOC_CSS}
+  body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #000; background: #fff; padding: 2cm 2.5cm; }
+  .header { text-align: center; margin-bottom: 20pt; border-bottom: 2px solid #000; padding-bottom: 12pt; }
+  .header img { height: 90pt; width: auto; margin-bottom: 6pt; }
+  .header h1 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title { text-align: center; margin: 14pt 0 10pt; }
+  .doc-title h3 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title .sub { font-size: 10pt; color: #444; margin-top: 4pt; }
+  .meta { font-size: 9pt; color: #555; margin-bottom: 10pt; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8pt; font-size: 9pt; table-layout: fixed; }
+  th { background: #1a1a2e; color: #fff; padding: 5pt 7pt; text-align: left; vertical-align: middle; font-weight: 700; font-size: 9pt; }
+  td { padding: 4pt 7pt; vertical-align: middle; font-size: 8.5pt; border-bottom: 1px solid #e8e8e8; word-wrap: break-word; overflow-wrap: break-word; }
+  .btn-print { display: block; margin: 0 auto 20pt; padding: 8pt 24pt; background: #1a3a6b; color: #fff; border: none; border-radius: 4px; font-size: 11pt; cursor: pointer; }
+</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${escHtml(u.orgao || '')}</h1>
+  <h2>${escHtml(u.municipio || '')}</h2>
+</div>
+<div class="doc-title">
+  <h3>Relatório de Atas de Registro de Preços</h3>
+  <div class="sub">Sistema de Gestão de Contratos e Atas — Lei Federal nº 14.133/2021</div>
+</div>
+<div class="meta">
+  ${q ? `Busca: "${escHtml(q)}" &nbsp;·&nbsp; ` : ''}${status ? `Status: ${statusLabel[status]} &nbsp;·&nbsp; ` : ''}Gerado em: ${dtGer} &nbsp;·&nbsp; Total: ${_atas.length} ata${_atas.length !== 1 ? 's' : ''}
+</div>
+<table>
+  <colgroup>
+    <col style="width:12%"><col style="width:28%"><col style="width:14%"><col style="width:16%"><col style="width:16%"><col style="width:14%">
+  </colgroup>
+  <thead><tr>
+    <th>Número</th><th>Órgão Gerenciador</th><th>Status</th><th>Assinatura</th><th>Vigência Final</th><th>Itens</th>
+  </tr></thead>
+  <tbody>${tbody}</tbody>
+</table>
+${_qrFooterReport('Relatório de Atas')}
+</body></html>`;
+
+  _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, 'Relatório de Atas');
 }
 
 
