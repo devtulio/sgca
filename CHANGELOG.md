@@ -5,6 +5,11 @@
 
 ---
 
+## [0.9.4] — 2026-07-07
+
+### Corrigido
+- **Manual Operacional** — bloco "Sobre esta versão" na capa usava o estilo de destaque amarelo (`.nota`), inconsistente com o SGCD/SGDP, que não têm caixas coloridas na capa; convertido para o mesmo estilo itálico discreto (`.cover-legal`) usado nos blocos legais dos outros dois sistemas
+
 ## [0.9.3] — 2026-07-07
 
 ### Adicionado
