@@ -5,6 +5,11 @@
 
 ---
 
+## [0.13.0] — 2026-07-09
+
+### Adicionado
+- **Busca global (Ctrl+K)** — botão "Buscar" na sidebar e atalho Ctrl+K abrem um modal de busca unificada por Contratos e Atas (número, objeto, órgão gerenciador, fornecedor), igual ao padrão já existente no SGCD/SGDP. Antes o Ctrl+K só focava o campo de busca local da tela visível
+
 ## [0.12.2] — 2026-07-09
 
 ### Alterado

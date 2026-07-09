@@ -1,4 +1,4 @@
-# SGCA v0.12.2 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.13.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os

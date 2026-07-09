@@ -87,6 +87,22 @@
   .sidebar-brasao { width: 80px; height: 80px; object-fit: contain; display: block; margin: 0 auto 10px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
   .sidebar-logo .s-title { font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
   .sidebar-logo .s-sub   { font-size: 10px; opacity: .7; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  .sidebar-search {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  .sidebar-search button {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.75); border-radius: 6px;
+    padding: 7px 10px; font-size: .78rem; cursor: pointer;
+    transition: background .15s;
+  }
+  .sidebar-search button:hover { background: rgba(255,255,255,.18); color: #fff; }
+  .sidebar-search .search-shortcut {
+    margin-left: auto; font-size: .65rem; opacity: .6;
+    background: rgba(255,255,255,.15); padding: 1px 5px; border-radius: 3px;
+  }
   .sidebar-logo .s-muni  { font-size: 11px; opacity: .85; margin-top: 6px; line-height: 1.3; }
   .sidebar-nav { flex: 1; padding: 8px 0; }
   .nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -1046,6 +1062,14 @@
     <div class="s-title">SGCA</div>
     <div class="s-sub">Contratos e Atas</div>
     <div class="s-muni" id="sidebar-orgao">—</div>
+  </div>
+
+  <div class="sidebar-search">
+    <button onclick="abrirGlobalSearch()" title="Busca global (Ctrl+K)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Buscar
+      <span class="search-shortcut">Ctrl+K</span>
+    </button>
   </div>
 
   <div class="sidebar-date" id="sidebar-date"></div>
@@ -2164,6 +2188,16 @@
 <!-- ── New Process Modal ── -->
 
 <!-- ── Global Search Overlay ── -->
+<div class="overlay hidden" id="global-search-overlay" onclick="if(event.target===this)fecharGlobalSearch()">
+  <div class="gsearch-box">
+    <div class="gsearch-input-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gray-500);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="global-search-input" placeholder="Buscar por número, objeto, fornecedor…" oninput="_debouncedGlobalSearch(this.value)">
+      <kbd style="font-size:.7rem;color:var(--gray-500);background:var(--gray-100);padding:2px 6px;border-radius:4px;flex-shrink:0">Esc</kbd>
+    </div>
+    <div class="gsearch-results" id="global-search-results"></div>
+  </div>
+</div>
 
 <!-- ── Painel de Notificações ── -->
 <div id="notif-panel">
@@ -2316,7 +2350,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.12.2';
+const SGCA_VERSION = '0.13.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -5295,6 +5329,74 @@ const _debouncedRenderForn = _debounce(renderFornecedores, 150);
 const _debouncedRenderContratos = _debounce(renderContratos, 300);
 const _debouncedRenderAtas = _debounce(renderAtas, 300);
 let _lastFiltered = null;
+
+// ══════════════════════════════════════════════════════════════
+// GLOBAL SEARCH
+// ══════════════════════════════════════════════════════════════
+let _gsearchContratos = [];
+let _gsearchAtas = [];
+async function abrirGlobalSearch() {
+  document.getElementById('global-search-overlay').classList.remove('hidden');
+  const inp = document.getElementById('global-search-input');
+  inp.value = '';
+  inp.focus();
+  document.getElementById('global-search-results').innerHTML = '<p class="gsearch-empty">Carregando…</p>';
+  const [rc, ra] = await Promise.all([
+    API.get('/api/contratos?per=2000'),
+    API.get('/api/atas?per=2000'),
+  ]);
+  _gsearchContratos = (await API.json(rc))?.items || [];
+  _gsearchAtas = (await API.json(ra))?.items || [];
+  if (!_fornecedoresCache.length) await _loadFornecedoresCache();
+  renderGlobalSearch('');
+}
+function fecharGlobalSearch() {
+  document.getElementById('global-search-overlay').classList.add('hidden');
+}
+function renderGlobalSearch(q) {
+  const LIMIT = 50;
+  const term = q.trim().toLowerCase();
+  const fornNome = id => _fornecedoresCache.find(f => f.id === id)?.razao_social || '';
+  const CONTR_STATUS = { vigente: 'Vigente', em_prorrogacao: 'Em prorrogação', encerrado: 'Encerrado', rescindido: 'Rescindido' };
+  const CONTR_BADGE  = { vigente: 'badge-done', em_prorrogacao: 'badge-progress', encerrado: 'badge-todo', rescindido: 'badge-blocked' };
+  const ATA_STATUS = { vigente: 'Vigente', vencida: 'Vencida', cancelada: 'Cancelada' };
+  const ATA_BADGE  = { vigente: 'badge-done', vencida: 'badge-blocked', cancelada: 'badge-todo' };
+
+  const contratos = _gsearchContratos.filter(c => {
+    if (!term) return true;
+    return [c.numero, c.objeto, fornNome(c.fornecedorId)].some(v => (v || '').toLowerCase().includes(term));
+  }).map(c => ({
+    tipo: 'contrato', id: c.id, num: c.numero, obj: c.objeto || '(sem objeto)',
+    sub: [fornNome(c.fornecedorId), c.valorGlobal && fmtMoney(c.valorGlobal)].filter(Boolean).join(' · '),
+    statusLbl: CONTR_STATUS[c.status] || c.status, badge: CONTR_BADGE[c.status] || 'badge-todo',
+  }));
+
+  const atas = _gsearchAtas.filter(a => {
+    if (!term) return true;
+    return [a.numero, a.orgaoGerenciador].some(v => (v || '').toLowerCase().includes(term));
+  }).map(a => ({
+    tipo: 'ata', id: a.id, num: a.numero, obj: a.orgaoGerenciador || '(sem órgão gerenciador)',
+    sub: `${(a.itens || []).length} item(ns) registrado(s)`,
+    statusLbl: ATA_STATUS[a.status] || a.status, badge: ATA_BADGE[a.status] || 'badge-todo',
+  }));
+
+  const matched = [...contratos, ...atas];
+  const results = matched.slice(0, LIMIT);
+  const el = document.getElementById('global-search-results');
+  if (!results.length) { el.innerHTML = `<p class="gsearch-empty">Nenhum registro encontrado.</p>`; return; }
+  const countNote = matched.length > LIMIT
+    ? `<p style="font-size:.72rem;color:var(--gray-400);text-align:center;padding:4px 0 0">Exibindo ${LIMIT} de ${matched.length} resultados — refine a busca para ver mais.</p>`
+    : '';
+  el.innerHTML = results.map(r => `<div class="gsearch-item" onclick="fecharGlobalSearch();${r.tipo === 'contrato' ? `openContratoModal('${r.id}')` : `openAtaModal('${r.id}')`}">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span style="font-size:.7rem;color:var(--gray-500)">${r.tipo === 'contrato' ? 'Contrato' : 'Ata'} ${escHtml(r.num || '')}</span>
+      <span class="badge ${r.badge}" style="font-size:.62rem">${escHtml(r.statusLbl || '')}</span>
+    </div>
+    <div style="font-weight:500;font-size:.875rem;margin:2px 0">${escHtml(r.obj)}</div>
+    <div style="font-size:.72rem;color:var(--gray-500)">${escHtml(r.sub)}</div>
+  </div>`).join('') + countNote;
+}
+const _debouncedGlobalSearch = _debounce(renderGlobalSearch, 100);
 
 let _lastDashFilters = '';
 
@@ -8573,16 +8675,11 @@ document.getElementById('sidebar-date').textContent = new Date().toLocaleDateStr
 })();
 
 document.addEventListener('keydown', e => {
-  // Atalho Ctrl+K: foca o campo de busca da seção visível (padrão da família SGCD/SGDP)
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-    e.preventDefault();
-    const busca = [...document.querySelectorAll('#contr-busca, #ata-busca')]
-      .find(el => el.offsetParent !== null);
-    if (busca) { busca.focus(); busca.select(); }
-    return;
-  }
+  // Atalho global Ctrl+K
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); abrirGlobalSearch(); return; }
   if (e.key === 'Escape') {
     // Fecha o primeiro modal aberto encontrado, em ordem de prioridade
+    if (!document.getElementById('global-search-overlay').classList.contains('hidden')) { fecharGlobalSearch(); return; }
     if (!document.getElementById('cert-edit-overlay').classList.contains('hidden')) { closeCertEdit(); return; }
     if (!document.getElementById('forn-modal-overlay').classList.contains('hidden')) { closeFornModal(); return; }
     if (!document.getElementById('contrato-modal-overlay').classList.contains('hidden')) { closeContratoModal(); return; }
