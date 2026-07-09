@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.15.2-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.16.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -25,7 +25,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Sanções e Penalidades** — registro interno por fornecedor (advertência, multa, suspensão, impedimento, inidoneidade), com aviso ao selecionar um fornecedor sancionado em um Contrato/Ata e entrada do fim do prazo na Agenda de Vencimentos
 - **Reajuste por índice** (IPCA-E, IGP-M, INCC-M, INPC) em aditivos de repactuação/reequilíbrio, com busca automática da variação acumulada no período direto do Banco Central (SGS) e cálculo automático do novo valor global
 - **Anexos assinados (PDF, múltiplos)** vinculados ao registro do contrato e da ata
-- **Vínculo Contrato ↔ Ata de Registro de Preços** — campo "Ata de Origem" para contratações por adesão
+- **Vínculo Contrato ↔ Ata de Registro de Preços** — campo "Ata de Origem" para contratações por adesão a uma ARP nossa; para adesão a ARP de outro órgão gerenciador (não cadastrada no sistema), campos de texto "Nº da ARP de Adesão" e "Órgão Gerenciador de Origem"
 - **Fiscal Substituto** — titular e substituto no Contrato, ambos recebendo o aviso automático de vencimento
 - **Relatórios consolidados** de Contratos, Atas e Sanções (por fornecedor ou global), no mesmo padrão A4 usado nos demais documentos
 - **Indicadores e gráfico de vencimentos** nas telas de Contratos e de Atas — vigentes, vencendo em 30 dias, valor total, saldo baixo e vencimentos dos próximos 6 meses

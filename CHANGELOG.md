@@ -5,6 +5,13 @@
 
 ---
 
+## [0.16.0] — 2026-07-09
+
+### Adicionado
+- **ARP de Adesão externa** — dois novos campos no Contrato, "Nº da ARP de Adesão" e "Órgão Gerenciador de Origem", para contratos que decorrem de adesão a uma Ata de Registro de Preços de outro órgão gerenciador (não cadastrada no nosso módulo de Atas). O campo "Ata de Origem" (dropdown) continua existindo para o caso de vínculo com uma ARP nossa — os dois são vínculos alternativos, um aviso impede salvar com os dois preenchidos ao mesmo tempo. Exportação PNCP e Extrato de Contrato passam a reconhecer também esse vínculo externo (antes só reconheciam Ata de Origem interna)
+
+---
+
 ## [0.15.2] — 2026-07-09
 
 ### Alterado

@@ -1395,8 +1395,18 @@
           <div id="c-fornecedor-aviso"></div>
         </div>
         <div class="info-field">
-          <label>Ata de Origem (adesão a Ata de Registro de Preços)</label>
+          <label>Ata de Origem (nossa ARP)</label>
           <select id="c-ata-origem"><option value="">Nenhuma (contratação direta)</option></select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="info-field" style="margin:0">
+            <label>Nº da ARP de Adesão (órgão externo)</label>
+            <input type="text" id="c-arp-adesao-numero" placeholder="Ex: 12/2025" title="Preencha quando o contrato decorrer de adesão a uma Ata de Registro de Preços de outro órgão gerenciador, não cadastrada no nosso sistema">
+          </div>
+          <div class="info-field" style="margin:0">
+            <label>Órgão Gerenciador de Origem</label>
+            <input type="text" id="c-arp-adesao-orgao" placeholder="Ex: Prefeitura Municipal de..." title="Preencha quando o contrato decorrer de adesão a uma Ata de Registro de Preços de outro órgão gerenciador, não cadastrada no nosso sistema">
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
@@ -2471,7 +2481,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.15.2';
+const SGCA_VERSION = '0.16.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -4010,6 +4020,8 @@ async function openContratoModal(id) {
   document.getElementById('c-fornecedor').innerHTML = _fornecedorOptionsHtml(c?.fornecedorId);
   _checkFornecedorSancao(c?.fornecedorId || '', 'c-fornecedor-aviso');
   document.getElementById('c-ata-origem').innerHTML = _ataOptionsHtml(c?.ataOrigemId);
+  document.getElementById('c-arp-adesao-numero').value = c?.arpAdesaoNumero || '';
+  document.getElementById('c-arp-adesao-orgao').value  = c?.arpAdesaoOrgao || '';
 
   const aditivosSection = document.getElementById('contrato-aditivos-section');
   aditivosSection.style.display = c ? '' : 'none';
@@ -4056,13 +4068,21 @@ async function saveContrato() {
       return;
     }
   }
+  const ataOrigemId = document.getElementById('c-ata-origem').value || null;
+  const arpAdesaoNumero = document.getElementById('c-arp-adesao-numero').value.trim();
+  if (ataOrigemId && arpAdesaoNumero) {
+    toast('Selecione a Ata de Origem OU preencha a ARP de Adesão externa, não as duas — são vínculos alternativos.', 'error');
+    return;
+  }
   const payload = {
     numero,
     processoOrigem: document.getElementById('c-processo').value.trim(),
     pcaItem: document.getElementById('c-pca-item').value.trim(),
     objeto,
     fornecedorId: document.getElementById('c-fornecedor').value || null,
-    ataOrigemId: document.getElementById('c-ata-origem').value || null,
+    ataOrigemId,
+    arpAdesaoNumero,
+    arpAdesaoOrgao: document.getElementById('c-arp-adesao-orgao').value.trim(),
     valorGlobal: parseValor(document.getElementById('c-valor').value),
     vigenciaInicial: document.getElementById('c-vig-inicial').value,
     vigenciaFinal: document.getElementById('c-vig-final').value,
@@ -4710,6 +4730,7 @@ ${_anexarBotaoHtml(c.id, 'Extrato de Contrato')}
   <tr><td class="lbl">Processo Administrativo</td><td>${blank(c.processoOrigem)}</td></tr>
   ${c.pcaItem ? `<tr><td class="lbl">Item do PCA</td><td>${escHtml(c.pcaItem)}</td></tr>` : ''}
   ${ataOrigem ? `<tr><td class="lbl">Ata de Origem</td><td>Ata ${escHtml(ataOrigem.numero || ataOrigem.id)} — adesão a Registro de Preços</td></tr>` : ''}
+  ${c.arpAdesaoNumero ? `<tr><td class="lbl">ARP de Adesão</td><td>ARP ${escHtml(c.arpAdesaoNumero)}${c.arpAdesaoOrgao ? ' — Órgão Gerenciador: ' + escHtml(c.arpAdesaoOrgao) : ''}</td></tr>` : ''}
   <tr><td class="lbl">Vigência</td><td>${blank(vigencia)}</td></tr>
   <tr><td class="lbl">Valor Global</td><td>${c.valorGlobal ? fmtMoney(c.valorGlobal) : blank('')}</td></tr>
   <tr><td class="lbl">Contratante</td><td>${blank(u.orgao)}${u.cnpj_orgao ? ' — CNPJ: ' + escHtml(u.cnpj_orgao) : ''}</td></tr>
@@ -4997,8 +5018,10 @@ async function exportarPNCPContrato() {
     numeroContrato: c.numero || null,
     anoContrato: c.createdAt ? new Date(c.createdAt).getFullYear() : new Date().getFullYear(),
     processo: c.processoOrigem || null,
-    tipoContratoId: c.ataOrigemId ? 12 : 1, // 1=Contrato ; 12=Contrato decorrente de Ata de Registro de Preços
-    categoriaProcesso: c.ataOrigemId ? 'Ata de Registro de Preços' : 'Contrato Administrativo',
+    tipoContratoId: (c.ataOrigemId || c.arpAdesaoNumero) ? 12 : 1, // 1=Contrato ; 12=Contrato decorrente de Ata de Registro de Preços
+    categoriaProcesso: (c.ataOrigemId || c.arpAdesaoNumero) ? 'Ata de Registro de Preços' : 'Contrato Administrativo',
+    arpAdesaoNumero: c.arpAdesaoNumero || null,
+    arpAdesaoOrgaoGerenciador: c.arpAdesaoOrgao || null,
     objetoContrato: c.objeto || '',
     dataAssinatura: c.vigenciaInicial || null,
     dataVigenciaInicio: c.vigenciaInicial || null,
