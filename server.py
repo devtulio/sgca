@@ -1,4 +1,4 @@
-# SGCA v0.9.4 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.10.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -56,6 +56,7 @@ _watchdog_paused  = False   # pausa o watchdog durante diálogos bloqueantes (ex
 _had_session      = False   # True após primeiro login; evita encerramento antes de qualquer usuário logar
 _modo_servidor    = False   # True = modo servidor contínuo (sem encerramento automático)
 _backup_pos_sess  = False   # True = backup pós-sessão já executado; aguarda nova sessão para resetar
+FTS_AVAILABLE     = False   # True se o SQLite tem FTS5 compilado (setado em init_db)
 
 # ── Banco de dados ────────────────────────────────────────────────────────────
 
@@ -149,6 +150,20 @@ def init_db():
                 key   TEXT PRIMARY KEY,
                 value TEXT
             );
+            CREATE TABLE IF NOT EXISTS tags (
+                id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL UNIQUE COLLATE NOCASE
+            );
+            CREATE TABLE IF NOT EXISTS contrato_tags (
+                contrato_id TEXT NOT NULL REFERENCES contratos(id) ON DELETE CASCADE,
+                tag_id      INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+                PRIMARY KEY (contrato_id, tag_id)
+            );
+            CREATE TABLE IF NOT EXISTS ata_tags (
+                ata_id TEXT NOT NULL REFERENCES atas(id) ON DELETE CASCADE,
+                tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+                PRIMARY KEY (ata_id, tag_id)
+            );
             CREATE INDEX IF NOT EXISTS idx_forn_cnpj     ON fornecedores(cnpj);
             CREATE INDEX IF NOT EXISTS idx_contr_status  ON contratos(status);
             CREATE INDEX IF NOT EXISTS idx_contr_forn    ON contratos(fornecedor_id);
@@ -158,7 +173,33 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_ata_vig       ON atas(vigencia_final);
             CREATE INDEX IF NOT EXISTS idx_ata_deleted   ON atas(deleted_at);
             CREATE INDEX IF NOT EXISTS idx_audit_ts      ON audit_global(ts);
+            CREATE INDEX IF NOT EXISTS idx_contr_tags_tag ON contrato_tags(tag_id);
+            CREATE INDEX IF NOT EXISTS idx_ata_tags_tag   ON ata_tags(tag_id);
         ''')
+        global FTS_AVAILABLE
+        try:
+            conn.executescript('''
+                CREATE VIRTUAL TABLE IF NOT EXISTS contratos_fts USING fts5(
+                    objeto, content='contratos', content_rowid='rowid'
+                );
+                CREATE TRIGGER IF NOT EXISTS contratos_fts_ai AFTER INSERT ON contratos BEGIN
+                    INSERT INTO contratos_fts(rowid, objeto) VALUES (new.rowid, new.objeto);
+                END;
+                CREATE TRIGGER IF NOT EXISTS contratos_fts_ad AFTER DELETE ON contratos BEGIN
+                    INSERT INTO contratos_fts(contratos_fts, rowid, objeto) VALUES ('delete', old.rowid, old.objeto);
+                END;
+                CREATE TRIGGER IF NOT EXISTS contratos_fts_au AFTER UPDATE ON contratos BEGIN
+                    INSERT INTO contratos_fts(contratos_fts, rowid, objeto) VALUES ('delete', old.rowid, old.objeto);
+                    INSERT INTO contratos_fts(rowid, objeto) VALUES (new.rowid, new.objeto);
+                END;
+            ''')
+            if conn.execute('SELECT COUNT(*) FROM contratos_fts').fetchone()[0] == 0:
+                conn.execute("INSERT INTO contratos_fts(rowid, objeto) SELECT rowid, objeto FROM contratos")
+            FTS_AVAILABLE = True
+        except sqlite3.OperationalError as e:
+            # ponytail: builds do SQLite sem FTS5 (raro) caem para busca com LIKE
+            _log.error('FTS5 indisponível, busca usará LIKE: %s', e)
+            FTS_AVAILABLE = False
         # Migração: coluna deleted_at para lixeira (soft-delete) — SQLite não suporta
         # ADD COLUMN IF NOT EXISTS, então tentamos e ignoramos se já existir
         try:
@@ -176,6 +217,35 @@ def init_db():
             )
             conn.commit()
             print('Usuário padrão criado: admin / admin123 — troque a senha nas Configurações.')
+
+def _fts_match_query(text):
+    """Converte texto livre em uma query FTS5 (AND de prefixos por palavra)."""
+    tokens = re.findall(r'\w+', text, re.UNICODE)
+    if not tokens: return None
+    return ' '.join(f'"{t}"*' for t in tokens)
+
+def _sync_tags(conn, join_table, id_col, item_id, tag_names):
+    """Substitui as tags do registro pela lista informada (cria as que não existem)."""
+    nomes = sorted({t.strip() for t in (tag_names or []) if t.strip()})
+    conn.execute(f'DELETE FROM {join_table} WHERE {id_col}=?', (item_id,))
+    for nome in nomes:
+        conn.execute('INSERT OR IGNORE INTO tags (nome) VALUES (?)', (nome,))
+        tag_id = conn.execute('SELECT id FROM tags WHERE nome=? COLLATE NOCASE', (nome,)).fetchone()['id']
+        conn.execute(f'INSERT OR IGNORE INTO {join_table} ({id_col},tag_id) VALUES (?,?)', (item_id, tag_id))
+
+def _tags_map(conn, join_table, id_col, item_ids):
+    """Retorna {item_id: [nomes de tag]} para os ids informados."""
+    if not item_ids: return {}
+    qs = ','.join('?' * len(item_ids))
+    rows = conn.execute(
+        f'''SELECT j.{id_col} AS iid, t.nome FROM {join_table} j
+            JOIN tags t ON j.tag_id=t.id WHERE j.{id_col} IN ({qs})
+            ORDER BY t.nome''', item_ids
+    ).fetchall()
+    out = {}
+    for r in rows:
+        out.setdefault(r['iid'], []).append(r['nome'])
+    return out
 
 # ── Segurança ─────────────────────────────────────────────────────────────────
 
@@ -413,6 +483,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._list_atas(qs)
         elif re.fullmatch(r'/api/atas/[^/]+', p):
             self._get_ata(p.split('/')[-1])
+
+        # Etiquetas
+        elif p == '/api/tags':
+            self._list_tags()
 
         # Auditoria
         # Sem restrição de admin: também usado pelo histórico de alterações por
@@ -877,6 +951,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         status     = qp('status', '')
         fornecedor = qp('fornecedor', '')
         fiscal     = qp('fiscal', '')
+        tag        = qp('tag', '')
         page   = int(qp('page', 1))
         per    = min(int(qp('per', 500)), 2000)
         trash  = qp('trash') == '1'
@@ -885,35 +960,48 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         where.append('deleted_at IS NOT NULL' if trash else 'deleted_at IS NULL')
         if q:
             # 'numero' só existe dentro do JSON (data), não é coluna da tabela
-            where.append("(objeto LIKE ? OR json_extract(data, '$.numero') LIKE ?)")
-            params += [f'%{q}%', f'%{q}%']
+            fts_q = _fts_match_query(q) if FTS_AVAILABLE else None
+            if fts_q:
+                where.append('''(rowid IN (SELECT rowid FROM contratos_fts WHERE contratos_fts MATCH ?)
+                                  OR json_extract(data, '$.numero') LIKE ?)''')
+                params += [fts_q, f'%{q}%']
+            else:
+                where.append("(objeto LIKE ? OR json_extract(data, '$.numero') LIKE ?)")
+                params += [f'%{q}%', f'%{q}%']
         if status:
             where.append('status=?'); params.append(status)
         if fornecedor:
             where.append('fornecedor_id=?'); params.append(fornecedor)
         if fiscal:
             where.append("json_extract(data, '$.fiscalNome')=?"); params.append(fiscal)
+        if tag:
+            where.append('id IN (SELECT ct.contrato_id FROM contrato_tags ct JOIN tags t ON ct.tag_id=t.id WHERE t.nome=? COLLATE NOCASE)')
+            params.append(tag)
 
         wc = ('WHERE ' + ' AND '.join(where)) if where else ''
         order = 'deleted_at DESC' if trash else 'vigencia_final ASC'
         with get_db() as conn:
             total = conn.execute(f'SELECT COUNT(*) FROM contratos {wc}', params).fetchone()[0]
             rows  = conn.execute(
-                f'SELECT data,deleted_at FROM contratos {wc} ORDER BY {order} LIMIT ? OFFSET ?',
+                f'SELECT id,data,deleted_at FROM contratos {wc} ORDER BY {order} LIMIT ? OFFSET ?',
                 params + [per, (page-1)*per]
             ).fetchall()
+            tags_map = _tags_map(conn, 'contrato_tags', 'contrato_id', [r['id'] for r in rows])
         items = []
         for r in rows:
             item = json.loads(r['data'])
             item['deletedAt'] = r['deleted_at']
+            item['tags'] = tags_map.get(r['id'], [])
             items.append(item)
         self._json(200, {'total': total, 'items': items})
 
     def _get_contrato(self, cid):
         with get_db() as conn:
             row = conn.execute('SELECT data FROM contratos WHERE id=?', (cid,)).fetchone()
-        if not row: self._json(404, {'error': 'Contrato não encontrado'}); return
-        self._json(200, json.loads(row['data']))
+            if not row: self._json(404, {'error': 'Contrato não encontrado'}); return
+            tags = _tags_map(conn, 'contrato_tags', 'contrato_id', [cid]).get(cid, [])
+        item = json.loads(row['data']); item['tags'] = tags
+        self._json(200, item)
 
     def _save_contrato_row(self, conn, data):
         conn.execute(
@@ -939,6 +1027,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         data['_createdBy'] = s['user_id']
         with get_db() as conn:
             self._save_contrato_row(conn, data)
+            if 'tags' in data: _sync_tags(conn, 'contrato_tags', 'contrato_id', cid, data['tags'])
         self._json(200, data)
 
     def _update_contrato(self, cid, data, s):
@@ -950,6 +1039,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             existing.update(data)
             existing['updatedAt'] = _now()
             self._save_contrato_row(conn, existing)
+            if 'tags' in data: _sync_tags(conn, 'contrato_tags', 'contrato_id', cid, data['tags'])
         self._json(200, existing)
 
     def _restore_contrato(self, cid):
@@ -995,6 +1085,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         def qp(k, d=None): v = qs.get(k); return v[0] if v else d
         q      = qp('q', '')
         status = qp('status', '')
+        tag    = qp('tag', '')
         page   = int(qp('page', 1))
         per    = min(int(qp('per', 500)), 2000)
         trash  = qp('trash') == '1'
@@ -1005,27 +1096,34 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             where.append('numero LIKE ?'); params.append(f'%{q}%')
         if status:
             where.append('status=?'); params.append(status)
+        if tag:
+            where.append('id IN (SELECT at.ata_id FROM ata_tags at JOIN tags t ON at.tag_id=t.id WHERE t.nome=? COLLATE NOCASE)')
+            params.append(tag)
 
         wc = ('WHERE ' + ' AND '.join(where)) if where else ''
         order = 'deleted_at DESC' if trash else 'vigencia_final ASC'
         with get_db() as conn:
             total = conn.execute(f'SELECT COUNT(*) FROM atas {wc}', params).fetchone()[0]
             rows  = conn.execute(
-                f'SELECT data,deleted_at FROM atas {wc} ORDER BY {order} LIMIT ? OFFSET ?',
+                f'SELECT id,data,deleted_at FROM atas {wc} ORDER BY {order} LIMIT ? OFFSET ?',
                 params + [per, (page-1)*per]
             ).fetchall()
+            tags_map = _tags_map(conn, 'ata_tags', 'ata_id', [r['id'] for r in rows])
         items = []
         for r in rows:
             item = json.loads(r['data'])
             item['deletedAt'] = r['deleted_at']
+            item['tags'] = tags_map.get(r['id'], [])
             items.append(item)
         self._json(200, {'total': total, 'items': items})
 
     def _get_ata(self, aid):
         with get_db() as conn:
             row = conn.execute('SELECT data FROM atas WHERE id=?', (aid,)).fetchone()
-        if not row: self._json(404, {'error': 'Ata não encontrada'}); return
-        self._json(200, json.loads(row['data']))
+            if not row: self._json(404, {'error': 'Ata não encontrada'}); return
+            tags = _tags_map(conn, 'ata_tags', 'ata_id', [aid]).get(aid, [])
+        item = json.loads(row['data']); item['tags'] = tags
+        self._json(200, item)
 
     def _save_ata_row(self, conn, data):
         conn.execute(
@@ -1048,6 +1146,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         data['_createdBy'] = s['user_id']
         with get_db() as conn:
             self._save_ata_row(conn, data)
+            if 'tags' in data: _sync_tags(conn, 'ata_tags', 'ata_id', aid, data['tags'])
         self._json(200, data)
 
     def _update_ata(self, aid, data, s):
@@ -1059,12 +1158,18 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             existing.update(data)
             existing['updatedAt'] = _now()
             self._save_ata_row(conn, existing)
+            if 'tags' in data: _sync_tags(conn, 'ata_tags', 'ata_id', aid, data['tags'])
         self._json(200, existing)
 
     def _restore_ata(self, aid):
         with get_db() as conn:
             conn.execute('UPDATE atas SET deleted_at=NULL WHERE id=?', (aid,))
         self._json(200, {'ok': True})
+
+    def _list_tags(self):
+        with get_db() as conn:
+            rows = conn.execute('SELECT nome FROM tags ORDER BY nome').fetchall()
+        self._json(200, {'items': [r['nome'] for r in rows]})
 
     def _add_ata_item(self, aid, data, s):
         with get_db() as conn:

@@ -5,6 +5,15 @@
 
 ---
 
+## [0.10.0] — 2026-07-08
+
+### Adicionado
+- **Busca full-text (FTS5)** — busca no campo Objeto de Contratos agora usa índice SQLite FTS5 (com fallback automático para `LIKE` caso o build do SQLite não tenha FTS5 compilado), em vez de só `LIKE`; sincronizado do padrão já usado no SGDP. Atas não ganharam FTS5 — seu único campo de texto livre é gerado automaticamente, não há conteúdo de usuário para indexar
+- **Etiquetas (tags) em Contratos e Atas** — tags livres com autocomplete, filtro dedicado na listagem e marcadores nos cards do Kanban; sincronizado do modelo relacional já usado no SGDP (`tags` + `contrato_tags`/`ata_tags`)
+
+### Corrigido
+- **Contraste no tema escuro** — `#notif-panel` usava um seletor `[data-theme="dark"]` que nunca era ativado (a troca de tema usa a classe `body.dark`, não o atributo `data-theme`); `.table-wrap` não tinha nenhuma cobertura no tema escuro. Mesmo bug clonado no SGDP e já corrigido lá; achado ao comparar os 3 sistemas
+
 ## [0.9.4] — 2026-07-07
 
 ### Corrigido
