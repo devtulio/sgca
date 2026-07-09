@@ -1,4 +1,4 @@
-# SGCA v0.13.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.14.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -582,6 +582,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         # Contratos
         elif p == '/api/contratos':
             self._list_contratos(qs)
+        elif p == '/api/indice-reajuste':
+            self._proxy_indice(qs)
         elif re.fullmatch(r'/api/contratos/[^/]+', p):
             self._get_contrato(p.split('/')[-1])
 
@@ -1743,6 +1745,35 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers(); self.wfile.write(body)
         except Exception as e:
             self._json(502, {'status': 'ERROR', 'message': str(e)})
+
+    # ── Índice de Reajuste (Banco Central / SGS) ───────────────────────────────
+    # Séries mensais de variação % — acumula o período multiplicando (1+var/100)
+    # de cada mês, evitando digitação manual do percentual em aditivos de
+    # reequilíbrio/repactuação.
+
+    _INDICE_SGS = {'IPCA-E': 10764, 'IGP-M': 189, 'INPC': 188, 'INCC-M': 192}
+
+    def _proxy_indice(self, qs):
+        def qp(k): v = qs.get(k); return (v[0] if v else '').strip()
+        indice, de, ate = qp('indice'), qp('de'), qp('ate')
+        codigo = self._INDICE_SGS.get(indice)
+        if not codigo or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', de or '') or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', ate or ''):
+            self._json(400, {'message': 'Índice ou datas inválidos'}); return
+        d1 = '/'.join(reversed(de.split('-')))
+        d2 = '/'.join(reversed(ate.split('-')))
+        url = f'https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados?formato=json&dataInicial={d1}&dataFinal={d2}'
+        req = urllib.request.Request(url, headers={'User-Agent': 'SGCA/2.0'})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                dados = json.loads(resp.read())
+            if not dados:
+                self._json(200, {'percentual': None, 'meses': 0}); return
+            fator = 1.0
+            for item in dados:
+                fator *= (1 + float(item['valor'].replace(',', '.')) / 100)
+            self._json(200, {'percentual': round((fator - 1) * 100, 2), 'meses': len(dados)})
+        except Exception as e:
+            self._json(502, {'message': f'Falha ao consultar Banco Central: {e}'})
 
     # ── E-mail ────────────────────────────────────────────────────────────────
 

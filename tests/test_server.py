@@ -211,6 +211,13 @@ class TestContratos(SGCATestCase):
         status, data = self.request('GET', '/api/contratos/id-que-nao-existe', token=token)
         self.assertEqual(status, 404)
 
+    def test_indice_reajuste_rejeita_indice_ou_datas_invalidas(self):
+        token = self.login()
+        status, data = self.request('GET', '/api/indice-reajuste?indice=outro&de=2025-01-01&ate=2026-01-01', token=token)
+        self.assertEqual(status, 400)
+        status, data = self.request('GET', '/api/indice-reajuste?indice=IPCA-E&de=01-01-2025&ate=2026-01-01', token=token)
+        self.assertEqual(status, 400)
+
 
 class TestAtas(SGCATestCase):
 

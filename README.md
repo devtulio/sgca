@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.13.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.14.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -23,7 +23,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Exportação de Contratos e Atas em CSV** para planilha
 - **Garantia Contratual** — modalidade, valor, vencimento e devolução, com alerta na Agenda de Vencimentos
 - **Sanções e Penalidades** — registro interno por fornecedor (advertência, multa, suspensão, impedimento, inidoneidade), com aviso ao selecionar um fornecedor sancionado em um Contrato/Ata e entrada do fim do prazo na Agenda de Vencimentos
-- **Reajuste por índice** (IPCA-E, IGP-M, INCC-M, INPC) em aditivos de repactuação/reequilíbrio, com cálculo automático do novo valor global
+- **Reajuste por índice** (IPCA-E, IGP-M, INCC-M, INPC) em aditivos de repactuação/reequilíbrio, com busca automática da variação acumulada no período direto do Banco Central (SGS) e cálculo automático do novo valor global
 - **Anexos assinados (PDF, múltiplos)** vinculados ao registro do contrato e da ata
 - **Vínculo Contrato ↔ Ata de Registro de Preços** — campo "Ata de Origem" para contratações por adesão
 - **Fiscal Substituto** — titular e substituto no Contrato, ambos recebendo o aviso automático de vencimento
@@ -34,6 +34,10 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Filtro por Fiscal** na tela de Contratos, e alerta de "Contratos sem Fiscal" no Dashboard (Art. 117, Lei 14.133/2021)
 - **Busca global** (botão na sidebar ou atalho Ctrl+K) — pesquisa por número, objeto, órgão gerenciador e fornecedor em todos os Contratos e Atas, com acesso direto ao registro
 - **Histórico do registro** — botão "🕘 Histórico" no Contrato/Ata mostra a trilha de auditoria filtrada só para aquele registro
+- **Fiscalização Mensal** no Contrato — data, fiscal, parecer e observações, com alerta "Fiscalização Atrasada" no Dashboard quando um contrato vigente fica mais de 45 dias sem registro (Art. 117)
+- **Matriz de Risco** do Contrato — riscos com probabilidade, impacto, mitigação e responsável, com documento gerável (Art. 22)
+- **Recebimento do Objeto** — datas e responsáveis pelo recebimento provisório e definitivo, com Termo de Recebimento gerável (Art. 140)
+- **Subcontratação** — CNPJ, razão social e percentual do subcontratado, com alerta se o total ultrapassar o limite definido para o contrato (Art. 122)
 - **Autenticação multiusuário** com hashing PBKDF2-HMAC-SHA256 e gestão de usuários pelo admin
 - **Cadastro de fornecedores** com consulta automática de CNPJ via ReceitaWS/BrasilAPI, controle de certidões com alertas de vencimento e exclusão (lixeira) — bloqueada enquanto o fornecedor tiver contratos ou atas vinculados
 - **Importação de fornecedores via CSV** e relatório consolidado

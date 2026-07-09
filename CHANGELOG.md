@@ -5,6 +5,17 @@
 
 ---
 
+## [0.14.0] — 2026-07-09
+
+### Adicionado
+- **Busca automática do índice de reajuste** — no aditivo de reequilíbrio/repactuação, botão "🔍 Buscar no Banco Central" consulta a API pública do SGS (Sistema Gerenciador de Séries Temporais) do Banco Central e preenche sozinho a variação % acumulada no período informado (IPCA-E, IGP-M, INPC ou INCC-M), em vez de exigir digitação manual
+- **Fiscalização Mensal** (Art. 117, Lei 14.133/2021) — nova seção no Contrato para registrar data, fiscal responsável, parecer (conforme/não conforme) e observações de cada fiscalização; novo indicador "Fiscalização Atrasada" no Dashboard, contando contratos vigentes sem registro de fiscalização há mais de 45 dias
+- **Matriz de Risco** (Art. 22, Lei 14.133/2021) — lista de riscos do Contrato (descrição, probabilidade, impacto, mitigação, responsável), com botão "⚠️ Matriz de Risco" gerando documento A4 no mesmo padrão dos demais
+- **Recebimento do Objeto** (Art. 140, Lei 14.133/2021) — datas e responsáveis pelo recebimento provisório e definitivo no Contrato, com botão "📥 Termo de Recebimento" gerando o documento correspondente
+- **Subcontratação** (Art. 122, Lei 14.133/2021) — registro de CNPJ, razão social, percentual e objeto de cada subcontratação no Contrato, com limite configurável por contrato e alerta quando o total subcontratado ultrapassa o limite definido
+
+---
+
 ## [0.13.0] — 2026-07-09
 
 ### Adicionado

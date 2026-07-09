@@ -1473,6 +1473,104 @@
           </div>
         </div>
 
+        <div style="border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Recebimento do Objeto</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+            <div class="info-field" style="margin:0">
+              <label>Provisório em</label>
+              <input type="date" id="c-receb-prov-data">
+            </div>
+            <div class="info-field" style="margin:0">
+              <label>Responsável (provisório)</label>
+              <input type="text" id="c-receb-prov-resp">
+            </div>
+            <div class="info-field" style="margin:0">
+              <label>Definitivo em</label>
+              <input type="date" id="c-receb-def-data">
+            </div>
+            <div class="info-field" style="margin:0">
+              <label>Responsável (definitivo)</label>
+              <input type="text" id="c-receb-def-resp">
+            </div>
+          </div>
+        </div>
+
+        <div id="contrato-fiscalizacoes-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand)">Fiscalização Mensal</p>
+            <button class="btn btn-outline btn-sm" onclick="showNovaFiscalizacaoForm()">+ Registrar Fiscalização</button>
+          </div>
+          <div id="contrato-fiscalizacao-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+              <input type="date" id="fz-data">
+              <input type="text" id="fz-fiscal" placeholder="Fiscal responsável">
+              <select id="fz-parecer">
+                <option value="conforme">Conforme</option>
+                <option value="nao_conforme">Não conforme</option>
+              </select>
+            </div>
+            <textarea id="fz-obs" placeholder="Observações" style="width:100%;margin-top:8px;min-height:50px"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+              <button class="btn btn-outline btn-sm" onclick="hideNovaFiscalizacaoForm()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="saveFiscalizacao()">Salvar</button>
+            </div>
+          </div>
+          <div id="contrato-fiscalizacoes-lista"></div>
+        </div>
+
+        <div id="contrato-riscos-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand)">Matriz de Risco</p>
+            <button class="btn btn-outline btn-sm" onclick="showNovoRiscoForm()">+ Novo Risco</button>
+          </div>
+          <div id="contrato-risco-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
+            <textarea id="rk-descricao" placeholder="Descrição do risco" style="width:100%;min-height:50px"></textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+              <select id="rk-probabilidade">
+                <option value="baixa">Probabilidade: Baixa</option>
+                <option value="media">Probabilidade: Média</option>
+                <option value="alta">Probabilidade: Alta</option>
+              </select>
+              <select id="rk-impacto">
+                <option value="baixo">Impacto: Baixo</option>
+                <option value="medio">Impacto: Médio</option>
+                <option value="alto">Impacto: Alto</option>
+              </select>
+              <input type="text" id="rk-responsavel" placeholder="Responsável pela mitigação">
+            </div>
+            <textarea id="rk-mitigacao" placeholder="Medida de mitigação" style="width:100%;margin-top:8px;min-height:50px"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+              <button class="btn btn-outline btn-sm" onclick="hideNovoRiscoForm()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="saveRisco()">Salvar</button>
+            </div>
+          </div>
+          <div id="contrato-riscos-lista"></div>
+        </div>
+
+        <div id="contrato-subcontratacoes-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand)">Subcontratação</p>
+            <button class="btn btn-outline btn-sm" onclick="showNovaSubcontratacaoForm()">+ Nova Subcontratação</button>
+          </div>
+          <div class="info-field" style="margin:0 0 8px">
+            <label>Limite permitido (%, conforme edital/contrato)</label>
+            <input type="text" id="c-subcontratacao-limite" placeholder="Ex: 30" style="max-width:120px">
+          </div>
+          <div id="contrato-subcontratacao-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px">
+              <input type="text" id="sc-cnpj" placeholder="CNPJ" maxlength="18" oninput="maskCnpj(this)">
+              <input type="text" id="sc-razao" placeholder="Razão social">
+              <input type="text" id="sc-percentual" placeholder="% do objeto">
+            </div>
+            <input type="text" id="sc-objeto" placeholder="Parte do objeto subcontratada" style="width:100%;margin-top:8px">
+            <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+              <button class="btn btn-outline btn-sm" onclick="hideNovaSubcontratacaoForm()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="saveSubcontratacao()">Salvar</button>
+            </div>
+          </div>
+          <div id="contrato-subcontratacoes-lista"></div>
+        </div>
+
         <div id="contrato-anexo-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
           <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Anexos (PDF)</p>
           <div id="c-anexo-atual" style="font-size:.8rem;color:var(--gray-500);margin-bottom:8px"></div>
@@ -1500,7 +1598,7 @@
               <input type="text" id="ad-valor-variacao" placeholder="Variação (R$, use - para supressão)" style="display:none">
             </div>
             <div id="ad-indice-wrap" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-              <select id="ad-indice">
+              <select id="ad-indice" onchange="_adToggleBuscarIndice()">
                 <option value="IPCA-E">IPCA-E</option>
                 <option value="IGP-M">IGP-M</option>
                 <option value="INCC-M">INCC-M</option>
@@ -1508,6 +1606,11 @@
                 <option value="outro">Outro</option>
               </select>
               <input type="text" id="ad-indice-percentual" placeholder="Variação do índice (%, ex: 4,5)" oninput="_adIndicePreview()">
+            </div>
+            <div id="ad-indice-busca-wrap" style="display:none;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:8px;align-items:center">
+              <input type="date" id="ad-indice-de" title="Início do período de apuração">
+              <input type="date" id="ad-indice-ate" title="Fim do período de apuração">
+              <button type="button" class="btn btn-outline btn-sm" onclick="_adBuscarIndice()">🔍 Buscar no Banco Central</button>
             </div>
             <div id="ad-indice-preview" style="font-size:.72rem;color:var(--gray-500);margin-top:4px"></div>
             <textarea id="ad-justificativa" placeholder="Justificativa" style="width:100%;margin-top:8px;min-height:50px"></textarea>
@@ -1520,8 +1623,10 @@
         </div>
       </div>
       <div class="modal-footer" style="justify-content:space-between">
-        <div id="contrato-doc-actions" style="display:none;gap:8px">
+        <div id="contrato-doc-actions" style="display:none;gap:8px;flex-wrap:wrap">
           <button class="btn btn-outline btn-sm" onclick="gerarExtratoContrato()">📄 Gerar Extrato</button>
+          <button class="btn btn-outline btn-sm" onclick="gerarMatrizRisco()">⚠️ Matriz de Risco</button>
+          <button class="btn btn-outline btn-sm" onclick="gerarTermoRecebimento()">📥 Termo de Recebimento</button>
           <button class="btn btn-outline btn-sm" onclick="exportarPNCPContrato()">📤 Exportar PNCP</button>
           <button class="btn btn-outline btn-sm" onclick="abrirHistoricoRegistro(_contratoAtualId, 'Histórico do Contrato', this)">🕘 Histórico</button>
         </div>
@@ -2350,7 +2455,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.13.0';
+const SGCA_VERSION = '0.14.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3544,6 +3649,11 @@ async function renderDashboardGeral() {
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
   const em7 = new Date(hoje); em7.setDate(em7.getDate() + 7);
   const urgentes = eventos.filter(e => e.date <= em7);
+  const em45 = new Date(hoje); em45.setDate(em45.getDate() - 45);
+  const semFiscalizacao = contratosVigentes.filter(c => {
+    const ultima = (c.fiscalizacoes || []).map(f => f.data).sort().pop();
+    return !ultima || new Date(ultima + 'T00:00:00') < em45;
+  });
 
   const statsEl = document.getElementById('dash-geral-stats');
   statsEl.innerHTML = `
@@ -3576,6 +3686,11 @@ async function renderDashboardGeral() {
       <div class="stat-top"><span class="stat-lbl">Contratos sem Fiscal</span></div>
       <div class="stat-val">${semFiscal.length}</div>
       <div class="stat-sub">exigência do Art. 117, Lei 14.133/2021</div>
+    </div>
+    <div class="stat blocked" style="cursor:pointer" onclick="showContratos()">
+      <div class="stat-top"><span class="stat-lbl">Fiscalização Atrasada</span></div>
+      <div class="stat-val">${semFiscalizacao.length}</div>
+      <div class="stat-sub">sem registro de fiscalização há mais de 45 dias</div>
     </div>
   `;
 
@@ -3850,6 +3965,11 @@ async function openContratoModal(id) {
   document.getElementById('c-garantia-valor').value      = c?.garantiaValor ? fmtMoney(c.garantiaValor) : '';
   document.getElementById('c-garantia-vencimento').value = c?.garantiaVencimento || '';
   document.getElementById('c-garantia-devolucao').value  = c?.garantiaDevolucao || '';
+  document.getElementById('c-receb-prov-data').value = c?.recebimentoProvisorioData || '';
+  document.getElementById('c-receb-prov-resp').value = c?.recebimentoProvisorioResponsavel || '';
+  document.getElementById('c-receb-def-data').value  = c?.recebimentoDefinitivoData || '';
+  document.getElementById('c-receb-def-resp').value  = c?.recebimentoDefinitivoResponsavel || '';
+  document.getElementById('c-subcontratacao-limite').value = c?.subcontratacaoLimitePercentual ?? '';
   document.getElementById('c-tags').value        = (c?.tags || []).join(', ');
   document.getElementById('c-fornecedor').innerHTML = _fornecedorOptionsHtml(c?.fornecedorId);
   _checkFornecedorSancao(c?.fornecedorId || '', 'c-fornecedor-aviso');
@@ -3859,10 +3979,21 @@ async function openContratoModal(id) {
   aditivosSection.style.display = c ? '' : 'none';
   document.getElementById('contrato-doc-actions').style.display = c ? 'flex' : 'none';
   document.getElementById('contrato-anexo-section').style.display = c ? '' : 'none';
+  document.getElementById('contrato-fiscalizacoes-section').style.display = c ? '' : 'none';
+  document.getElementById('contrato-riscos-section').style.display = c ? '' : 'none';
+  document.getElementById('contrato-subcontratacoes-section').style.display = c ? '' : 'none';
   document.getElementById('c-anexo-input').value = '';
   _renderAnexosContrato(c?.anexosContrato || (c?.anexoContrato ? [c.anexoContrato] : []));
   hideNovoAditivoForm();
-  if (c) renderAditivosList(c);
+  hideNovaFiscalizacaoForm();
+  hideNovoRiscoForm();
+  hideNovaSubcontratacaoForm();
+  if (c) {
+    renderAditivosList(c);
+    renderFiscalizacoesList(c);
+    renderRiscosList(c);
+    renderSubcontratacoesList(c);
+  }
 
   document.getElementById('contrato-modal-overlay').classList.remove('hidden');
 }
@@ -3909,6 +4040,11 @@ async function saveContrato() {
     garantiaValor: parseValor(document.getElementById('c-garantia-valor').value),
     garantiaVencimento: document.getElementById('c-garantia-vencimento').value,
     garantiaDevolucao: document.getElementById('c-garantia-devolucao').value,
+    recebimentoProvisorioData: document.getElementById('c-receb-prov-data').value,
+    recebimentoProvisorioResponsavel: document.getElementById('c-receb-prov-resp').value.trim(),
+    recebimentoDefinitivoData: document.getElementById('c-receb-def-data').value,
+    recebimentoDefinitivoResponsavel: document.getElementById('c-receb-def-resp').value.trim(),
+    subcontratacaoLimitePercentual: parseFloat(document.getElementById('c-subcontratacao-limite').value.replace(',', '.')) || null,
     tags: document.getElementById('c-tags').value.split(',').map(t => t.trim()).filter(Boolean)
   };
   const r = _contratoAtualId
@@ -3986,6 +4122,29 @@ function onAditivoTipoChange() {
   document.getElementById('ad-indice-wrap').style.display      = ehIndice ? 'grid' : 'none';
   document.getElementById('ad-indice-preview').textContent = '';
   if (!ehIndice) document.getElementById('ad-indice-percentual').value = '';
+  if (ehIndice) {
+    document.getElementById('ad-indice-de').value  = document.getElementById('c-vig-inicial').value || '';
+    document.getElementById('ad-indice-ate').value = new Date().toISOString().slice(0, 10);
+    _adToggleBuscarIndice();
+  } else {
+    document.getElementById('ad-indice-busca-wrap').style.display = 'none';
+  }
+}
+function _adToggleBuscarIndice() {
+  const indice = document.getElementById('ad-indice').value;
+  document.getElementById('ad-indice-busca-wrap').style.display = indice === 'outro' ? 'none' : 'grid';
+}
+async function _adBuscarIndice() {
+  const indice = document.getElementById('ad-indice').value;
+  const de     = document.getElementById('ad-indice-de').value;
+  const ate    = document.getElementById('ad-indice-ate').value;
+  if (!de || !ate) { toast('Informe o período (De/Até) para buscar o índice', 'error'); return; }
+  const r = await API.get(`/api/indice-reajuste?indice=${encodeURIComponent(indice)}&de=${de}&ate=${ate}`);
+  const d = await API.json(r);
+  if (!r?.ok || d?.percentual == null) { toast(d?.message || 'Não foi possível obter o índice no período informado', 'error'); return; }
+  document.getElementById('ad-indice-percentual').value = String(d.percentual).replace('.', ',');
+  toast(`${indice} acumulado no período: ${d.percentual}% (${d.meses} meses) — confira antes de salvar`, 'success');
+  _adIndicePreview();
 }
 function _adIndicePreview() {
   const percentual = parseFloat(document.getElementById('ad-indice-percentual').value.replace(',', '.')) || 0;
@@ -4042,6 +4201,200 @@ async function removeAditivo(aid) {
   const idx = _contratos.findIndex(c => c.id === contrato.id);
   if (idx >= 0) _contratos[idx] = contrato;
   renderAditivosList(contrato);
+}
+
+// ── Listas simples do Contrato (fiscalização, riscos, subcontratação) ──────
+// Sem endpoint dedicado (ao contrário dos aditivos, não exigem recálculo no
+// servidor): busca o contrato atualizado, altera o array em memória e grava
+// de volta por inteiro, no mesmo padrão já usado para sanções de fornecedor.
+async function _contratoListaAdd(campo, item) {
+  if (!_contratoAtualId) return null;
+  const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!contrato) return null;
+  contrato[campo] = [...(contrato[campo] || []), item];
+  contrato.updatedAt = Date.now();
+  const r = await API.put(`/api/contratos/${contrato.id}`, contrato);
+  if (!r?.ok) return null;
+  const idx = _contratos.findIndex(c => c.id === contrato.id);
+  if (idx >= 0) _contratos[idx] = contrato;
+  return contrato;
+}
+async function _contratoListaRemover(campo, id) {
+  if (!_contratoAtualId) return null;
+  const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!contrato) return null;
+  contrato[campo] = (contrato[campo] || []).filter(x => x.id !== id);
+  contrato.updatedAt = Date.now();
+  const r = await API.put(`/api/contratos/${contrato.id}`, contrato);
+  if (!r?.ok) return null;
+  const idx = _contratos.findIndex(c => c.id === contrato.id);
+  if (idx >= 0) _contratos[idx] = contrato;
+  return contrato;
+}
+
+// ── Fiscalização Mensal (Art. 117, Lei 14.133/2021) ─────────────────────────
+function renderFiscalizacoesList(c) {
+  const list = (c.fiscalizacoes || []).slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  const parecerLabel = { conforme: 'Conforme', nao_conforme: 'Não conforme' };
+  document.getElementById('contrato-fiscalizacoes-lista').innerHTML = list.length
+    ? list.map(f => `
+      <div style="display:flex;justify-content:space-between;align-items:start;padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:.8rem">
+        <div>
+          <strong>${fmtDateBR(f.data)}</strong> — ${escHtml(f.fiscal || '')}
+          <span style="color:${f.parecer === 'nao_conforme' ? 'var(--red)' : 'var(--green)'}"> — ${parecerLabel[f.parecer] || f.parecer}</span>
+          ${f.obs ? `<br><span style="color:var(--gray-500)">${escHtml(f.obs)}</span>` : ''}
+        </div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="removeFiscalizacao('${f.id}')" title="Remover">✕</button>
+      </div>
+    `).join('')
+    : '<p style="font-size:.75rem;color:var(--gray-400)">Nenhuma fiscalização registrada</p>';
+}
+function showNovaFiscalizacaoForm() {
+  document.getElementById('contrato-fiscalizacao-form').style.display = '';
+  document.getElementById('fz-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('fz-fiscal').value = document.getElementById('c-fiscal').value || '';
+  document.getElementById('fz-parecer').value = 'conforme';
+  document.getElementById('fz-obs').value = '';
+}
+function hideNovaFiscalizacaoForm() {
+  const f = document.getElementById('contrato-fiscalizacao-form');
+  if (f) f.style.display = 'none';
+}
+async function saveFiscalizacao() {
+  const data = document.getElementById('fz-data').value;
+  if (!data) { toast('Informe a data da fiscalização', 'error'); return; }
+  const item = {
+    id: genId(), data,
+    fiscal: document.getElementById('fz-fiscal').value.trim(),
+    parecer: document.getElementById('fz-parecer').value,
+    obs: document.getElementById('fz-obs').value.trim()
+  };
+  const contrato = await _contratoListaAdd('fiscalizacoes', item);
+  if (!contrato) { toast('Erro ao salvar fiscalização', 'error'); return; }
+  await _auditEvento('CONTRATO_EDITADO', `Fiscalização registrada no contrato ${contrato.numero || contrato.id}`, contrato.id);
+  toast('Fiscalização registrada', 'success');
+  hideNovaFiscalizacaoForm();
+  renderFiscalizacoesList(contrato);
+}
+async function removeFiscalizacao(id) {
+  const ok = await customConfirm('Remover este registro de fiscalização?', { okLabel: 'Remover' });
+  if (!ok) return;
+  const contrato = await _contratoListaRemover('fiscalizacoes', id);
+  if (!contrato) return;
+  renderFiscalizacoesList(contrato);
+}
+
+// ── Matriz de Risco (Art. 22, Lei 14.133/2021) ──────────────────────────────
+function renderRiscosList(c) {
+  const list = c.riscos || [];
+  const probLabel = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
+  const impLabel  = { baixo: 'Baixo', medio: 'Médio', alto: 'Alto' };
+  document.getElementById('contrato-riscos-lista').innerHTML = list.length
+    ? list.map(rk => `
+      <div style="display:flex;justify-content:space-between;align-items:start;padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:.8rem">
+        <div>
+          <strong>${escHtml(rk.descricao || '')}</strong>
+          <br>Probabilidade: ${probLabel[rk.probabilidade] || rk.probabilidade} · Impacto: ${impLabel[rk.impacto] || rk.impacto}
+          ${rk.responsavel ? ` · Responsável: ${escHtml(rk.responsavel)}` : ''}
+          ${rk.mitigacao ? `<br><span style="color:var(--gray-500)">Mitigação: ${escHtml(rk.mitigacao)}</span>` : ''}
+        </div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="removeRisco('${rk.id}')" title="Remover">✕</button>
+      </div>
+    `).join('')
+    : '<p style="font-size:.75rem;color:var(--gray-400)">Nenhum risco registrado</p>';
+}
+function showNovoRiscoForm() {
+  document.getElementById('contrato-risco-form').style.display = '';
+  document.getElementById('rk-descricao').value = '';
+  document.getElementById('rk-probabilidade').value = 'media';
+  document.getElementById('rk-impacto').value = 'medio';
+  document.getElementById('rk-responsavel').value = '';
+  document.getElementById('rk-mitigacao').value = '';
+}
+function hideNovoRiscoForm() {
+  const f = document.getElementById('contrato-risco-form');
+  if (f) f.style.display = 'none';
+}
+async function saveRisco() {
+  const descricao = document.getElementById('rk-descricao').value.trim();
+  if (!descricao) { toast('Descreva o risco', 'error'); return; }
+  const item = {
+    id: genId(), descricao,
+    probabilidade: document.getElementById('rk-probabilidade').value,
+    impacto: document.getElementById('rk-impacto').value,
+    responsavel: document.getElementById('rk-responsavel').value.trim(),
+    mitigacao: document.getElementById('rk-mitigacao').value.trim()
+  };
+  const contrato = await _contratoListaAdd('riscos', item);
+  if (!contrato) { toast('Erro ao salvar risco', 'error'); return; }
+  await _auditEvento('CONTRATO_EDITADO', `Risco registrado no contrato ${contrato.numero || contrato.id}`, contrato.id);
+  toast('Risco registrado', 'success');
+  hideNovoRiscoForm();
+  renderRiscosList(contrato);
+}
+async function removeRisco(id) {
+  const ok = await customConfirm('Remover este risco da matriz?', { okLabel: 'Remover' });
+  if (!ok) return;
+  const contrato = await _contratoListaRemover('riscos', id);
+  if (!contrato) return;
+  renderRiscosList(contrato);
+}
+
+// ── Subcontratação (Art. 122, Lei 14.133/2021) ──────────────────────────────
+function renderSubcontratacoesList(c) {
+  const list = c.subcontratacoes || [];
+  const total = list.reduce((s, x) => s + (parseFloat(x.percentual) || 0), 0);
+  document.getElementById('contrato-subcontratacoes-lista').innerHTML = list.length
+    ? list.map(sc => `
+      <div style="display:flex;justify-content:space-between;align-items:start;padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:.8rem">
+        <div>
+          <strong>${escHtml(sc.razaoSocial || '')}</strong> ${sc.cnpj ? '— ' + escHtml(sc.cnpj) : ''} (${sc.percentual}%)
+          ${sc.objeto ? `<br><span style="color:var(--gray-500)">${escHtml(sc.objeto)}</span>` : ''}
+        </div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="removeSubcontratacao('${sc.id}')" title="Remover">✕</button>
+      </div>
+    `).join('')
+    : '<p style="font-size:.75rem;color:var(--gray-400)">Nenhuma subcontratação registrada</p>';
+  const limite = parseFloat((document.getElementById('c-subcontratacao-limite').value || '').replace(',', '.'));
+  if (limite && total > limite) {
+    document.getElementById('contrato-subcontratacoes-lista').insertAdjacentHTML('afterbegin',
+      `<div class="aviso" style="margin-bottom:8px">Total subcontratado (${total.toFixed(2)}%) ultrapassa o limite de ${limite}% definido para este contrato (Art. 122, Lei 14.133/2021)</div>`);
+  }
+}
+function showNovaSubcontratacaoForm() {
+  document.getElementById('contrato-subcontratacao-form').style.display = '';
+  document.getElementById('sc-cnpj').value = '';
+  document.getElementById('sc-razao').value = '';
+  document.getElementById('sc-percentual').value = '';
+  document.getElementById('sc-objeto').value = '';
+}
+function hideNovaSubcontratacaoForm() {
+  const f = document.getElementById('contrato-subcontratacao-form');
+  if (f) f.style.display = 'none';
+}
+async function saveSubcontratacao() {
+  const razaoSocial = document.getElementById('sc-razao').value.trim();
+  if (!razaoSocial) { toast('Informe a razão social do subcontratado', 'error'); return; }
+  const item = {
+    id: genId(),
+    cnpj: document.getElementById('sc-cnpj').value.trim(),
+    razaoSocial,
+    percentual: parseFloat(document.getElementById('sc-percentual').value.replace(',', '.')) || 0,
+    objeto: document.getElementById('sc-objeto').value.trim()
+  };
+  const contrato = await _contratoListaAdd('subcontratacoes', item);
+  if (!contrato) { toast('Erro ao salvar subcontratação', 'error'); return; }
+  await _auditEvento('CONTRATO_EDITADO', `Subcontratação registrada no contrato ${contrato.numero || contrato.id}`, contrato.id);
+  toast('Subcontratação registrada', 'success');
+  hideNovaSubcontratacaoForm();
+  renderSubcontratacoesList(contrato);
+}
+async function removeSubcontratacao(id) {
+  const ok = await customConfirm('Remover este registro de subcontratação?', { okLabel: 'Remover' });
+  if (!ok) return;
+  const contrato = await _contratoListaRemover('subcontratacoes', id);
+  if (!contrato) return;
+  renderSubcontratacoesList(contrato);
 }
 
 // ── Anexo do contrato assinado (PDF) ─────────────────────────────
@@ -4411,6 +4764,141 @@ ${_qrFooterReport(titulo)}
 
   const win = window.open('', '_blank', 'width=900,height=700');
   await _gerarDocumento(win, html, `${titulo} — Contrato ${c.numero || c.id}`, c.id);
+}
+
+async function gerarMatrizRisco() {
+  const c = _contratos.find(x => x.id === _contratoAtualId);
+  if (!c) return;
+  const u = getUser();
+  const hoje = new Date().toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' });
+  const blank = txt => txt || '_'.repeat(40);
+  const probLabel = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
+  const impLabel  = { baixo: 'Baixo', medio: 'Médio', alto: 'Alto' };
+  const riscos = c.riscos || [];
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Matriz de Risco - ${escHtml(c.numero || c.id)}</title>
+<style>${_DOC_CSS}
+  table.riscos { width: 100%; border-collapse: collapse; margin-top: 10pt; }
+  table.riscos th, table.riscos td { border: 1px solid #999; padding: 6pt; font-size: 9pt; text-align: left; vertical-align: top; }
+  table.riscos th { background: #eee; }
+</style>
+</head>
+<body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${blank(u.orgao)}</h1>
+  <h2>${blank(u.municipio)}</h2>
+</div>
+
+<div class="doc-title">
+  <h3>Matriz de Risco</h3>
+  <div class="num" style="font-size:10pt;color:#555">Fundamento: Art. 22, Lei Federal nº 14.133/2021</div>
+</div>
+
+<table class="field-table">
+  <tr><td class="lbl">Contrato Nº</td><td>${blank(c.numero)}</td></tr>
+  <tr><td class="lbl">Objeto</td><td>${blank(c.objeto)}</td></tr>
+</table>
+
+<table class="riscos">
+  <thead><tr><th>Descrição do Risco</th><th>Probabilidade</th><th>Impacto</th><th>Mitigação</th><th>Responsável</th></tr></thead>
+  <tbody>
+    ${riscos.length ? riscos.map(rk => `
+      <tr>
+        <td>${escHtml(rk.descricao || '')}</td>
+        <td>${probLabel[rk.probabilidade] || rk.probabilidade || ''}</td>
+        <td>${impLabel[rk.impacto] || rk.impacto || ''}</td>
+        <td>${escHtml(rk.mitigacao || '')}</td>
+        <td>${escHtml(rk.responsavel || '')}</td>
+      </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#888">Nenhum risco registrado</td></tr>'}
+  </tbody>
+</table>
+
+<div class="city-date" style="margin-top:20pt">${blank(u.municipio)}, ${hoje}</div>
+
+${_qrFooterReport('Matriz de Risco')}
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  await _gerarDocumento(win, html, `Matriz de Risco — Contrato ${c.numero || c.id}`, c.id);
+}
+
+async function gerarTermoRecebimento() {
+  const c = _contratos.find(x => x.id === _contratoAtualId);
+  if (!c) return;
+  const u = getUser();
+  const forn = _fornecedoresCache.find(f => f.id === c.fornecedorId);
+  const hoje = new Date().toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' });
+  const blank = txt => txt || '_'.repeat(40);
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Termo de Recebimento - ${escHtml(c.numero || c.id)}</title>
+<style>${_DOC_CSS}
+  .section { margin-bottom: 16pt; }
+  .section-title { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8pt; border-bottom: 1px solid #ccc; padding-bottom: 4pt; }
+  .signature-block { margin-top: 40pt; display: flex; justify-content: space-around; }
+  .signature-line { border-top: 1px solid #000; width: 240pt; text-align: center; padding-top: 4pt; font-size: 10pt; }
+</style>
+</head>
+<body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${blank(u.orgao)}</h1>
+  <h2>${blank(u.municipio)}</h2>
+</div>
+
+<div class="doc-title">
+  <h3>Termo de Recebimento do Objeto</h3>
+  <div class="num" style="font-size:10pt;color:#555">Fundamento: Art. 140, Lei Federal nº 14.133/2021</div>
+</div>
+
+<table class="field-table">
+  <tr><td class="lbl">Contrato Nº</td><td>${blank(c.numero)}</td></tr>
+  <tr><td class="lbl">Contratado</td><td>${blank(forn?.razao_social)}${forn?.cnpj ? ' — CNPJ: ' + escHtml(forn.cnpj) : ''}</td></tr>
+  <tr><td class="lbl">Objeto</td><td>${blank(c.objeto)}</td></tr>
+  <tr><td class="lbl">Recebimento Provisório</td><td>${c.recebimentoProvisorioData ? fmtDateBR(c.recebimentoProvisorioData) + ' — ' + blank(c.recebimentoProvisorioResponsavel) : 'Não registrado'}</td></tr>
+  <tr><td class="lbl">Recebimento Definitivo</td><td>${c.recebimentoDefinitivoData ? fmtDateBR(c.recebimentoDefinitivoData) + ' — ' + blank(c.recebimentoDefinitivoResponsavel) : 'Não registrado'}</td></tr>
+</table>
+
+<div class="section">
+  <div class="section-title">Declaração</div>
+  <p style="line-height:1.7;text-align:justify">
+    Atesta-se, para os devidos fins, o recebimento do objeto acima identificado, nos termos do art. 140 da Lei Federal nº 14.133/2021,
+    conforme datas e responsáveis indicados nesta tabela.
+  </p>
+</div>
+
+<div class="city-date">${blank(u.municipio)}, ${hoje}</div>
+
+<div class="signature-block">
+  <div class="signature-line">
+    <div><strong>${blank(c.recebimentoProvisorioResponsavel)}</strong></div>
+    <div style="font-size:9pt;margin-top:2pt">Recebimento Provisório</div>
+  </div>
+  <div class="signature-line">
+    <div><strong>${blank(c.recebimentoDefinitivoResponsavel)}</strong></div>
+    <div style="font-size:9pt;margin-top:2pt">Recebimento Definitivo</div>
+  </div>
+</div>
+
+${_qrFooterReport('Termo de Recebimento')}
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  await _gerarDocumento(win, html, `Termo de Recebimento — Contrato ${c.numero || c.id}`, c.id);
 }
 
 // ── Exportação PNCP (Contrato) ──────────────────────────────────
