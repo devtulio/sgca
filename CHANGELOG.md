@@ -5,6 +5,17 @@
 
 ---
 
+## [0.15.0] — 2026-07-09
+
+### Adicionado
+- **Item do Plano de Contratações Anual (PCA)** — novo campo no Contrato, junto de Nº do Contrato/Processo Administrativo, para rastreabilidade exigida pela IN SEGES nº 81/2022 (Art. 12, Lei 14.133/2021)
+- **Alerta de vigência total próxima do limite legal** (Art. 107) — campo "Limite de Vigência (anos)" no Contrato; soma a vigência inicial com as prorrogações acumuladas e avisa quando o total se aproxima ou ultrapassa o limite informado
+- **Aniversário de reajuste** na Agenda de Vencimentos — novo tipo de evento lembrando, 12 meses após o último aditivo de reequilíbrio/repactuação (ou desde a assinatura, se nunca houve um), que o contrato pode ter direito a reajuste
+- **Lembrete de Fiscalização Mensal por e-mail** — o job diário de alertas (que já avisa vencimentos) passa a notificar também o fiscal titular/substituto quando o contrato ficar 30+ dias sem registro de fiscalização
+- **Assinatura eletrônica dos documentos gerados** — Extrato de Contrato, Termos Aditivos, Matriz de Risco e Termo de Recebimento ganham um campo para reanexar o PDF (depois de salvo pelo diálogo de impressão do navegador) diretamente na lista de Anexos do Contrato, de onde já é possível assinar com certificado ICP-Brasil pelo fluxo existente — sem exigir conversão de HTML para PDF no servidor
+
+---
+
 ## [0.14.0] — 2026-07-09
 
 ### Adicionado

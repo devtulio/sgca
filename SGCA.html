@@ -1367,7 +1367,7 @@
         <button class="btn btn-ghost btn-icon" onclick="closeContratoModal()">✕</button>
       </div>
       <div class="modal-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
             <label>Nº do Contrato</label>
             <input type="text" id="c-numero" placeholder="Ex: 45/2026">
@@ -1375,6 +1375,10 @@
           <div class="info-field" style="margin:0">
             <label>Processo Administrativo</label>
             <input type="text" id="c-processo" placeholder="Ex: 120/2026">
+          </div>
+          <div class="info-field" style="margin:0">
+            <label>Item do PCA</label>
+            <input type="text" id="c-pca-item" placeholder="Ex: 34/2026" title="Item do Plano de Contratações Anual (Art. 12, Lei 14.133/2021)">
           </div>
         </div>
         <div class="info-field">
@@ -1401,8 +1405,15 @@
           </div>
           <div class="info-field" style="margin:0">
             <label>Vigência Final</label>
-            <input type="date" id="c-vig-final">
+            <input type="date" id="c-vig-final" onchange="_atualizarAlertaVigenciaLimite()">
           </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 3fr;gap:10px">
+          <div class="info-field" style="margin:0">
+            <label>Limite de Vigência (anos)</label>
+            <input type="text" id="c-vig-limite-anos" placeholder="Ex: 10" title="Duração máxima total permitida (Art. 107, Lei 14.133/2021), incluindo prorrogações" oninput="_atualizarAlertaVigenciaLimite()">
+          </div>
+          <div id="vig-limite-alerta" style="align-self:center"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
@@ -1779,6 +1790,7 @@
           <option value="ata">Vencimento de ata</option>
           <option value="garantia">Vencimento de garantia</option>
           <option value="sancao">Fim de sanção</option>
+          <option value="reajuste">Aniversário de reajuste</option>
         </select>
       </div>
     </div>
@@ -2455,7 +2467,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.14.0';
+const SGCA_VERSION = '0.15.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3912,6 +3924,23 @@ function _autoVigenciaContrato(vigenciaInicial) {
   document.getElementById('c-vig-final').value = d.toISOString().slice(0, 10);
 }
 
+// ── Alerta de vigência total próxima do limite legal (Art. 107) ────────────
+function _atualizarAlertaVigenciaLimite() {
+  const el = document.getElementById('vig-limite-alerta');
+  const limite = parseFloat((document.getElementById('c-vig-limite-anos').value || '').replace(',', '.'));
+  const ini = document.getElementById('c-vig-inicial').value;
+  const fim = document.getElementById('c-vig-final').value;
+  if (!limite || !ini || !fim) { el.innerHTML = ''; return; }
+  const anos = (new Date(fim + 'T00:00:00') - new Date(ini + 'T00:00:00')) / (365.25 * 86400000);
+  if (anos >= limite) {
+    el.innerHTML = `<div class="aviso" style="margin:0">Vigência total (${anos.toFixed(1)} anos) já atinge ou ultrapassa o limite de ${limite} anos (Art. 107, Lei 14.133/2021)</div>`;
+  } else if (anos >= limite * 0.9) {
+    el.innerHTML = `<div class="nota" style="margin:0">Vigência total (${anos.toFixed(1)} anos) se aproxima do limite de ${limite} anos (Art. 107, Lei 14.133/2021)</div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
 async function _loadTagsDatalist() {
   const r = await API.get('/api/tags');
   const d = await API.json(r);
@@ -3950,10 +3979,13 @@ async function openContratoModal(id) {
     document.getElementById('c-numero').value = _sugerirProximoNumero(dAll?.items || [], new Date().getFullYear());
   }
   document.getElementById('c-processo').value    = c?.processoOrigem || '';
+  document.getElementById('c-pca-item').value    = c?.pcaItem || '';
   document.getElementById('c-objeto').value      = c?.objeto || '';
   document.getElementById('c-valor').value       = c?.valorGlobal ? fmtMoney(c.valorGlobal) : '';
   document.getElementById('c-vig-inicial').value = c?.vigenciaInicial || '';
   document.getElementById('c-vig-final').value   = c?.vigenciaFinal || '';
+  document.getElementById('c-vig-limite-anos').value = c?.vigenciaLimiteAnos ?? '';
+  _atualizarAlertaVigenciaLimite();
   document.getElementById('c-fiscal').value      = c?.fiscalNome || '';
   document.getElementById('c-fiscal-email').value = c?.fiscalEmail || '';
   document.getElementById('c-fiscal-substituto').value       = c?.fiscalSubstitutoNome || '';
@@ -4023,12 +4055,14 @@ async function saveContrato() {
   const payload = {
     numero,
     processoOrigem: document.getElementById('c-processo').value.trim(),
+    pcaItem: document.getElementById('c-pca-item').value.trim(),
     objeto,
     fornecedorId: document.getElementById('c-fornecedor').value || null,
     ataOrigemId: document.getElementById('c-ata-origem').value || null,
     valorGlobal: parseValor(document.getElementById('c-valor').value),
     vigenciaInicial: document.getElementById('c-vig-inicial').value,
     vigenciaFinal: document.getElementById('c-vig-final').value,
+    vigenciaLimiteAnos: parseFloat((document.getElementById('c-vig-limite-anos').value || '').replace(',', '.')) || null,
     fiscalNome: document.getElementById('c-fiscal').value.trim(),
     fiscalEmail: document.getElementById('c-fiscal-email').value.trim(),
     fiscalSubstitutoNome: document.getElementById('c-fiscal-substituto').value.trim(),
@@ -4186,6 +4220,7 @@ async function saveAditivo() {
   hideNovoAditivoForm();
   document.getElementById('c-vig-final').value = contrato.vigenciaFinal || '';
   document.getElementById('c-valor').value = contrato.valorGlobal ? fmtMoney(contrato.valorGlobal) : '';
+  _atualizarAlertaVigenciaLimite();
   renderAditivosList(contrato);
   renderContratosStats();
   updateAgendaBadge();
@@ -4451,6 +4486,27 @@ async function onAnexoContratoChange(input) {
   input.value = '';
 }
 
+// Chamado pela janela do documento gerado (Extrato/Termo/Matriz de Risco/Termo
+// de Recebimento) via window.opener, depois que o usuário salva o PDF impresso
+// e o reanexa ali mesmo — mesmo destino (anexosContrato) do upload manual.
+async function _anexarDocumentoAoRegistro(contratoId, nomeArquivo, base64) {
+  const contrato = await API.get(`/api/contratos/${contratoId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!contrato) throw new Error('Contrato não encontrado');
+  const up = await API.post('/api/arquivos', { nome: nomeArquivo, mime: 'application/pdf', data_b64: base64 });
+  if (!up?.ok) throw new Error('Falha ao enviar arquivo');
+  const arq = await API.json(up);
+  const anexos = contrato.anexosContrato || (contrato.anexoContrato ? [contrato.anexoContrato] : []);
+  anexos.push({ nome: nomeArquivo, arquivo_id: arq.id, tamanho: arq.tamanho, uploadedAt: new Date().toISOString() });
+  contrato.anexosContrato = anexos;
+  contrato.anexoContrato = null;
+  const r = await API.put(`/api/contratos/${contratoId}`, contrato);
+  if (!r?.ok) throw new Error('Falha ao salvar contrato');
+  const idx = _contratos.findIndex(c => c.id === contrato.id);
+  if (idx >= 0) _contratos[idx] = contrato; else _contratos.push(contrato);
+  await _auditEvento('CONTRATO_EDITADO', `Documento gerado anexado ao contrato: ${nomeArquivo}`, contratoId);
+  if (_contratoAtualId === contratoId) _renderAnexosContrato(anexos);
+}
+
 async function removeAnexoContrato(idx) {
   const ok = await customConfirm('Remover este anexo?', { okLabel: 'Remover' });
   if (!ok) return;
@@ -4630,6 +4686,7 @@ async function gerarExtratoContrato() {
 </head>
 <body>
 <button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+${_anexarBotaoHtml(c.id, 'Extrato de Contrato')}
 
 <div class="header">
   <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
@@ -4646,6 +4703,7 @@ async function gerarExtratoContrato() {
 <table class="field-table">
   <tr><td class="lbl">Nº do Contrato</td><td>${blank(c.numero)}</td></tr>
   <tr><td class="lbl">Processo Administrativo</td><td>${blank(c.processoOrigem)}</td></tr>
+  ${c.pcaItem ? `<tr><td class="lbl">Item do PCA</td><td>${escHtml(c.pcaItem)}</td></tr>` : ''}
   ${ataOrigem ? `<tr><td class="lbl">Ata de Origem</td><td>Ata ${escHtml(ataOrigem.numero || ataOrigem.id)} — adesão a Registro de Preços</td></tr>` : ''}
   <tr><td class="lbl">Vigência</td><td>${blank(vigencia)}</td></tr>
   <tr><td class="lbl">Valor Global</td><td>${c.valorGlobal ? fmtMoney(c.valorGlobal) : blank('')}</td></tr>
@@ -4713,6 +4771,7 @@ async function gerarTermoAditivo(aid) {
 </head>
 <body>
 <button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+${_anexarBotaoHtml(c.id, titulo)}
 
 <div class="header">
   <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
@@ -4789,6 +4848,7 @@ async function gerarMatrizRisco() {
 </head>
 <body>
 <button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+${_anexarBotaoHtml(c.id, 'Matriz de Risco')}
 
 <div class="header">
   <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
@@ -4852,6 +4912,7 @@ async function gerarTermoRecebimento() {
 </head>
 <body>
 <button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+${_anexarBotaoHtml(c.id, 'Termo de Recebimento')}
 
 <div class="header">
   <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
@@ -5302,6 +5363,24 @@ async function _agendaEventos() {
       const dg = new Date(c.garantiaVencimento + 'T00:00:00');
       if (!isNaN(dg)) events.push({ date: dg, label: `Vencimento de garantia contratual — ${c.numero ? c.numero + ' · ' : ''}${c.objeto || ''}`, tipo: 'garantia', id: c.id, urgente: dg < today });
     }
+
+    // Aniversário de reajuste: 12 meses após o último aditivo de reequilíbrio/
+    // repactuação (ou desde a assinatura, se nunca houve um), empurrado para a
+    // próxima ocorrência futura — funciona como lembrete recorrente, não prazo fatal.
+    const ultimoReajuste = (c.aditivos || [])
+      .filter(a => a.tipo === 'reequilibrio' || a.tipo === 'repactuacao')
+      .map(a => a.data).sort().pop();
+    const ancora = ultimoReajuste || c.vigenciaInicial;
+    if (ancora) {
+      const dr = new Date(ancora.slice(0, 10) + 'T00:00:00');
+      if (!isNaN(dr)) {
+        dr.setFullYear(dr.getFullYear() + 1);
+        while (dr < today) dr.setFullYear(dr.getFullYear() + 1);
+        if (!c.vigenciaFinal || dr <= new Date(c.vigenciaFinal + 'T00:00:00')) {
+          events.push({ date: dr, label: `Aniversário de reajuste — ${c.numero ? c.numero + ' · ' : ''}${c.objeto || ''}`, tipo: 'reajuste', id: c.id, urgente: false });
+        }
+      }
+    }
   }
   for (const a of atas) {
     if (a.status === 'cancelada') continue;
@@ -5376,8 +5455,10 @@ async function renderAgenda() {
           ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
           : e.tipo === 'sancao'
           ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A32D2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+          : e.tipo === 'reajuste'
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F6B4C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>`
           : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5E2750" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>`;
-        const iconBg = e.tipo === 'garantia' ? '#FFF3D8' : e.tipo === 'contrato' ? '#e8eef7' : e.tipo === 'sancao' ? '#FCEBEB' : '#F3EDF8';
+        const iconBg = e.tipo === 'garantia' ? '#FFF3D8' : e.tipo === 'contrato' ? '#e8eef7' : e.tipo === 'sancao' ? '#FCEBEB' : e.tipo === 'reajuste' ? '#E4F5EE' : '#F3EDF8';
         return `<div onclick="_agendaAbrir('${e.tipo}','${e.id}')" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid ${e.urgente?'var(--danger)':'var(--gray-200)'};border-radius:8px;margin-bottom:8px;cursor:pointer;background:var(--bg-card)">
           <div style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center">${icon}</div>
           <div style="flex:1">
@@ -9012,6 +9093,46 @@ function _qrFooterReport(label) {
     Lei Federal nº 14.133/2021 &nbsp;·&nbsp; ${dtFmt} &nbsp;·&nbsp; Código de autenticidade: <strong>${cod}</strong>
   </div>
 </div>`;
+}
+
+// ── Assinatura de documentos gerados ────────────────────────────────────────
+// Os documentos (Extrato, Termos, Matriz de Risco, Termo de Recebimento) são
+// só HTML impresso — não existe geração de PDF no servidor (evita depender de
+// uma lib pesada de HTML→PDF). Em vez disso, depois de salvar como PDF pelo
+// próprio diálogo de impressão do navegador, o usuário reanexa esse PDF aqui
+// mesmo na janela do documento; o anexo entra na lista de Anexos do Contrato,
+// de onde já dá para assinar com certificado ICP-Brasil (mesmo fluxo dos
+// anexos enviados manualmente).
+function _anexarBotaoHtml(contratoId, docNome) {
+  return `
+<div class="no-print" style="margin:14pt 0;padding:10pt;background:#f5f5f5;border-radius:6px;font-size:9pt;color:#333">
+  <label style="cursor:pointer;display:block">
+    📎 Depois de salvar como PDF acima, anexe o arquivo aqui para poder assiná-lo digitalmente no SGCA:
+    <input type="file" accept="application/pdf" style="display:block;margin-top:6pt" onchange="_anexarDocumentoGerado(this, '${contratoId}', '${escHtml(docNome).replace(/'/g, "\\'")}')">
+  </label>
+  <div id="anexar-doc-status" style="margin-top:6pt"></div>
+</div>
+<script>
+async function _anexarDocumentoGerado(input, contratoId, docNome) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('anexar-doc-status');
+  if (file.type !== 'application/pdf') { status.textContent = 'Selecione um arquivo PDF.'; status.style.color = '#a33'; return; }
+  const opener = window.opener;
+  if (!opener || opener.closed) { status.textContent = 'A janela principal do SGCA foi fechada — reabra o sistema e tente novamente.'; status.style.color = '#a33'; return; }
+  status.textContent = 'Enviando...'; status.style.color = '#555';
+  try {
+    const reader = new FileReader();
+    const dataurl = await new Promise((resolve, reject) => { reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+    await opener._anexarDocumentoAoRegistro(contratoId, docNome + '.pdf', dataurl.split(',')[1]);
+    status.textContent = 'Anexado! Volte ao SGCA e assine em Anexos (PDF), se necessário.';
+    status.style.color = '#1a7a3d';
+  } catch (e) {
+    status.textContent = 'Erro ao anexar: ' + e.message;
+    status.style.color = '#a33';
+  }
+}
+<\/script>`;
 }
 
 

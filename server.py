@@ -1,4 +1,4 @@
-# SGCA v0.14.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.15.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -1913,10 +1913,36 @@ def _send_daily_alerts():
                 pass
         return itens
 
+    def _fiscalizacoes_pendentes():
+        with get_db() as conn:
+            rows = conn.execute("SELECT data FROM contratos WHERE deleted_at IS NULL").fetchall()
+        itens = []
+        for row in rows:
+            try:
+                item = json.loads(row['data'])
+            except Exception:
+                continue
+            if item.get('status') in ('encerrado', 'rescindido'):
+                continue
+            ultima = max((f.get('data') for f in (item.get('fiscalizacoes') or []) if f.get('data')), default=None)
+            ancora = ultima or item.get('vigenciaInicial')
+            if not ancora:
+                continue
+            try:
+                ts = time.mktime(time.strptime(ancora[:10], '%Y-%m-%d'))
+                dias = int((agora - ts) / 86400)
+                if dias >= 30:
+                    nome = item.get('numero') and f"Contrato {item['numero']}" or (item.get('objeto') or item.get('id'))
+                    itens.append((nome, dias, item.get('fiscalEmail'), item.get('fiscalSubstitutoEmail')))
+            except Exception:
+                pass
+        return itens
+
     contratos = _vencimentos('contratos', 'Contrato')
     atas      = _vencimentos('atas', 'Ata')
+    fiscalizacoes_pendentes = _fiscalizacoes_pendentes()
 
-    if not contratos and not atas:
+    if not contratos and not atas and not fiscalizacoes_pendentes:
         with get_db() as conn:
             conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('alert_email_last_sent',?)", (hoje,))
         return
@@ -1962,6 +1988,24 @@ def _send_daily_alerts():
             print(f'  [ALERTAS] E-mail enviado ao fiscal {email} ({len(itens)} contrato(s))', flush=True)
         except Exception as e:
             _log.error('Falha ao enviar e-mail ao fiscal %s: %s', email, e)
+
+    # Notifica o fiscal (titular e substituto) de contratos sem fiscalização
+    # mensal registrada há 30 dias ou mais (Art. 117, Lei 14.133/2021)
+    por_fiscal_fiscalizacao = {}
+    for nome, dias, email, email_substituto in fiscalizacoes_pendentes:
+        if email:
+            por_fiscal_fiscalizacao.setdefault(email, []).append((nome, dias))
+        if email_substituto:
+            por_fiscal_fiscalizacao.setdefault(email_substituto, []).append((nome, dias))
+    for email, itens in por_fiscal_fiscalizacao.items():
+        linhas = ''.join(f'<li><strong>{html_mod.escape(str(nome))}</strong> — {dias} dia(s) sem fiscalização registrada</li>' for nome, dias in sorted(itens, key=lambda x: -x[1]))
+        corpo_fz = (f"<p>Resumo automático do SGCA — {hoje}</p>"
+                    f"<p>Contrato(s) sob sua fiscalização pendentes de registro de fiscalização mensal:</p><ul>{linhas}</ul>")
+        try:
+            _send_email_raw(smtp_cfg, frm, email, f'SGCA — Fiscalização mensal pendente ({hoje})', corpo_fz)
+            print(f'  [ALERTAS] E-mail de fiscalização pendente enviado a {email} ({len(itens)} contrato(s))', flush=True)
+        except Exception as e:
+            _log.error('Falha ao enviar e-mail de fiscalização ao fiscal %s: %s', email, e)
 
     with get_db() as conn:
         conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('alert_email_last_sent',?)", (hoje,))

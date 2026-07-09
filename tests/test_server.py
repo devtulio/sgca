@@ -404,6 +404,28 @@ class TestAgendaAlerts(SGCATestCase):
                 conn.execute('DELETE FROM sys_settings WHERE key=?', (k,))
         self.assertIsNotNone(row)
 
+    def test_send_daily_alerts_detecta_fiscalizacao_pendente(self):
+        import datetime
+        token = self.login()
+        vig_inicial = (datetime.date.today() - datetime.timedelta(days=40)).isoformat()
+        # vigência final bem no futuro para não disparar o alerta de vencimento,
+        # isolando o teste no novo caminho de fiscalização pendente
+        vig_final = (datetime.date.today() + datetime.timedelta(days=400)).isoformat()
+        self.request('POST', '/api/contratos',
+                     {'objeto': 'Contrato sem fiscalização recente', 'vigenciaInicial': vig_inicial,
+                      'vigenciaFinal': vig_final, 'status': 'vigente', 'fiscalEmail': 'fiscal2@teste.com'}, token=token)
+
+        with server.get_db() as conn:
+            conn.execute("DELETE FROM sys_settings WHERE key='alert_email_last_sent'")
+            for k, v in [('smtp_host', 'smtp.invalido.test'), ('smtp_user', 'a@a.com'), ('smtp_pass', 'x')]:
+                conn.execute('INSERT OR REPLACE INTO sys_settings (key,value) VALUES (?,?)', (k, v))
+        server._send_daily_alerts()
+        with server.get_db() as conn:
+            row = conn.execute("SELECT value FROM sys_settings WHERE key='alert_email_last_sent'").fetchone()
+            for k in ('smtp_host', 'smtp_user', 'smtp_pass', 'alert_email_last_sent'):
+                conn.execute('DELETE FROM sys_settings WHERE key=?', (k,))
+        self.assertIsNotNone(row)
+
 
 class TestHealth(SGCATestCase):
 

@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.14.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.15.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -38,6 +38,11 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Matriz de Risco** do Contrato — riscos com probabilidade, impacto, mitigação e responsável, com documento gerável (Art. 22)
 - **Recebimento do Objeto** — datas e responsáveis pelo recebimento provisório e definitivo, com Termo de Recebimento gerável (Art. 140)
 - **Subcontratação** — CNPJ, razão social e percentual do subcontratado, com alerta se o total ultrapassar o limite definido para o contrato (Art. 122)
+- **Item do Plano de Contratações Anual (PCA)** — campo de rastreabilidade no Contrato (Art. 12, Lei 14.133/2021 / IN SEGES nº 81/2022)
+- **Alerta de vigência total próxima do limite legal** — soma da vigência inicial com todas as prorrogações, aviso configurável por contrato (Art. 107)
+- **Aniversário de reajuste** na Agenda de Vencimentos — lembrete 12 meses após o último aditivo de reequilíbrio/repactuação (ou desde a assinatura, se nunca houve um)
+- **Lembrete de Fiscalização Mensal por e-mail** — aviso automático ao fiscal titular/substituto quando o contrato passa 30 dias sem registro de fiscalização
+- **Assinatura de documentos gerados** — Extrato, Termos Aditivos, Matriz de Risco e Termo de Recebimento podem ser salvos como PDF e reanexados ao contrato para assinatura com certificado ICP-Brasil, reaproveitando o mesmo fluxo dos anexos
 - **Autenticação multiusuário** com hashing PBKDF2-HMAC-SHA256 e gestão de usuários pelo admin
 - **Cadastro de fornecedores** com consulta automática de CNPJ via ReceitaWS/BrasilAPI, controle de certidões com alertas de vencimento e exclusão (lixeira) — bloqueada enquanto o fornecedor tiver contratos ou atas vinculados
 - **Importação de fornecedores via CSV** e relatório consolidado
