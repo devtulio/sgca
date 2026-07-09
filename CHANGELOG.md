@@ -5,6 +5,13 @@
 
 ---
 
+## [0.15.2] — 2026-07-09
+
+### Alterado
+- **Modal do Contrato mais largo** (de 640px para 760px) e ajuste na proporção de duas linhas de campos ("Limite de Vigência" e "Recebimento do Objeto") — os rótulos mais longos quebravam em duas linhas nas colunas mais estreitas
+
+---
+
 ## [0.15.1] — 2026-07-09
 
 ### Corrigido
