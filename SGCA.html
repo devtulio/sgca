@@ -254,8 +254,9 @@
   .stat-lbl { font-size: .72rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; }
   .stat-sub { font-size: .7rem; color: var(--gray-400); margin-top: 6px; padding-top: 6px;
     border-top: 1px solid var(--gray-100); }
-  /* dark */
-  body.dark .stat { background: #2a2a2a; border-color: #383838; }
+  /* dark: ver bloco de variáveis/tema escuro mais abaixo, que já define
+     body.dark .stat (background + border) e as variantes .done/.prog/
+     .blocked/.brand — evita duas regras concorrentes para o mesmo seletor */
   body.dark .stat-badge { background: #383838; color: var(--gray-500); }
   body.dark .stat.done    .stat-badge { background: #0d2e15; color: var(--success); }
   body.dark .stat.prog    .stat-badge { background: #2e1e00; color: var(--warning); }
@@ -734,6 +735,8 @@
   body.dark .stat          { background: #2a2a2a; border-color: #383838; }
   body.dark .stat.done     { background: #0d2e15; border-color: var(--success); }
   body.dark .stat.prog     { background: #2e1e00; border-color: var(--warning); }
+  body.dark .stat.blocked  { background: #2e0d0d; border-color: var(--danger); }
+  body.dark .stat.brand    { border-color: var(--brand); }
   body.dark .pc-stall-bar { background: rgba(202,138,4,.12); border-color: var(--warning); color: #fcd34d; }
   body.dark .pc-quick-open { background: var(--brand); }
   body.dark .process-card,
