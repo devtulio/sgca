@@ -1,4 +1,4 @@
-# SGCA v0.10.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
+# SGCA v0.11.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -164,6 +164,29 @@ def init_db():
                 tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
                 PRIMARY KEY (ata_id, tag_id)
             );
+            CREATE TABLE IF NOT EXISTS arquivos (
+                id            TEXT PRIMARY KEY,
+                nome_original TEXT NOT NULL,
+                nome_disco    TEXT NOT NULL,
+                tamanho       INTEGER,
+                mime          TEXT,
+                uploaded_by   INTEGER REFERENCES usuarios(id),
+                uploaded_em   TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S','now','localtime'))
+            );
+            CREATE TABLE IF NOT EXISTS signatures (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                cod            TEXT NOT NULL UNIQUE,
+                entity_type    TEXT NOT NULL CHECK(entity_type IN ('contrato','ata')),
+                entity_id      TEXT NOT NULL,
+                arquivo_id     TEXT REFERENCES arquivos(id),
+                doc_numero     TEXT,
+                doc_objeto     TEXT,
+                signer_user_id INTEGER REFERENCES usuarios(id),
+                signer_name    TEXT,
+                cert_subject   TEXT,
+                hash_sha256    TEXT,
+                signed_at      TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S','now','localtime'))
+            );
             CREATE INDEX IF NOT EXISTS idx_forn_cnpj     ON fornecedores(cnpj);
             CREATE INDEX IF NOT EXISTS idx_contr_status  ON contratos(status);
             CREATE INDEX IF NOT EXISTS idx_contr_forn    ON contratos(fornecedor_id);
@@ -175,6 +198,8 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_audit_ts      ON audit_global(ts);
             CREATE INDEX IF NOT EXISTS idx_contr_tags_tag ON contrato_tags(tag_id);
             CREATE INDEX IF NOT EXISTS idx_ata_tags_tag   ON ata_tags(tag_id);
+            CREATE INDEX IF NOT EXISTS idx_sig_entity     ON signatures(entity_type, entity_id);
+            CREATE INDEX IF NOT EXISTS idx_sig_cod        ON signatures(cod);
         ''')
         global FTS_AVAILABLE
         try:
@@ -207,6 +232,8 @@ def init_db():
         except sqlite3.OperationalError:
             pass
         conn.execute('CREATE INDEX IF NOT EXISTS idx_forn_deleted ON fornecedores(deleted_at)')
+        _migrar_anexos_dataurl(conn)
+        conn.commit()
         # Sessões são descartadas a cada início do servidor (logout automático ao fechar janela)
         conn.execute('DELETE FROM sessions')
         # Cria admin padrão se não houver usuários
@@ -246,6 +273,76 @@ def _tags_map(conn, join_table, id_col, item_ids):
     for r in rows:
         out.setdefault(r['iid'], []).append(r['nome'])
     return out
+
+def _migrar_anexos_dataurl(conn):
+    """Migra anexos armazenados como dataurl embutido no JSON do registro (formato
+    antigo, base64 dentro do próprio blob) para a tabela arquivos + disco, no mesmo
+    padrão do SGCD/SGDP. Idempotente: só mexe em entradas sem arquivo_id ainda."""
+    for tabela, campo_pl, campo_sg in (('contratos', 'anexosContrato', 'anexoContrato'),
+                                        ('atas', 'anexosAta', 'anexoAta')):
+        rows = conn.execute(f"SELECT id, data FROM {tabela} WHERE data LIKE '%dataurl%'").fetchall()
+        for row in rows:
+            item = json.loads(row['data'])
+            anexos = item.get(campo_pl) or ([item[campo_sg]] if item.get(campo_sg) else [])
+            if not anexos: continue
+            changed = False
+            for anexo in anexos:
+                if not anexo.get('dataurl') or anexo.get('arquivo_id'):
+                    continue
+                try:
+                    b64 = anexo['dataurl'].split(',', 1)[-1]
+                    binary = base64.b64decode(b64)
+                except Exception:
+                    continue
+                fid = str(uuid.uuid4())
+                nome_disco = f'{secrets.token_hex(16)}.bin'
+                with open(os.path.join(UPLOADS_DIR, nome_disco), 'wb') as f:
+                    f.write(binary)
+                conn.execute(
+                    'INSERT INTO arquivos (id,nome_original,nome_disco,tamanho,mime) VALUES (?,?,?,?,?)',
+                    (fid, anexo.get('nome', 'arquivo'), nome_disco, len(binary), 'application/pdf')
+                )
+                anexo['arquivo_id'] = fid
+                anexo['tamanho'] = len(binary)
+                del anexo['dataurl']
+                changed = True
+            if changed:
+                item[campo_pl] = anexos
+                item[campo_sg] = None
+                conn.execute(f'UPDATE {tabela} SET data=? WHERE id=?', (json.dumps(item, ensure_ascii=False), row['id']))
+
+def _gerar_cod_assinatura(conn):
+    """Código curto de verificação (ex: A1B2-C3D4), único na tabela signatures."""
+    for _ in range(10):
+        raw = secrets.token_hex(4).upper()
+        cod = raw[:4] + '-' + raw[4:]
+        if not conn.execute('SELECT 1 FROM signatures WHERE cod=?', (cod,)).fetchone():
+            return cod
+    raise RuntimeError('Não foi possível gerar código de verificação único')
+
+def _assinar_pdf_icp(pdf_bytes, cert_bytes, senha):
+    """Assina um PDF com certificado ICP-Brasil A1 (.pfx), nível qualificado.
+    Import tardio de pyHanko: o servidor sobe normalmente mesmo sem a lib
+    instalada — só este módulo fica indisponível, com erro claro. Portado do SGCD/SGDP.
+    Retorna (pdf_assinado_bytes, subject_do_certificado)."""
+    import tempfile, io
+    from pyhanko.sign import signers
+    from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+
+    with tempfile.NamedTemporaryFile(suffix='.pfx', delete=False) as tf:
+        tf.write(cert_bytes)
+        pfx_path = tf.name
+    try:
+        signer = signers.SimpleSigner.load_pkcs12(pfx_path, passphrase=senha.encode('utf-8'))
+        if signer is None:
+            raise ValueError('Senha do certificado incorreta ou arquivo .pfx inválido/corrompido')
+        cert_subject = str(signer.signing_cert.subject.human_friendly)
+        writer = IncrementalPdfFileWriter(io.BytesIO(pdf_bytes))
+        out = io.BytesIO()
+        signers.sign_pdf(writer, signers.PdfSignatureMetadata(field_name='Signature1'), signer=signer, output=out)
+        return out.getvalue(), cert_subject
+    finally:
+        os.remove(pfx_path)
 
 # ── Segurança ─────────────────────────────────────────────────────────────────
 
@@ -366,6 +463,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
         if p == '/health':
             self._json(200, {'ok': True, 'modo_servidor': _modo_servidor})
+        elif p.startswith('/verificar/'):
+            self._serve_verificar(p[len('/verificar/'):].strip('/').upper())
         elif p == '/api/public/org-info':
             try:
                 with get_db() as conn:
@@ -487,6 +586,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         # Etiquetas
         elif p == '/api/tags':
             self._list_tags()
+
+        # Arquivos
+        elif re.fullmatch(r'/api/arquivos/[^/]+', p):
+            self._serve_arquivo(p.split('/')[-1])
 
         # Auditoria
         # Sem restrição de admin: também usado pelo histórico de alterações por
@@ -652,6 +755,15 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif re.fullmatch(r'/api/atas/[^/]+/itens', p):
             self._add_ata_item(p.split('/')[3], data, s)
 
+        elif p == '/api/arquivos':
+            self._create_arquivo(data, s)
+
+        elif re.fullmatch(r'/api/contratos/[^/]+/anexos/[^/]+/assinar', p):
+            self._assinar_anexo('contrato', p.split('/')[3], p.split('/')[5], data, s)
+
+        elif re.fullmatch(r'/api/atas/[^/]+/anexos/[^/]+/assinar', p):
+            self._assinar_anexo('ata', p.split('/')[3], p.split('/')[5], data, s)
+
         elif p == '/api/audit':
             self._add_audit(data, s)
 
@@ -752,6 +864,9 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 with get_db() as conn:
                     conn.execute('UPDATE fornecedores SET deleted_at=? WHERE id=?', (_now(), fid))
             self._json(200, {'ok': True})
+
+        elif re.fullmatch(r'/api/arquivos/[^/]+', p):
+            self._delete_arquivo(p.split('/')[-1])
 
         elif re.fullmatch(r'/api/contratos/[^/]+/aditivos/[^/]+', p):
             cid, aid = p.split('/')[3], p.split('/')[5]
@@ -1171,6 +1286,178 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             rows = conn.execute('SELECT nome FROM tags ORDER BY nome').fetchall()
         self._json(200, {'items': [r['nome'] for r in rows]})
 
+    # ── Arquivos ─────────────────────────────────────────────────────────────
+    # ponytail: front-end já lê todo upload como base64 (_lerArquivoComoDataUrl),
+    # então os endpoints de arquivo seguem essa convenção (JSON/base64) em vez de
+    # multipart/form-data — sem parser de multipart a mais para manter.
+
+    def _create_arquivo(self, data, s):
+        nome = (data.get('nome') or 'arquivo').strip()
+        mime = data.get('mime') or 'application/octet-stream'
+        b64  = data.get('data_b64') or ''
+        if not b64:
+            self._json(400, {'error': 'data_b64 é obrigatório'}); return
+        try:
+            binary = base64.b64decode(b64)
+        except Exception:
+            self._json(400, {'error': 'data_b64 inválido'}); return
+        fid = str(uuid.uuid4())
+        nome_disco = f'{secrets.token_hex(16)}.bin'
+        with open(os.path.join(UPLOADS_DIR, nome_disco), 'wb') as f:
+            f.write(binary)
+        with get_db() as conn:
+            conn.execute(
+                'INSERT INTO arquivos (id,nome_original,nome_disco,tamanho,mime,uploaded_by) VALUES (?,?,?,?,?,?)',
+                (fid, nome, nome_disco, len(binary), mime, s['user_id'])
+            )
+        self._json(200, {'id': fid, 'nome_original': nome, 'tamanho': len(binary), 'mime': mime})
+
+    def _serve_arquivo(self, fid):
+        with get_db() as conn:
+            row = conn.execute('SELECT * FROM arquivos WHERE id=?', (fid,)).fetchone()
+        if not row: self._json(404, {'error': 'Arquivo não encontrado'}); return
+        fp = os.path.join(UPLOADS_DIR, row['nome_disco'])
+        if not os.path.isfile(fp): self._json(404, {'error': 'Arquivo não encontrado no disco'}); return
+        with open(fp, 'rb') as f:
+            binary = f.read()
+        self.send_response(200)
+        self._cors()
+        self.send_header('Content-Type', row['mime'] or 'application/octet-stream')
+        self.send_header('Content-Length', str(len(binary)))
+        safe_fn = row['nome_original'].replace('"', '_').replace('\n', '_').replace('\r', '_')
+        self.send_header('Content-Disposition', f'inline; filename="{safe_fn}"')
+        self.end_headers()
+        self.wfile.write(binary)
+
+    def _delete_arquivo(self, fid):
+        with get_db() as conn:
+            row = conn.execute('SELECT nome_disco FROM arquivos WHERE id=?', (fid,)).fetchone()
+            if row:
+                fp = os.path.join(UPLOADS_DIR, row['nome_disco'])
+                if os.path.isfile(fp): os.remove(fp)
+                conn.execute('DELETE FROM arquivos WHERE id=?', (fid,))
+        self._json(200, {'ok': True})
+
+    def _assinar_anexo(self, entity_type, entity_id, arquivo_id, data, s):
+        """Assina digitalmente (ICP-Brasil) um anexo já enviado de Contrato ou Ata,
+        substituindo seu conteúdo pela versão assinada. Registro imutável em
+        signatures sobrevive mesmo se o anexo for depois removido/trocado."""
+        tabela   = 'contratos' if entity_type == 'contrato' else 'atas'
+        campo_pl = 'anexosContrato' if entity_type == 'contrato' else 'anexosAta'
+
+        cert_b64 = data.get('cert_b64')
+        senha    = data.get('senha') or ''
+        if not cert_b64 or not senha:
+            self._json(400, {'error': 'Certificado (.pfx) e senha são obrigatórios'}); return
+        try:
+            cert_bytes = base64.b64decode(cert_b64)
+        except Exception:
+            self._json(400, {'error': 'Certificado inválido'}); return
+
+        with get_db() as conn:
+            arq = conn.execute('SELECT * FROM arquivos WHERE id=?', (arquivo_id,)).fetchone()
+        if not arq: self._json(404, {'error': 'Arquivo não encontrado'}); return
+        fp = os.path.join(UPLOADS_DIR, arq['nome_disco'])
+        if not os.path.isfile(fp): self._json(404, {'error': 'Arquivo não encontrado no disco'}); return
+        with open(fp, 'rb') as f:
+            pdf_bytes = f.read()
+
+        try:
+            pdf_assinado, cert_subject = _assinar_pdf_icp(pdf_bytes, cert_bytes, senha)
+        except ImportError:
+            self._json(400, {'error': 'Módulo de assinatura ICP-Brasil indisponível — instale com "pip install -r requirements.txt"'}); return
+        except Exception as e:
+            self._json(400, {'error': f'Falha ao assinar com o certificado: {e}'}); return
+        finally:
+            cert_bytes = None; senha = None  # descarta referências assim que possível
+
+        with get_db() as conn:
+            row = conn.execute(f'SELECT data FROM {tabela} WHERE id=?', (entity_id,)).fetchone()
+            if not row: self._json(404, {'error': 'Registro não encontrado'}); return
+            item = json.loads(row['data'])
+
+            with open(fp, 'wb') as f:
+                f.write(pdf_assinado)
+            hash_sha256 = hashlib.sha256(pdf_assinado).hexdigest()
+            conn.execute('UPDATE arquivos SET tamanho=? WHERE id=?', (len(pdf_assinado), arquivo_id))
+
+            cod = _gerar_cod_assinatura(conn)
+            agora = _now()
+            doc_numero = item.get('numero') or ''
+            doc_objeto = item.get('objeto') or (f"Ata de Registro de Preços nº {item.get('numero','')}" if entity_type == 'ata' else '')
+            conn.execute(
+                '''INSERT INTO signatures (cod,entity_type,entity_id,arquivo_id,doc_numero,doc_objeto,
+                   signer_user_id,signer_name,cert_subject,hash_sha256,signed_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
+                (cod, entity_type, entity_id, arquivo_id, doc_numero, doc_objeto,
+                 s['user_id'], s['nome'], cert_subject, hash_sha256, agora)
+            )
+
+            anexos = item.get(campo_pl) or []
+            for anexo in anexos:
+                if anexo.get('arquivo_id') == arquivo_id:
+                    anexo['assinado']       = True
+                    anexo['assinadoPor']    = s['nome']
+                    anexo['assinadoEm']     = agora
+                    anexo['codVerificacao'] = cod
+                    anexo['tamanho']        = len(pdf_assinado)
+            item[campo_pl] = anexos
+            conn.execute(f'UPDATE {tabela} SET data=? WHERE id=?', (json.dumps(item, ensure_ascii=False), entity_id))
+            conn.commit()
+
+        self._json(200, {'ok': True, 'cod_verificacao': cod, 'cert_subject': cert_subject})
+
+    def _serve_verificar(self, cod):
+        with get_db() as conn:
+            row = conn.execute('SELECT * FROM signatures WHERE cod=?', (cod,)).fetchone()
+        if row:
+            tipo_label = 'Contrato' if row['entity_type'] == 'contrato' else 'Ata de Registro de Preços'
+            doc_label = f"{tipo_label} nº {row['doc_numero']}" if row['doc_numero'] else tipo_label
+            status_html = f'''<h2>✓ Assinatura Encontrada</h2>
+    <div class="field"><strong>Documento:</strong> {html_mod.escape(doc_label)}</div>
+    <div class="field"><strong>Objeto:</strong> {html_mod.escape(row['doc_objeto'] or '—')}</div>
+    <div class="field"><strong>Assinado por:</strong> {html_mod.escape(row['signer_name'] or '—')}</div>
+    <div class="field"><strong>Certificado:</strong> {html_mod.escape(row['cert_subject'] or '—')}</div>
+    <div class="field"><strong>Data:</strong> {html_mod.escape(row['signed_at'] or '—')}</div>'''
+            status_class = 'ok'
+            extra_note = '<p style="font-size:12px;color:#6b7280;margin-top:10px">Para validar a cadeia de certificação, confira também o <a href="https://verificador.iti.gov.br/" target="_blank" rel="noopener">verificador oficial do ITI</a>.</p>'
+        else:
+            status_html = '<h2>✗ Não encontrado</h2><p style="font-size:13px;margin-top:6px">O código não corresponde a nenhuma assinatura registrada nesta instalação.</p>'
+            status_class = 'err'
+            extra_note = ''
+
+        html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verificação de Autenticidade — SGCA</title>
+<style>
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:system-ui,sans-serif;background:#f3f4f6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
+  .card{{background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:480px;width:100%;padding:32px;text-align:center}}
+  h2{{font-size:20px;margin-bottom:14px}}
+  .card.ok h2{{color:#15803d}}
+  .card.err h2{{color:#dc2626}}
+  .field{{text-align:left;font-size:14px;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0}}
+  .brand{{margin-top:20px;font-size:11px;color:#9ca3af}}
+</style>
+</head>
+<body>
+  <div class="card {status_class}">
+    {status_html}
+    {extra_note}
+    <div class="brand">SGCA — Sistema de Gestão de Contratos e Atas</div>
+  </div>
+</body>
+</html>"""
+        payload = html.encode('utf-8')
+        self.send_response(200)
+        self._cors()
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def _add_ata_item(self, aid, data, s):
         with get_db() as conn:
             row = conn.execute('SELECT data FROM atas WHERE id=?', (aid,)).fetchone()
@@ -1333,7 +1620,39 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             conn.execute('DELETE FROM fornecedores')
             conn.execute('DELETE FROM contratos')
             conn.execute('DELETE FROM atas')
+            conn.execute('DELETE FROM signatures')
+            conn.execute('DELETE FROM arquivos')
             conn.commit()
+
+            for fd in data.get('arquivos', []):
+                b64 = fd.get('data_b64') or ''
+                if not b64: continue
+                try:
+                    binary = base64.b64decode(b64)
+                    nome_disco = f'{secrets.token_hex(16)}.bin'
+                    with open(os.path.join(UPLOADS_DIR, nome_disco), 'wb') as fh:
+                        fh.write(binary)
+                    conn.execute(
+                        '''INSERT INTO arquivos (id,nome_original,nome_disco,tamanho,mime,uploaded_by,uploaded_em)
+                           VALUES (?,?,?,?,?,?,?)''',
+                        (fd.get('id') or str(uuid.uuid4()), fd.get('nome_original', 'arquivo'),
+                         nome_disco, len(binary), fd.get('mime', 'application/octet-stream'),
+                         fd.get('uploaded_by'), fd.get('uploaded_em'))
+                    )
+                except Exception:
+                    pass
+
+            for sg in data.get('signatures', []):
+                conn.execute(
+                    '''INSERT OR REPLACE INTO signatures
+                       (id,cod,entity_type,entity_id,arquivo_id,doc_numero,doc_objeto,
+                        signer_user_id,signer_name,cert_subject,hash_sha256,signed_at)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+                    (sg.get('id'), sg.get('cod'), sg.get('entity_type'), sg.get('entity_id'),
+                     sg.get('arquivo_id'), sg.get('doc_numero'), sg.get('doc_objeto'),
+                     sg.get('signer_user_id'), sg.get('signer_name'), sg.get('cert_subject'),
+                     sg.get('hash_sha256'), sg.get('signed_at'))
+                )
 
             for f in data.get('fornecedores', []):
                 fid = f.get('id') or str(uuid.uuid4())
@@ -1643,10 +1962,18 @@ def _build_backup_payload():
         atas         = [json.loads(r['data']) for r in conn.execute('SELECT data FROM atas').fetchall()]
         audit        = [dict(r) for r in conn.execute('SELECT * FROM audit_global').fetchall()]
         settings     = {r['key']: r['value'] for r in conn.execute('SELECT key,value FROM sys_settings').fetchall()}
+        arqs = []
+        for r in conn.execute('SELECT * FROM arquivos').fetchall():
+            p = os.path.join(UPLOADS_DIR, r['nome_disco'])
+            if os.path.isfile(p):
+                with open(p, 'rb') as f:
+                    arqs.append({**dict(r), 'data_b64': base64.b64encode(f.read()).decode()})
+        signatures = [dict(r) for r in conn.execute('SELECT * FROM signatures').fetchall()]
     return {
         '_sgca': True, 'version': 5, 'exportedAt': _now(),
         'fornecedores': fornecedores, 'contratos': contratos, 'atas': atas,
         'auditGlobal': audit, 'settings': settings,
+        'arquivos': arqs, 'signatures': signatures,
     }
 
 def _do_json_backup(cfg=None):

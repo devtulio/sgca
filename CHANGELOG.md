@@ -5,6 +5,13 @@
 
 ---
 
+## [0.11.0] — 2026-07-08
+
+### Adicionado
+- **Assinatura digital ICP-Brasil** — botão "🔏 Assinar" em cada anexo PDF de Contrato/Ata; assina com certificado .pfx A1, gera código de verificação público e página `/verificar/<código>` (sem login). Registro imutável em `signatures`, sobrevive mesmo se o anexo for depois substituído. Escopo alinhado ao SGDP (só ICP-Brasil, sem os métodos simples/gov.br do SGCD)
+- **Tabela `arquivos` própria para anexos** — pré-requisito da assinatura: anexos de Contrato/Ata deixam de ser base64 embutido no JSON do registro (reescrevia o blob inteiro a cada edição de qualquer campo) e passam a ser armazenados como arquivo em disco + linha em tabela, no mesmo padrão do `files`/`arquivos` do SGCD/SGDP. Migração automática e idempotente do formato antigo, roda no início do servidor
+- `SGCA/requirements.txt` — documenta `pyhanko` (dependência opcional, só necessária para assinar; o servidor sobe normalmente sem ela)
+
 ## [0.10.0] — 2026-07-08
 
 ### Adicionado

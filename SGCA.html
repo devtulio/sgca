@@ -2178,6 +2178,34 @@
   </div>
 </div>
 
+<!-- ── Modal Assinatura Digital ICP-Brasil ── -->
+<div class="overlay hidden" id="modal-assinar" onclick="if(event.target===this)fecharModalAssinar()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>Assinatura Digital — <span id="assinar-anexo-label"></span></h3>
+      <button class="btn btn-ghost btn-sm" onclick="fecharModalAssinar()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.78rem;color:var(--gray-500);margin-bottom:12px">
+        Assina o PDF com certificado ICP-Brasil A1 (arquivo <code>.pfx</code>). A senha do certificado não é armazenada — usada apenas no momento da assinatura.
+      </p>
+      <div class="info-field">
+        <label>Certificado (.pfx) *</label>
+        <input id="f-assinar-cert" type="file" accept=".pfx,.p12">
+      </div>
+      <div class="info-field">
+        <label>Senha do certificado *</label>
+        <input id="f-assinar-senha" type="password" autocomplete="off">
+      </div>
+      <p id="assinar-status" style="font-size:.78rem;margin-top:8px"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModalAssinar()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-assinar-confirmar" onclick="assinarAnexo()">🔏 Assinar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal Histórico de Campo ── -->
 <div id="field-hist-panel">
   <div style="padding:10px 12px 6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-500);border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between">
@@ -2236,7 +2264,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.10.0';
+const SGCA_VERSION = '0.11.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3938,9 +3966,12 @@ function _renderAnexosContrato(anexos) {
   if (!el) return;
   if (!anexos || !anexos.length) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
   el.innerHTML = anexos.map((anexo, i) => `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-      📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+      📄 <a href="/api/arquivos/${anexo.arquivo_id}?token=${_apiToken}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
       <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
+      ${anexo.assinado
+        ? `<span style="font-size:.68rem;color:var(--success);font-weight:600">✓ Assinado por ${escHtml(anexo.assinadoPor||'')} — <a href="/verificar/${escHtml(anexo.codVerificacao||'')}" target="_blank">verificar</a></span>`
+        : `<button class="btn btn-ghost btn-sm" style="font-size:.68rem;padding:1px 6px" onclick="abrirModalAssinar('contrato','${_contratoAtualId}','${anexo.arquivo_id}','${escHtml(anexo.nome)}')" title="Assinar digitalmente (ICP-Brasil)">🔏 Assinar</button>`}
       <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoContrato(${i})" title="Remover anexo">✕</button>
     </div>`).join('');
 }
@@ -3956,7 +3987,11 @@ async function onAnexoContratoChange(input) {
   if (!contrato) return;
   const anexos = contrato.anexosContrato || (contrato.anexoContrato ? [contrato.anexoContrato] : []);
   for (const file of files) {
-    anexos.push({ nome: file.name, dataurl: await _lerArquivoComoDataUrl(file), uploadedAt: new Date().toISOString() });
+    const dataurl = await _lerArquivoComoDataUrl(file);
+    const up = await API.post('/api/arquivos', { nome: file.name, mime: file.type, data_b64: dataurl.split(',')[1] });
+    if (!up?.ok) { toast(`Erro ao enviar "${file.name}".`, 'error'); input.value = ''; return; }
+    const arq = await API.json(up);
+    anexos.push({ nome: file.name, arquivo_id: arq.id, tamanho: arq.tamanho, uploadedAt: new Date().toISOString() });
   }
   contrato.anexosContrato = anexos;
   contrato.anexoContrato = null; // migra de vez do formato antigo (anexo único) para o array
@@ -3976,11 +4011,12 @@ async function removeAnexoContrato(idx) {
   const contrato = await API.get(`/api/contratos/${_contratoAtualId}`).then(r => r?.ok ? API.json(r) : null);
   if (!contrato) return;
   const anexos = contrato.anexosContrato || (contrato.anexoContrato ? [contrato.anexoContrato] : []);
-  anexos.splice(idx, 1);
+  const [removido] = anexos.splice(idx, 1);
   contrato.anexosContrato = anexos;
   contrato.anexoContrato = null;
   const r = await API.put(`/api/contratos/${_contratoAtualId}`, contrato);
   if (!r?.ok) { toast('Erro ao remover anexo.', 'error'); return; }
+  if (removido?.arquivo_id) await API.del(`/api/arquivos/${removido.arquivo_id}`);
   const cidx = _contratos.findIndex(c => c.id === contrato.id);
   if (cidx >= 0) _contratos[cidx] = contrato;
   toast('Anexo removido.', 'success');
@@ -3993,9 +4029,12 @@ function _renderAnexosAta(anexos) {
   if (!el) return;
   if (!anexos || !anexos.length) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
   el.innerHTML = anexos.map((anexo, i) => `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-      📄 <a href="${anexo.dataurl}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+      📄 <a href="/api/arquivos/${anexo.arquivo_id}?token=${_apiToken}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
       <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
+      ${anexo.assinado
+        ? `<span style="font-size:.68rem;color:var(--success);font-weight:600">✓ Assinado por ${escHtml(anexo.assinadoPor||'')} — <a href="/verificar/${escHtml(anexo.codVerificacao||'')}" target="_blank">verificar</a></span>`
+        : `<button class="btn btn-ghost btn-sm" style="font-size:.68rem;padding:1px 6px" onclick="abrirModalAssinar('ata','${_ataAtualId}','${anexo.arquivo_id}','${escHtml(anexo.nome)}')" title="Assinar digitalmente (ICP-Brasil)">🔏 Assinar</button>`}
       <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoAta(${i})" title="Remover anexo">✕</button>
     </div>`).join('');
 }
@@ -4011,7 +4050,11 @@ async function onAnexoAtaChange(input) {
   if (!ata) return;
   const anexos = ata.anexosAta || (ata.anexoAta ? [ata.anexoAta] : []);
   for (const file of files) {
-    anexos.push({ nome: file.name, dataurl: await _lerArquivoComoDataUrl(file), uploadedAt: new Date().toISOString() });
+    const dataurl = await _lerArquivoComoDataUrl(file);
+    const up = await API.post('/api/arquivos', { nome: file.name, mime: file.type, data_b64: dataurl.split(',')[1] });
+    if (!up?.ok) { toast(`Erro ao enviar "${file.name}".`, 'error'); input.value = ''; return; }
+    const arq = await API.json(up);
+    anexos.push({ nome: file.name, arquivo_id: arq.id, tamanho: arq.tamanho, uploadedAt: new Date().toISOString() });
   }
   ata.anexosAta = anexos;
   ata.anexoAta = null; // migra de vez do formato antigo (anexo único) para o array
@@ -4031,15 +4074,84 @@ async function removeAnexoAta(idx) {
   const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
   if (!ata) return;
   const anexos = ata.anexosAta || (ata.anexoAta ? [ata.anexoAta] : []);
-  anexos.splice(idx, 1);
+  const [removido] = anexos.splice(idx, 1);
   ata.anexosAta = anexos;
   ata.anexoAta = null;
   const r = await API.put(`/api/atas/${_ataAtualId}`, ata);
   if (!r?.ok) { toast('Erro ao remover anexo.', 'error'); return; }
+  if (removido?.arquivo_id) await API.del(`/api/arquivos/${removido.arquivo_id}`);
   const aidx = _atas.findIndex(a => a.id === ata.id);
   if (aidx >= 0) _atas[aidx] = ata;
   toast('Anexo removido.', 'success');
   _renderAnexosAta(anexos);
+}
+
+// ── Assinatura digital ICP-Brasil de anexo (Contrato/Ata) ──────────
+let _assinarCtx = null; // { entityType: 'contrato'|'ata', entityId, arquivoId }
+
+function abrirModalAssinar(entityType, entityId, arquivoId, label) {
+  _assinarCtx = { entityType, entityId, arquivoId };
+  document.getElementById('assinar-anexo-label').textContent = label;
+  document.getElementById('f-assinar-cert').value = '';
+  document.getElementById('f-assinar-senha').value = '';
+  document.getElementById('assinar-status').textContent = '';
+  document.getElementById('modal-assinar').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharModalAssinar() {
+  document.getElementById('modal-assinar').classList.add('hidden');
+  document.body.style.overflow = '';
+  _assinarCtx = null;
+}
+
+async function assinarAnexo() {
+  if (!_assinarCtx) return;
+  const certFile = document.getElementById('f-assinar-cert').files[0];
+  const senha = document.getElementById('f-assinar-senha').value;
+  const status = document.getElementById('assinar-status');
+  if (!certFile) { status.textContent = 'Selecione o arquivo do certificado (.pfx).'; status.style.color = 'var(--danger)'; return; }
+  if (!senha)    { status.textContent = 'Informe a senha do certificado.'; status.style.color = 'var(--danger)'; return; }
+
+  const btn = document.getElementById('btn-assinar-confirmar');
+  btn.disabled = true;
+  status.style.color = '';
+  status.textContent = '⏳ Assinando…';
+
+  const { entityType, entityId, arquivoId } = _assinarCtx;
+  const certDataUrl = await _lerArquivoComoDataUrl(certFile);
+  const rota = entityType === 'contrato' ? 'contratos' : 'atas';
+  const r = await API.post(`/api/${rota}/${entityId}/anexos/${arquivoId}/assinar`, {
+    cert_b64: certDataUrl.split(',')[1], senha
+  });
+  btn.disabled = false;
+  const d = await API.json(r);
+  if (!r?.ok) { status.textContent = d?.error || 'Erro ao assinar.'; status.style.color = 'var(--danger)'; return; }
+
+  const verifUrl = `${location.origin}/verificar/${d.cod_verificacao}`;
+  status.style.color = 'var(--success)';
+  status.innerHTML = `✔ Assinado com sucesso.<br>Código de verificação: <strong style="font-family:monospace">${escHtml(d.cod_verificacao)}</strong><br>
+    <a href="${escHtml(verifUrl)}" target="_blank" rel="noopener">${escHtml(verifUrl)}</a>`;
+  toast('Anexo assinado digitalmente.', 'success');
+
+  const evento = entityType === 'contrato' ? 'CONTRATO_ASSINADO' : 'ATA_ASSINADA';
+  await _auditEvento(evento, `Assinado por ${getUser()?.nome || ''} — cód. ${d.cod_verificacao}`, entityId);
+
+  if (entityType === 'contrato') {
+    const contrato = await API.get(`/api/contratos/${entityId}`).then(rr => rr?.ok ? API.json(rr) : null);
+    if (contrato) {
+      const idx = _contratos.findIndex(c => c.id === contrato.id);
+      if (idx >= 0) _contratos[idx] = contrato;
+      _renderAnexosContrato(contrato.anexosContrato || []);
+    }
+  } else {
+    const ata = await API.get(`/api/atas/${entityId}`).then(rr => rr?.ok ? API.json(rr) : null);
+    if (ata) {
+      const idx = _atas.findIndex(a => a.id === ata.id);
+      if (idx >= 0) _atas[idx] = ata;
+      _renderAnexosAta(ata.anexosAta || []);
+    }
+  }
 }
 
 // ── Documentos gerados (Contrato) ───────────────────────────────
@@ -4926,6 +5038,7 @@ const _AUDIT_EVENT_LABELS = {
   CONTRATO_RESTAURADO: 'Contrato restaurado', CONTRATO_EXPURGADO: 'Contrato excluído definitivamente',
   ATA_CRIADA: 'Ata criada', ATA_EDITADA: 'Ata editada',
   ATA_RESTAURADO: 'Ata restaurada', ATA_EXPURGADO: 'Ata excluída definitivamente',
+  CONTRATO_ASSINADO: 'Anexo assinado digitalmente (ICP-Brasil)', ATA_ASSINADA: 'Anexo assinado digitalmente (ICP-Brasil)',
   FORNECEDOR_ALTERADO: 'Fornecedor alterado', FORNECEDOR_EXCLUIDO: 'Fornecedor excluído',
   FORNECEDOR_RESTAURADO: 'Fornecedor restaurado', FORNECEDOR_EXPURGADO: 'Fornecedor excluído definitivamente',
   DOCUMENTO_GERADO: 'Documento gerado', SYNC_BACKUP: 'Sincronização de backup',
@@ -4943,6 +5056,8 @@ const _AUDIT_EVENT_META = {
   ATA_EDITADA:          { bg: '#FFF3D8', color: '#854F0B' },
   ATA_RESTAURADO:       { bg: '#E1F5EE', color: '#0F6E56' },
   ATA_EXPURGADO:        { bg: '#FCEBEB', color: '#A32D2D' },
+  CONTRATO_ASSINADO:    { bg: '#E1F5EE', color: '#0F6E56' },
+  ATA_ASSINADA:         { bg: '#E1F5EE', color: '#0F6E56' },
   FORNECEDOR_ALTERADO:  { bg: '#E1F5EE', color: '#0F6E56' },
   FORNECEDOR_EXCLUIDO:  { bg: '#FCEBEB', color: '#A32D2D' },
   FORNECEDOR_RESTAURADO:{ bg: '#E1F5EE', color: '#0F6E56' },

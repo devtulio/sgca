@@ -1,0 +1,5 @@
+# Dependência opcional — só necessária para assinatura digital ICP-Brasil
+# (POST /api/contratos/<id>/anexos/<id>/assinar e /api/atas/.../assinar).
+# O servidor sobe e funciona normalmente sem esta lib instalada; só a
+# assinatura fica indisponível, com erro claro na resposta da API.
+pyhanko
