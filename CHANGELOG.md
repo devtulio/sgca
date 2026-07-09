@@ -5,6 +5,15 @@
 
 ---
 
+## [0.15.1] — 2026-07-09
+
+### Corrigido
+- **Alertas de limite sem estilo na tela** — os avisos de vigência total (Art. 107), subcontratação acima do limite (Art. 122) e variação acumulada de aditivos (Art. 125) usavam classes (`.aviso`/`.nota`) que só existem na folha de estilo dos documentos impressos; fora desse contexto apareciam como texto simples, sem nenhuma cor de destaque. Corrigido com o mesmo padrão inline já usado no aviso de fornecedor sancionado
+- **Cards do Dashboard sem cor de status no modo escuro** — duas regras CSS concorrentes definiam o fundo/borda de `.stat` no tema escuro; a que sempre vencia não tinha variantes para `.blocked`/`.brand`, deixando cards como "Contratos sem Fiscal", "Fiscalização Atrasada" e "Contratos Vigentes" com borda cinza neutra em vez da cor de status
+- **Botões `.btn-outline` com fundo branco fixo no modo escuro** — afetava todo botão outline do sistema (Cancelar, Gerar Extrato, Histórico, Exportar PNCP etc.), não só os das funcionalidades novas; cor de texto e borda já se adaptavam ao tema escuro, só o fundo ficou esquecido
+
+---
+
 ## [0.15.0] — 2026-07-09
 
 ### Adicionado
