@@ -1429,7 +1429,7 @@
           </div>
           <div id="vig-limite-alerta" style="align-self:center"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
             <label>Fiscal do Contrato</label>
             <input type="text" id="c-fiscal">
@@ -1438,19 +1438,15 @@
             <label>E-mail do Fiscal</label>
             <input type="email" id="c-fiscal-email" placeholder="para alerta de vencimento" title="Recebe um alerta automático quando o contrato estiver vencendo">
           </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
             <label>Gestor do Contrato</label>
             <input type="text" id="c-gestor">
           </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="info-field" style="margin:0">
-            <label>Fiscal Substituto</label>
-            <input type="text" id="c-fiscal-substituto">
-          </div>
-          <div class="info-field" style="margin:0">
-            <label>E-mail do Fiscal Substituto</label>
-            <input type="email" id="c-fiscal-substituto-email" placeholder="para alerta de vencimento" title="Recebe um alerta automático quando o contrato estiver vencendo">
+            <label>E-mail do Gestor</label>
+            <input type="email" id="c-gestor-email" placeholder="para alerta de vencimento" title="Recebe um alerta automático quando o contrato estiver vencendo">
           </div>
         </div>
         <div class="info-field">
@@ -2481,7 +2477,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.16.0';
+const SGCA_VERSION = '0.17.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -4002,9 +3998,8 @@ async function openContratoModal(id) {
   _atualizarAlertaVigenciaLimite();
   document.getElementById('c-fiscal').value      = c?.fiscalNome || '';
   document.getElementById('c-fiscal-email').value = c?.fiscalEmail || '';
-  document.getElementById('c-fiscal-substituto').value       = c?.fiscalSubstitutoNome || '';
-  document.getElementById('c-fiscal-substituto-email').value = c?.fiscalSubstitutoEmail || '';
   document.getElementById('c-gestor').value      = c?.gestorNome || '';
+  document.getElementById('c-gestor-email').value = c?.gestorEmail || '';
   document.getElementById('c-dotacao').value     = c?.dotacaoOrcamentaria || '';
   document.getElementById('c-status').value      = c?.status || 'vigente';
   document.getElementById('c-garantia-modalidade').value = c?.garantiaModalidade || '';
@@ -4089,9 +4084,8 @@ async function saveContrato() {
     vigenciaLimiteAnos: parseFloat((document.getElementById('c-vig-limite-anos').value || '').replace(',', '.')) || null,
     fiscalNome: document.getElementById('c-fiscal').value.trim(),
     fiscalEmail: document.getElementById('c-fiscal-email').value.trim(),
-    fiscalSubstitutoNome: document.getElementById('c-fiscal-substituto').value.trim(),
-    fiscalSubstitutoEmail: document.getElementById('c-fiscal-substituto-email').value.trim(),
     gestorNome: document.getElementById('c-gestor').value.trim(),
+    gestorEmail: document.getElementById('c-gestor-email').value.trim(),
     dotacaoOrcamentaria: document.getElementById('c-dotacao').value.trim(),
     status: document.getElementById('c-status').value,
     garantiaModalidade: document.getElementById('c-garantia-modalidade').value,
@@ -4738,7 +4732,6 @@ ${_anexarBotaoHtml(c.id, 'Extrato de Contrato')}
   <tr><td class="lbl">Objeto</td><td>${blank(c.objeto)}</td></tr>
   <tr><td class="lbl">Gestor do Contrato</td><td>${blank(c.gestorNome)}</td></tr>
   <tr><td class="lbl">Fiscal do Contrato</td><td>${blank(c.fiscalNome)}</td></tr>
-  ${c.fiscalSubstitutoNome ? `<tr><td class="lbl">Fiscal Substituto</td><td>${escHtml(c.fiscalSubstitutoNome)}</td></tr>` : ''}
   ${c.dotacaoOrcamentaria ? `<tr><td class="lbl">Dotação Orçamentária</td><td>${escHtml(c.dotacaoOrcamentaria)}</td></tr>` : ''}
 </table>
 

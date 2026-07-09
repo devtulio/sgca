@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.16.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.17.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -26,7 +26,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Reajuste por índice** (IPCA-E, IGP-M, INCC-M, INPC) em aditivos de repactuação/reequilíbrio, com busca automática da variação acumulada no período direto do Banco Central (SGS) e cálculo automático do novo valor global
 - **Anexos assinados (PDF, múltiplos)** vinculados ao registro do contrato e da ata
 - **Vínculo Contrato ↔ Ata de Registro de Preços** — campo "Ata de Origem" para contratações por adesão a uma ARP nossa; para adesão a ARP de outro órgão gerenciador (não cadastrada no sistema), campos de texto "Nº da ARP de Adesão" e "Órgão Gerenciador de Origem"
-- **Fiscal Substituto** — titular e substituto no Contrato, ambos recebendo o aviso automático de vencimento
+- **Gestor do Contrato com e-mail** — recebe o mesmo aviso automático de vencimento e de fiscalização mensal pendente que o fiscal
 - **Relatórios consolidados** de Contratos, Atas e Sanções (por fornecedor ou global), no mesmo padrão A4 usado nos demais documentos
 - **Indicadores e gráfico de vencimentos** nas telas de Contratos e de Atas — vigentes, vencendo em 30 dias, valor total, saldo baixo e vencimentos dos próximos 6 meses
 - **Atalho "Ver Contratos"** a partir do cadastro do fornecedor, e prorrogação assistida (sugestão automática de nova vigência ao criar aditivo de prazo)
@@ -41,7 +41,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Item do Plano de Contratações Anual (PCA)** — campo de rastreabilidade no Contrato (Art. 12, Lei 14.133/2021 / IN SEGES nº 81/2022)
 - **Alerta de vigência total próxima do limite legal** — soma da vigência inicial com todas as prorrogações, aviso configurável por contrato (Art. 107)
 - **Aniversário de reajuste** na Agenda de Vencimentos — lembrete 12 meses após o último aditivo de reequilíbrio/repactuação (ou desde a assinatura, se nunca houve um)
-- **Lembrete de Fiscalização Mensal por e-mail** — aviso automático ao fiscal titular/substituto quando o contrato passa 30 dias sem registro de fiscalização
+- **Lembrete de Fiscalização Mensal por e-mail** — aviso automático ao fiscal e ao gestor quando o contrato passa 30 dias sem registro de fiscalização
 - **Assinatura de documentos gerados** — Extrato, Termos Aditivos, Matriz de Risco e Termo de Recebimento podem ser salvos como PDF e reanexados ao contrato para assinatura com certificado ICP-Brasil, reaproveitando o mesmo fluxo dos anexos
 - **Autenticação multiusuário** com hashing PBKDF2-HMAC-SHA256 e gestão de usuários pelo admin
 - **Cadastro de fornecedores** com consulta automática de CNPJ via ReceitaWS/BrasilAPI, controle de certidões com alertas de vencimento e exclusão (lixeira) — bloqueada enquanto o fornecedor tiver contratos ou atas vinculados

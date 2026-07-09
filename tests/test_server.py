@@ -390,7 +390,7 @@ class TestAgendaAlerts(SGCATestCase):
         vig = (datetime.date.today() + datetime.timedelta(days=5)).isoformat()
         self.request('POST', '/api/contratos',
                      {'objeto': 'Contrato com fiscal', 'vigenciaFinal': vig, 'status': 'vigente',
-                      'fiscalEmail': 'fiscal@teste.com'}, token=token)
+                      'fiscalEmail': 'fiscal@teste.com', 'gestorEmail': 'gestor@teste.com'}, token=token)
 
         with server.get_db() as conn:
             conn.execute("DELETE FROM sys_settings WHERE key='alert_email_last_sent'")

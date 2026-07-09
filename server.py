@@ -1,4 +1,4 @@
-# SGCA v0.16.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.17.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -1908,7 +1908,7 @@ def _send_daily_alerts():
                 dias = int((ts - agora) / 86400)
                 if dias <= 30:
                     nome = item.get('numero') and f"{rotulo} {item['numero']}" or (item.get('objeto') or item.get('id'))
-                    itens.append((nome, dias, item.get('fiscalEmail'), item.get('fiscalSubstitutoEmail')))
+                    itens.append((nome, dias, item.get('fiscalEmail'), item.get('gestorEmail')))
             except Exception:
                 pass
         return itens
@@ -1933,7 +1933,7 @@ def _send_daily_alerts():
                 dias = int((agora - ts) / 86400)
                 if dias >= 30:
                     nome = item.get('numero') and f"Contrato {item['numero']}" or (item.get('objeto') or item.get('id'))
-                    itens.append((nome, dias, item.get('fiscalEmail'), item.get('fiscalSubstitutoEmail')))
+                    itens.append((nome, dias, item.get('fiscalEmail'), item.get('gestorEmail')))
             except Exception:
                 pass
         return itens
@@ -1973,13 +1973,13 @@ def _send_daily_alerts():
         except Exception as e:
             _log.error('Falha ao enviar e-mail de alertas: %s', e)
 
-    # Notifica individualmente o fiscal (titular e substituto) de cada contrato vencendo
+    # Notifica individualmente o fiscal e o gestor de cada contrato vencendo
     por_fiscal = {}
-    for nome, dias, email, email_substituto in contratos:
+    for nome, dias, email, email_gestor in contratos:
         if email:
             por_fiscal.setdefault(email, []).append((nome, dias))
-        if email_substituto:
-            por_fiscal.setdefault(email_substituto, []).append((nome, dias))
+        if email_gestor:
+            por_fiscal.setdefault(email_gestor, []).append((nome, dias))
     for email, itens in por_fiscal.items():
         corpo_f = (f"<p>Resumo automático do SGCA — {hoje}</p>"
                    f"<p>Contrato(s) sob sua fiscalização com vigência vencendo:</p>" + _linhas('', itens))
@@ -1989,14 +1989,14 @@ def _send_daily_alerts():
         except Exception as e:
             _log.error('Falha ao enviar e-mail ao fiscal %s: %s', email, e)
 
-    # Notifica o fiscal (titular e substituto) de contratos sem fiscalização
-    # mensal registrada há 30 dias ou mais (Art. 117, Lei 14.133/2021)
+    # Notifica o fiscal e o gestor de contratos sem fiscalização mensal
+    # registrada há 30 dias ou mais (Art. 117, Lei 14.133/2021)
     por_fiscal_fiscalizacao = {}
-    for nome, dias, email, email_substituto in fiscalizacoes_pendentes:
+    for nome, dias, email, email_gestor in fiscalizacoes_pendentes:
         if email:
             por_fiscal_fiscalizacao.setdefault(email, []).append((nome, dias))
-        if email_substituto:
-            por_fiscal_fiscalizacao.setdefault(email_substituto, []).append((nome, dias))
+        if email_gestor:
+            por_fiscal_fiscalizacao.setdefault(email_gestor, []).append((nome, dias))
     for email, itens in por_fiscal_fiscalizacao.items():
         linhas = ''.join(f'<li><strong>{html_mod.escape(str(nome))}</strong> — {dias} dia(s) sem fiscalização registrada</li>' for nome, dias in sorted(itens, key=lambda x: -x[1]))
         corpo_fz = (f"<p>Resumo automático do SGCA — {hoje}</p>"

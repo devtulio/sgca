@@ -5,6 +5,19 @@
 
 ---
 
+## [0.17.0] — 2026-07-09
+
+### Removido
+- **Fiscal Substituto** — removido do Contrato (campo e lógica de e-mail); o órgão não usa essa figura
+
+### Adicionado
+- **E-mail do Gestor** — o Gestor do Contrato ganha um campo de e-mail e passa a receber os mesmos avisos automáticos que o fiscal (vencimento de contrato e fiscalização mensal pendente), no lugar do papel que era do fiscal substituto
+
+### Alterado
+- **Layout dos campos de Fiscal/Gestor** — "Fiscal do Contrato" e "E-mail do Fiscal" em uma linha, "Gestor do Contrato" e "E-mail do Gestor" na linha seguinte
+
+---
+
 ## [0.16.0] — 2026-07-09
 
 ### Adicionado
