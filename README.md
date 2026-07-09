@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.13.0-blue) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.13.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -12,7 +12,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 
 ---
 
-## Funcionalidades Já Prontas
+## Funcionalidades Principais
 
 - **Dashboard geral** — primeira tela após o login, com indicadores consolidados de Contratos e Atas, gráfico de vencimentos dos próximos 6 meses e lista dos próximos vencimentos (contratos, atas, garantias e sanções)
 - **Contratos** — cadastro, Kanban por status (Vigente/Em prorrogação/Encerrado/Rescindido), vínculo com fornecedor, aditivos e apostilamentos com alerta de limite legal de 25% (Art. 125, Lei nº 14.133/2021); vigência final calculada automaticamente a partir da vigência inicial (+12 meses), editável manualmente
@@ -111,7 +111,10 @@ SGCA/
 ├── diagnostico.py            # Script de diagnóstico de rede e firewall
 ├── sgca.ico                  # Ícone do sistema
 ├── sgca.db                   # Banco de dados SQLite (criado automaticamente)
+├── uploads/                  # Anexos armazenados (criado automaticamente)
 ├── backups/                  # Backups automáticos (criado automaticamente)
+├── tests/                    # Suíte de testes automatizados do backend
+│   └── test_server.py
 ├── README.md
 ├── CHANGELOG.md
 └── MANUAL.html
@@ -123,7 +126,7 @@ SGCA/
 
 - Senhas armazenadas com **PBKDF2-HMAC-SHA256** e salt aleatório por usuário
 - Sessões server-side invalidadas automaticamente por inatividade
-- Acesso à API exige token de sessão em todas as rotas (exceto login)
+- Acesso à API exige token de sessão em todas as rotas (exceto login e verificação)
 - Trilha de auditoria imutável registra todas as ações com usuário e timestamp
 - Verificação de integridade do banco de dados (SQLite `PRAGMA integrity_check`) na inicialização
 - Recomenda-se uso em rede interna (LAN) apenas
@@ -152,7 +155,7 @@ npm install   # uma vez, instala apenas o ESLint (ferramenta de dev, não é usa
 npm run lint
 ```
 
-Há também uma suíte de testes automatizados do backend (`server.py`), usando só `unittest` da stdlib:
+Há também uma suíte de testes automatizados do backend (`server.py`), usando só `unittest` da stdlib — sobe o servidor real contra um banco e uploads temporários e testa os endpoints REST (login, contratos, atas, fornecedores, auditoria, configurações, usuários, backup):
 
 ```bash
 python -m unittest discover -s tests -v
