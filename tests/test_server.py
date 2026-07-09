@@ -404,6 +404,33 @@ class TestAgendaAlerts(SGCATestCase):
                 conn.execute('DELETE FROM sys_settings WHERE key=?', (k,))
         self.assertIsNotNone(row)
 
+    def test_send_daily_alerts_nao_duplica_quando_fiscal_e_gestor_sao_a_mesma_pessoa(self):
+        import datetime
+        token = self.login()
+        vig = (datetime.date.today() + datetime.timedelta(days=5)).isoformat()
+        self.request('POST', '/api/contratos',
+                     {'objeto': 'Contrato com fiscal-gestor único', 'vigenciaFinal': vig, 'status': 'vigente',
+                      'fiscalEmail': 'mesma@teste.com', 'gestorEmail': 'mesma@teste.com'}, token=token)
+
+        sent = []
+        original = server._send_email_raw
+        server._send_email_raw = lambda smtp, frm, to, subj, html, plain='': sent.append((to, subj, html))
+        with server.get_db() as conn:
+            conn.execute("DELETE FROM sys_settings WHERE key='alert_email_last_sent'")
+            for k, v in [('smtp_host', 'smtp.invalido.test'), ('smtp_user', 'a@a.com'), ('smtp_pass', 'x')]:
+                conn.execute('INSERT OR REPLACE INTO sys_settings (key,value) VALUES (?,?)', (k, v))
+        try:
+            server._send_daily_alerts()
+        finally:
+            server._send_email_raw = original
+            with server.get_db() as conn:
+                for k in ('smtp_host', 'smtp_user', 'smtp_pass', 'alert_email_last_sent'):
+                    conn.execute('DELETE FROM sys_settings WHERE key=?', (k,))
+
+        vencimento_emails = [s for s in sent if s[0] == 'mesma@teste.com' and 'sob sua fiscalização' in s[1]]
+        self.assertEqual(len(vencimento_emails), 1)
+        self.assertEqual(vencimento_emails[0][2].count('Contrato com fiscal-gestor único'), 1)
+
     def test_send_daily_alerts_detecta_fiscalizacao_pendente(self):
         import datetime
         token = self.login()

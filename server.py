@@ -1,4 +1,4 @@
-# SGCA v0.17.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.17.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -1978,7 +1978,7 @@ def _send_daily_alerts():
     for nome, dias, email, email_gestor in contratos:
         if email:
             por_fiscal.setdefault(email, []).append((nome, dias))
-        if email_gestor:
+        if email_gestor and email_gestor != email:  # fiscal e gestor podem ser a mesma pessoa
             por_fiscal.setdefault(email_gestor, []).append((nome, dias))
     for email, itens in por_fiscal.items():
         corpo_f = (f"<p>Resumo automático do SGCA — {hoje}</p>"
@@ -1995,7 +1995,7 @@ def _send_daily_alerts():
     for nome, dias, email, email_gestor in fiscalizacoes_pendentes:
         if email:
             por_fiscal_fiscalizacao.setdefault(email, []).append((nome, dias))
-        if email_gestor:
+        if email_gestor and email_gestor != email:  # fiscal e gestor podem ser a mesma pessoa
             por_fiscal_fiscalizacao.setdefault(email_gestor, []).append((nome, dias))
     for email, itens in por_fiscal_fiscalizacao.items():
         linhas = ''.join(f'<li><strong>{html_mod.escape(str(nome))}</strong> — {dias} dia(s) sem fiscalização registrada</li>' for nome, dias in sorted(itens, key=lambda x: -x[1]))

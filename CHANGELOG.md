@@ -5,6 +5,16 @@
 
 ---
 
+## [0.17.1] — 2026-07-09
+
+### Corrigido
+- **Aviso de vencimento duplicado quando fiscal e gestor são a mesma pessoa** — o e-mail automático de vencimento e o de fiscalização mensal pendente listavam o mesmo contrato duas vezes quando o e-mail do fiscal e o do gestor eram idênticos
+
+### Alterado
+- **Capa do Manual Operacional** — removido o parágrafo extenso "Sobre esta versão" (conteúdo já coberto em detalhe nas seções do manual); no lugar, uma referência legal curta à Lei Federal nº 14.133/2021, no mesmo padrão limpo já usado na capa do SGCD
+
+---
+
 ## [0.17.0] — 2026-07-09
 
 ### Removido
