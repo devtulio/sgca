@@ -5,6 +5,11 @@
 
 ---
 
+## [0.12.0] — 2026-07-09
+
+### Adicionado
+- **CPF e E-mail no cadastro de usuário** — novos campos no modal Editar/Novo Usuário, posicionados junto do Nome (separados de Cargo/Matrícula), para uso futuro (ex. notificações, assinatura). Sincronizado com SGDP (já tinha E-mail) e SGCD
+
 ## [0.11.0] — 2026-07-08
 
 ### Adicionado
