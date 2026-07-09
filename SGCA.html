@@ -3933,9 +3933,9 @@ function _atualizarAlertaVigenciaLimite() {
   if (!limite || !ini || !fim) { el.innerHTML = ''; return; }
   const anos = (new Date(fim + 'T00:00:00') - new Date(ini + 'T00:00:00')) / (365.25 * 86400000);
   if (anos >= limite) {
-    el.innerHTML = `<div class="aviso" style="margin:0">Vigência total (${anos.toFixed(1)} anos) já atinge ou ultrapassa o limite de ${limite} anos (Art. 107, Lei 14.133/2021)</div>`;
+    el.innerHTML = `<div style="padding:6px 10px;border-radius:6px;background:var(--danger-light);color:var(--danger);font-size:.78rem">⚠ Vigência total (${anos.toFixed(1)} anos) já atinge ou ultrapassa o limite de ${limite} anos (Art. 107, Lei 14.133/2021)</div>`;
   } else if (anos >= limite * 0.9) {
-    el.innerHTML = `<div class="nota" style="margin:0">Vigência total (${anos.toFixed(1)} anos) se aproxima do limite de ${limite} anos (Art. 107, Lei 14.133/2021)</div>`;
+    el.innerHTML = `<div style="padding:6px 10px;border-radius:6px;background:var(--warning-light);color:var(--warning);font-size:.78rem">⚠ Vigência total (${anos.toFixed(1)} anos) se aproxima do limite de ${limite} anos (Art. 107, Lei 14.133/2021)</div>`;
   } else {
     el.innerHTML = '';
   }
@@ -4117,8 +4117,9 @@ function renderAditivosList(c) {
   if (c.percentualAcumulado != null) {
     const alerta = c.percentualAcumulado >= 25 ? 'aviso' : (c.percentualAcumulado >= 20 ? 'nota' : null);
     if (alerta) {
+      const cor = alerta === 'aviso' ? '--danger' : '--warning';
       document.getElementById('contrato-aditivos-lista').insertAdjacentHTML('afterbegin',
-        `<div class="${alerta === 'aviso' ? 'aviso' : 'nota'}" style="margin-bottom:8px">
+        `<div style="margin-bottom:8px;padding:6px 10px;border-radius:6px;background:var(${cor}-light);color:var(${cor});font-size:.78rem">⚠
           Variação acumulada de valor: <strong>${c.percentualAcumulado}%</strong>
           ${alerta === 'aviso' ? ' — atenção ao limite legal de 25% (Art. 125, Lei 14.133/2021)' : ' — aproximando do limite de 25%'}
         </div>`);
@@ -4393,7 +4394,7 @@ function renderSubcontratacoesList(c) {
   const limite = parseFloat((document.getElementById('c-subcontratacao-limite').value || '').replace(',', '.'));
   if (limite && total > limite) {
     document.getElementById('contrato-subcontratacoes-lista').insertAdjacentHTML('afterbegin',
-      `<div class="aviso" style="margin-bottom:8px">Total subcontratado (${total.toFixed(2)}%) ultrapassa o limite de ${limite}% definido para este contrato (Art. 122, Lei 14.133/2021)</div>`);
+      `<div style="margin-bottom:8px;padding:6px 10px;border-radius:6px;background:var(--danger-light);color:var(--danger);font-size:.78rem">⚠ Total subcontratado (${total.toFixed(2)}%) ultrapassa o limite de ${limite}% definido para este contrato (Art. 122, Lei 14.133/2021)</div>`);
   }
 }
 function showNovaSubcontratacaoForm() {
