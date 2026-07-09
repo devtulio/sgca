@@ -5,6 +5,11 @@
 
 ---
 
+## [0.12.2] — 2026-07-09
+
+### Alterado
+- **Usuário admin padrão** — removido o cargo pré-preenchido ("Agente de Contratação") na criação do usuário admin de instalações novas; agora fica em branco por padrão, igual ao SGDP/SGCD. Instalações já existentes não são alteradas
+
 ## [0.12.1] — 2026-07-09
 
 ### Alterado
