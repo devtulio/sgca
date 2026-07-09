@@ -1288,7 +1288,7 @@
   <!-- ── Conformidade ── -->
 
   <!-- ── Fornecedor Modal ── -->
-  <div class="overlay hidden" id="forn-modal-overlay" onclick="if(event.target===this)closeFornModal()">
+  <div class="overlay hidden" id="forn-modal-overlay">
     <div class="modal" style="max-width:520px">
       <div class="modal-header">
         <h2>Novo Fornecedor</h2>
@@ -1312,7 +1312,7 @@
   </div>
 
   <!-- ── Modal de Usuário ── -->
-  <div class="overlay hidden" id="usuario-modal-overlay" onclick="if(event.target===this)fecharModalUsuario()">
+  <div class="overlay hidden" id="usuario-modal-overlay">
     <div class="modal" style="max-width:420px">
       <div class="modal-header">
         <h2 id="usuario-modal-titulo">Novo Usuário</h2>
@@ -1364,7 +1364,7 @@
   </div>
 
   <!-- ── Contrato Modal (criar/editar + aditivos) ── -->
-  <div class="overlay hidden" id="contrato-modal-overlay" onclick="if(event.target===this)closeContratoModal()">
+  <div class="overlay hidden" id="contrato-modal-overlay">
     <div class="modal" style="max-width:760px">
       <div class="modal-header">
         <h2 id="contrato-modal-title">Novo Contrato</h2>
@@ -1660,7 +1660,7 @@
   </div>
 
   <!-- ── Ata Modal (criar/editar + itens) ── -->
-  <div class="overlay hidden" id="ata-modal-overlay" onclick="if(event.target===this)closeAtaModal()">
+  <div class="overlay hidden" id="ata-modal-overlay">
     <div class="modal" style="max-width:680px">
       <div class="modal-header">
         <h2 id="ata-modal-title">Nova Ata de Registro de Preços</h2>
@@ -1747,7 +1747,7 @@
   </div>
 
   <!-- ── Certidão Edit Modal ── -->
-  <div class="overlay hidden" id="cert-edit-overlay" onclick="if(event.target===this)closeCertEdit()">
+  <div class="overlay hidden" id="cert-edit-overlay">
     <div class="modal" style="max-width:460px">
       <div class="modal-header">
         <h2 id="cert-edit-title">Certidão</h2>
@@ -2315,7 +2315,7 @@
 <!-- ── New Process Modal ── -->
 
 <!-- ── Global Search Overlay ── -->
-<div class="overlay hidden" id="global-search-overlay" onclick="if(event.target===this)fecharGlobalSearch()">
+<div class="overlay hidden" id="global-search-overlay">
   <div class="gsearch-box">
     <div class="gsearch-input-wrap">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gray-500);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -2338,7 +2338,7 @@
 <!-- ── Modal Templates ── -->
 
 <!-- ── Modal CSV Import ── -->
-<div class="overlay hidden" id="modal-csv" onclick="if(event.target===this)fecharModalCsv()">
+<div class="overlay hidden" id="modal-csv">
   <div class="modal" style="max-width:680px;width:96vw">
     <div class="modal-header">
       <h3>Importar Fornecedores via CSV</h3>
@@ -2392,7 +2392,7 @@
 </div>
 
 <!-- ── Modal Assinatura Digital ICP-Brasil ── -->
-<div class="overlay hidden" id="modal-assinar" onclick="if(event.target===this)fecharModalAssinar()">
+<div class="overlay hidden" id="modal-assinar">
   <div class="modal" style="max-width:420px">
     <div class="modal-header">
       <h3>Assinatura Digital — <span id="assinar-anexo-label"></span></h3>
@@ -2477,7 +2477,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.17.1';
+const SGCA_VERSION = '0.17.2';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;

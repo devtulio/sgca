@@ -5,6 +5,11 @@
 
 ---
 
+## [0.17.2] — 2026-07-09
+
+### Corrigido
+- **Clicar fora de um modal fechava a janela e descartava os dados digitados** — no cadastro de Contrato/Ata em especial, um clique acidental fora da janela apagava tudo o que já tinha sido preenchido. Removido o fechamento por clique fora em todos os overlays (Contrato, Ata, Fornecedor, Usuário, Certidão, Busca Global, CSV, Assinatura); agora só fecham pelo botão Cancelar/✕ ou pela tecla Esc
+
 ## [0.17.1] — 2026-07-09
 
 ### Corrigido
