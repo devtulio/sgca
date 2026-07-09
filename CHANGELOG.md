@@ -5,6 +5,11 @@
 
 ---
 
+## [0.12.1] — 2026-07-09
+
+### Alterado
+- **Modal de "Editar/Novo Usuário" reescrito** — substitui o overlay construído dinamicamente via JS por um modal estático (`.overlay`/`.modal-header`/`.info-field`/`.modal-footer`), o mesmo padrão já usado nos modais de Fornecedor, Contrato e Assinatura. Sem mudança de campos ou comportamento — só a estrutura interna, para consistência visual com o resto do sistema
+
 ## [0.12.0] — 2026-07-09
 
 ### Adicionado
