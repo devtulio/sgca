@@ -1,4 +1,4 @@
-# SGCA v0.21.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.22.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -44,7 +44,7 @@ BACKUP_DIR    = os.path.join(_DATA_DIR, 'backups')
 PROFILE_DIR   = os.path.join(_DATA_DIR, 'browser-profile')
 LOG_PATH      = os.path.join(_DATA_DIR, 'sgca_errors.log')
 BACKUP_KEEP   = 7        # número de backups automáticos mantidos
-SESSION_TTL   = 15   # 15s — renovado pelo ping a cada 5s; expira rápido se browser fechar
+SESSION_TTL   = 60   # renovado pelo ping a cada 5s (ver comentário em _watchdog mais abaixo)
 
 os.makedirs(_DATA_DIR, exist_ok=True)
 logging.basicConfig(
@@ -58,8 +58,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 _watchdog_paused  = False   # pausa o watchdog durante diálogos bloqueantes (ex: FolderBrowser)
-_had_session      = False   # True após primeiro login; evita encerramento antes de qualquer usuário logar
-_modo_servidor    = False   # True = modo servidor contínuo (sem encerramento automático)
+_had_session      = False   # True após primeiro login; controla quando o backup pós-sessão pode disparar
 _backup_pos_sess  = False   # True = backup pós-sessão já executado; aguarda nova sessão para resetar
 FTS_AVAILABLE     = False   # True se o SQLite tem FTS5 compilado (setado em init_db)
 
@@ -433,29 +432,23 @@ def active_sessions():
         return conn.execute('SELECT COUNT(*) FROM sessions WHERE expires>?', (time.time(),)).fetchone()[0]
 
 def _check_shutdown():
-    """Encerra o servidor quando não há mais sessões ativas (último logout).
-    No modo servidor contínuo (_modo_servidor=True), apenas faz backup sem encerrar."""
+    """O servidor nunca encerra sozinho por contagem de sessões — só via Ctrl+C
+    no terminal (ver bloco principal). Aqui só dispara um backup automático,
+    uma única vez, depois que a última sessão ativa termina.
+
+    ponytail: existia um modo "Pessoal" que fazia os._exit(0) nesta função
+    quando a última sessão caía — a ideia era encerrar sozinho ao fechar a
+    janela do navegador. Removido — se o encerramento automático por
+    inatividade real for necessário de novo, a forma correta é um timeout bem
+    mais longo (minutos, não segundos), não a contagem de sessões do ping."""
     global _backup_pos_sess
-    if _modo_servidor:
-        # Modo servidor: backup uma única vez após última sessão encerrada
-        if _had_session and active_sessions() == 0 and not _backup_pos_sess:
-            _backup_pos_sess = True
-            cfg = _get_backup_cfg()
-            if cfg['enabled']:
-                print('\nÚltima sessão encerrada. Executando backup automático...')
-                _do_json_backup(cfg)
-                _do_db_backup(cfg)
-        return
-    if not _had_session:
-        return
-    if active_sessions() > 0:
-        return
-    print('\nÚltima sessão encerrada. Executando backup e encerrando servidor...')
-    cfg = _get_backup_cfg()
-    if cfg['enabled']:
-        _do_json_backup(cfg)
-        _do_db_backup(cfg)
-    os._exit(0)
+    if _had_session and active_sessions() == 0 and not _backup_pos_sess:
+        _backup_pos_sess = True
+        cfg = _get_backup_cfg()
+        if cfg['enabled']:
+            print('\nÚltima sessão encerrada. Executando backup automático...')
+            _do_json_backup(cfg)
+            _do_db_backup(cfg)
 
 # ── HTTP Handler ──────────────────────────────────────────────────────────────
 
@@ -473,13 +466,30 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-cache, must-revalidate')
         super().end_headers()
 
+    def _safe_dispatch(self, inner):
+        # handle_error (mais abaixo) nunca era chamado de verdade — é método de
+        # socketserver.BaseServer, não do request handler, então exceções não
+        # tratadas em qualquer do_GET/POST/PUT/DELETE só apareciam no console
+        # (nada no log, cliente só via a conexão cair). Isso escondia bugs reais.
+        try:
+            inner()
+        except Exception as e:
+            _log.error('Erro não tratado em %s %s: %s', self.command, self.path, e)
+            try:
+                self._json(500, {'error': 'Erro interno no servidor.'})
+            except Exception:
+                pass  # resposta já pode ter começado a ser enviada
+
     def do_GET(self):
+        self._safe_dispatch(self._do_GET)
+
+    def _do_GET(self):
         parsed = urlparse(self.path)
         p  = parsed.path.rstrip('/')
         qs = parse_qs(parsed.query)
 
         if p == '/health':
-            self._json(200, {'ok': True, 'modo_servidor': _modo_servidor})
+            self._json(200, {'ok': True})
         elif p.startswith('/verificar/'):
             self._serve_verificar(p[len('/verificar/'):].strip('/').upper())
         elif p == '/api/public/org-info':
@@ -514,6 +524,9 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
+        self._safe_dispatch(self._do_POST)
+
+    def _do_POST(self):
         parsed = urlparse(self.path)
         p = parsed.path.rstrip('/')
 
@@ -550,12 +563,18 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         self._route_post(p, body, s)
 
     def do_PUT(self):
+        self._safe_dispatch(self._do_PUT)
+
+    def _do_PUT(self):
         p = urlparse(self.path).path.rstrip('/')
         s = self._auth()
         if not s: return
         self._route_put(p, self._body(), s)
 
     def do_DELETE(self):
+        self._safe_dispatch(self._do_DELETE)
+
+    def _do_DELETE(self):
         parsed = urlparse(self.path)
         p = parsed.path.rstrip('/')
         qs = parse_qs(parsed.query)
@@ -673,7 +692,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             tmp = _tf.NamedTemporaryFile(suffix='.db', delete=False)
             tmp.close()
             try:
-                with sqlite3.connect(DB_PATH) as src, sqlite3.connect(tmp.name) as bk:
+                with sqlite3.connect(DB_PATH, factory=_ConnAutoClose) as src, sqlite3.connect(tmp.name, factory=_ConnAutoClose) as bk:
                     src.backup(bk)
                 with open(tmp.name, 'rb') as f:
                     data_bytes = f.read()
@@ -1714,7 +1733,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         try:
             tmp.write(raw_bytes); tmp.close()
             # Valida que o arquivo tem as tabelas esperadas
-            with sqlite3.connect(tmp.name) as test_conn:
+            with sqlite3.connect(tmp.name, factory=_ConnAutoClose) as test_conn:
                 tables = {r[0] for r in test_conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
             required = {'fornecedores', 'contratos', 'atas', 'sys_settings'}
             if not required.issubset(tables):
@@ -1722,7 +1741,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             # Backup do atual antes de restaurar
             _do_db_backup()
             # Substitui o banco atual com o backup via API de backup SQLite (seguro)
-            with sqlite3.connect(tmp.name) as src, get_db() as dst:
+            with sqlite3.connect(tmp.name, factory=_ConnAutoClose) as src, get_db() as dst:
                 src.backup(dst)
             self._json(200, {'ok': True})
         except Exception as e:
@@ -1814,10 +1833,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
-
-    def handle_error(self, request, client_address):
-        import traceback
-        _log.error('Erro na requisição de %s:\n%s', client_address, traceback.format_exc())
 
     def log_message(self, fmt, *args): pass
 
@@ -2033,16 +2048,21 @@ def _purge_old_trash():
             conn.execute(f"DELETE FROM {tbl} WHERE deleted_at IS NOT NULL AND deleted_at < ?", (limite_iso,))
 
 def _watchdog():
-    # Limpa sessões expiradas a cada 5s e verifica encerramento.
-    # Com SESSION_TTL=15s e ping a cada 5s, um browser fechado sem logout
-    # causa encerramento do servidor em no máximo ~20 segundos.
+    # Limpa sessões expiradas a cada 5s e dispara o backup pós-sessão
+    # (_check_shutdown — não encerra mais o servidor, só faz backup).
+    # SESSION_TTL=60s dá folga de sobra sobre o ping a cada 5s: um TTL curto
+    # (era 15s) expirava sessões à toa quando o ping atrasava por qualquer
+    # motivo comum — carregamento inicial da página disputando conexão HTTP
+    # com várias outras chamadas simultâneas, ou a aba principal perdendo
+    # foco ao abrir um popup de documento.
     while True:
         time.sleep(5)
         if _watchdog_paused:
             continue
         with get_db() as conn:
             conn.execute('DELETE FROM sessions WHERE expires<?', (time.time(),))
-        _check_shutdown()
+        try: _check_shutdown()
+        except Exception as e: _log.error('Erro em _check_shutdown: %s', e)
         if time.time() - _last_trash_purge > 3600:
             try: _purge_old_trash()
             except Exception as e: _log.error('Erro ao esvaziar lixeira: %s', e)
@@ -2122,10 +2142,14 @@ def _get_backup_cfg():
         cfg = {r['key']: r['value'] for r in rows}
     except Exception:
         cfg = {}
+    try:
+        keep = max(1, int(cfg.get('auto_backup_keep') or BACKUP_KEEP))
+    except (TypeError, ValueError):
+        keep = BACKUP_KEEP  # valor não-numérico salvo por engano (ex.: via chamada direta à API) — ignora em vez de derrubar o watchdog
     return {
         'path':    cfg.get('backup_path') or BACKUP_DIR,
         'enabled': cfg.get('auto_backup_enabled', '1') != '0',
-        'keep':    max(1, int(cfg.get('auto_backup_keep') or BACKUP_KEEP)),
+        'keep':    keep,
     }
 
 def _do_db_backup(cfg=None):
@@ -2136,7 +2160,7 @@ def _do_db_backup(cfg=None):
     name = time.strftime('DB_SGCA_BACKUP_%Y-%m-%d_%H-%M-%S.db')
     dst  = os.path.join(bdir, name)
     try:
-        with sqlite3.connect(DB_PATH) as src, sqlite3.connect(dst) as bk:
+        with sqlite3.connect(DB_PATH, factory=_ConnAutoClose) as src, sqlite3.connect(dst, factory=_ConnAutoClose) as bk:
             src.backup(bk)
         # Registra timestamp do último backup
         with get_db() as conn:
@@ -2165,47 +2189,34 @@ def _check_db_integrity():
     except Exception as e:
         _log.error('Erro ao verificar integridade do banco: %s', e)
 
-# ── Seleção de modo ───────────────────────────────────────────────────────────
+# ── Menu inicial ──────────────────────────────────────────────────────────────
 
 def _selecionar_modo():
-    global _modo_servidor
     print()
     print('  ╔══════════════════════════════════════════════════╗')
     print('  ║   SGCA — Sistema de Gestão de Contratos e Atas    ║')
     print('  ╚══════════════════════════════════════════════════╝')
     print()
-    print('  Selecione o modo de operação:')
-    print()
-    print('  [1] Pessoal   — Uso individual no próprio computador')
-    print('                  Abre o app automaticamente no navegador')
-    print('                  Encerra quando o último usuário sair')
-    print()
-    print('  [2] Servidor  — Máquina central / acesso pela rede')
-    print('                  Não abre navegador automaticamente')
-    print('                  Fica rodando continuamente (Ctrl+C para parar)')
-    print()
-    print('  [3] Diagnóstico — Verifica rede, porta e firewall')
+    print('  [1] Diagnóstico     — Verifica rede, porta e firewall')
+    print('  [2] Iniciar Servidor')
     print()
     if not sys.stdin.isatty():
         op = '2'
     else:
         while True:
             try:
-                op = input('  Opção [1/2/3]: ').strip()
+                op = input('  Opção [1/2]: ').strip()
             except (EOFError, KeyboardInterrupt):
-                op = '1'
-            if op in ('1', '2', '3'):
+                op = '2'
+            if op in ('1', '2'):
                 break
-            print('  Digite 1, 2 ou 3.')
-    if op == '3':
+            print('  Digite 1 ou 2.')
+    if op == '1':
         import subprocess as _sp
         diag = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'diagnostico.py')
         _sp.run([sys.executable, diag])
         sys.exit(0)
-    _modo_servidor = (op == '2')
-    modo_label = 'SERVIDOR CONTÍNUO' if _modo_servidor else 'PESSOAL'
     print()
-    print(f'  Modo: {modo_label}')
     print('  ─────────────────────────────────────────────────')
 
 if __name__ == '__main__':
@@ -2217,39 +2228,30 @@ if __name__ == '__main__':
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer(('', PORT), SGCAHandler) as httpd:
         print(f'  Servidor: http://localhost:{PORT}')
+        import socket as _socket
+        try:
+            ip_local = _socket.gethostbyname(_socket.gethostname())
+        except Exception:
+            ip_local = 'desconhecido'
+        print(f'  Rede:     http://{ip_local}:{PORT}/SGCA.html')
+        print()
 
-        if _modo_servidor:
-            # Modo servidor: exibe IP da rede e fica rodando sem abrir browser
-            import socket as _socket
-            try:
-                ip_local = _socket.gethostbyname(_socket.gethostname())
-            except Exception:
-                ip_local = 'desconhecido'
-            print(f'  Rede:     http://{ip_local}:{PORT}/SGCA.html')
-            print()
-            print('  Aguardando conexões... (Ctrl+C para encerrar)')
-            try:
-                httpd.serve_forever()
-            except KeyboardInterrupt:
-                print('\n  Encerrando servidor...')
+        browser = _find_browser()
+        if browser:
+            profile_dir = PROFILE_DIR
+            subprocess.Popen([
+                browser,
+                f'--app=http://localhost:{PORT}/SGCA.html',
+                '--start-maximized',
+                '--disable-background-mode',
+                f'--user-data-dir={profile_dir}',
+            ])
+            print('  App aberto no navegador.')
         else:
-            # Modo pessoal: abre o app no navegador
-            browser = _find_browser()
-            if browser:
-                threading.Thread(target=httpd.serve_forever, daemon=True).start()
-                time.sleep(1)
-                profile_dir = PROFILE_DIR
-                proc = subprocess.Popen([
-                    browser,
-                    f'--app=http://localhost:{PORT}/SGCA.html',
-                    '--start-maximized',
-                    '--disable-background-mode',
-                    f'--user-data-dir={profile_dir}',
-                ])
-                print('  App aberto. Feche a janela do SGCA para encerrar.')
-                proc.wait()
-                print('  Encerrando servidor...')
-                while True: time.sleep(1)
-            else:
-                print(f'  Chrome/Edge não encontrado. Abra manualmente: http://localhost:{PORT}/SGCA.html')
-                httpd.serve_forever()
+            print(f'  Chrome/Edge não encontrado. Abra manualmente: http://localhost:{PORT}/SGCA.html')
+
+        print('  Aguardando conexões... (Ctrl+C para encerrar)')
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print('\n  Encerrando servidor...')

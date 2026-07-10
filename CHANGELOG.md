@@ -5,6 +5,16 @@
 
 ---
 
+## [0.22.0] — 2026-07-10
+
+### Corrigido
+- **Servidor podia encerrar sozinho no meio do uso (Modo Pessoal)** — `_check_shutdown()` chamava `os._exit(0)` quando a última sessão ativa expirava; uma aba em segundo plano (ex. ao gerar um documento, que abre popup e tira o foco da aba principal) sofria throttling do navegador no `setInterval` do ping, a sessão expirava sem ninguém ter saído de propósito, e o servidor se autodestruía no meio do uso. Corrigido removendo esse caminho inteiramente — o servidor agora só encerra via Ctrl+C no terminal.
+- **`SESSION_TTL` aumentado de 15s para 60s** — 15s era propositalmente curto para o antigo modo "Pessoal" detectar rápido que o navegador tinha fechado; sem esse motivo, virou uma margem perigosamente curta para o uso normal (chamadas de API concorrentes no login, aba perdendo foco ao abrir popup de documento).
+- **Menu inicial simplificado** — em vez de escolher entre "Pessoal" e "Servidor", agora são só 2 opções: Diagnóstico ou Iniciar Servidor. Iniciar sempre abre o navegador automaticamente e o sistema fica sempre disponível. Removido o botão "Fechar Sistema", que prometia um encerramento que não existe mais.
+- **4 pontos de vazamento de conexão SQLite** nos caminhos de backup/restore — `sqlite3.connect()` chamado sem a factory que fecha a conexão automaticamente (mesma classe de bug já corrigida em outros pontos do sistema).
+- **Watchdog podia morrer para sempre com valor não-numérico em `auto_backup_keep`** — `_get_backup_cfg()` agora ignora o valor inválido em vez de derrubar a thread.
+- **`handle_error` nunca era chamado de verdade** (é método de `socketserver.BaseServer`, não do request handler — exceções não tratadas em qualquer `do_GET/POST/PUT/DELETE` derrubavam a conexão sem log nem resposta ao cliente). Substituído por um `_safe_dispatch` que envolve os 4 handlers, loga o erro e responde 500 em vez de deixar a conexão cair silenciosamente.
+
 ## [0.21.0] — 2026-07-10
 
 ### Adicionado

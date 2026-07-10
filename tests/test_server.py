@@ -34,7 +34,6 @@ def setUpModule():
     server.BACKUP_DIR = os.path.join(_tmpdir, 'backups')
     os.makedirs(server.UPLOADS_DIR, exist_ok=True)
     os.makedirs(server.BACKUP_DIR, exist_ok=True)
-    server._modo_servidor = True  # evita os._exit(0) do watchdog em logout (não usado aqui, mas por segurança)
     server.init_db()
 
     socketserver.ThreadingTCPServer.allow_reuse_address = True
@@ -460,6 +459,45 @@ class TestHealth(SGCATestCase):
         status, data = self.request('GET', '/health')
         self.assertEqual(status, 200)
         self.assertTrue(data['ok'])
+
+
+class TestNuncaEncerraSozinho(SGCATestCase):
+
+    def test_ultima_sessao_expirar_nao_derruba_o_processo(self):
+        # Regressão: existia um modo "Pessoal" em que _check_shutdown() chamava
+        # os._exit(0) quando a última sessão ativa expirava. os._exit(0) mata o
+        # processo Python na hora, sem exceção capturável — se ainda existisse,
+        # o processo deste teste morreria aqui e nada abaixo executaria.
+        token = self.login()
+        with server.get_db() as conn:
+            conn.execute('DELETE FROM sessions')  # simula a última sessão expirando
+        server._had_session = True
+        server._backup_pos_sess = False
+        server._check_shutdown()
+
+        # Se chegou aqui, o processo sobreviveu — confirma que o servidor
+        # ainda responde normalmente (não travou nem morreu).
+        status, _ = self.request('GET', '/health')
+        self.assertEqual(status, 200)
+
+    def test_sessao_sobrevive_atraso_maior_que_o_ttl_antigo(self):
+        # Regressão: SESSION_TTL era 15s (renovado pelo ping a cada 5s) — margem
+        # curta o bastante para uma sessão expirar sozinha no uso normal (várias
+        # chamadas de API concorrentes disputando conexão HTTP logo no login,
+        # ou a aba principal perdendo foco ao abrir um popup de documento),
+        # derrubando o usuário de volta pro login no meio do trabalho sem
+        # ninguém ter saído de propósito.
+        #
+        # Simula 20s "consumidos" do TTL sem nenhum ping renovar a sessão —
+        # sob o TTL antigo (15s) isso já teria expirado; sob o atual (60s)
+        # ainda sobra bastante margem.
+        self.assertGreater(server.SESSION_TTL, 20,
+                            'SESSION_TTL muito curto — sessão expira sozinha em uso normal sem ping')
+        token = self.login()
+        with server.get_db() as conn:
+            conn.execute('UPDATE sessions SET expires=expires-20 WHERE token=?', (token,))
+        status, _ = self.request('GET', '/api/fornecedores', token=token)
+        self.assertEqual(status, 200, 'sessão expirou com atraso que o TTL antigo (15s) não sobreviveria')
 
 
 if __name__ == '__main__':
