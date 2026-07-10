@@ -5,6 +5,11 @@
 
 ---
 
+## [0.19.0] — 2026-07-10
+
+### Adicionado
+- **Exportar CSV em Fornecedores e Auditoria** — as duas telas ganham o mesmo botão "Exportar CSV" que já existia em Contratos/Atas, respeitando a busca/filtros ativos na tela. Mesma implementação do SGCD
+
 ## [0.18.0] — 2026-07-09
 
 ### Adicionado

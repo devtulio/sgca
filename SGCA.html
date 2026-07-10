@@ -1247,6 +1247,10 @@
     <div class="dash-top">
       <h2>Fornecedores</h2>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="exportarFornecedoresCSV()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar CSV
+        </button>
         <button class="btn btn-outline" onclick="gerarRelatorioFornecedores()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           Relatório
@@ -1812,6 +1816,10 @@
     <div class="dash-top">
       <h2>Trilha de Auditoria</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="exportarAuditoriaCSV()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar CSV
+        </button>
         <button class="btn btn-outline btn-sm" onclick="gerarRelatorioAuditoria()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           Relatório
@@ -2510,7 +2518,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.18.0';
+const SGCA_VERSION = '0.19.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -5931,6 +5939,34 @@ ${_qrFooterReport('Relatório de Auditoria')}
   _gerarDocumento(window.open('', '_blank', 'width=1000,height=720'), html, 'Relatório de Auditoria');
 }
 
+async function exportarAuditoriaCSV() {
+  const fTipo = document.getElementById('aud-tipo')?.value || '';
+  const fDe   = document.getElementById('aud-de')?.value;
+  const fAte  = document.getElementById('aud-ate')?.value;
+  const fUser = (document.getElementById('aud-q')?.value || '').toLowerCase();
+
+  let todos = (await listarAuditGlobal()).sort((a, b) => b.at - a.at);
+  if (fDe || fAte) {
+    const tsFrom = fDe ? new Date(fDe + 'T00:00:00').getTime() : null;
+    const tsTo   = fAte ? new Date(fAte + 'T23:59:59').getTime() : null;
+    todos = todos.filter(a => (tsFrom === null || a.at >= tsFrom) && (tsTo === null || a.at <= tsTo));
+  }
+  const lista = todos.filter(e => {
+    if (fTipo && e.evento !== fTipo) return false;
+    if (fUser && !(e.usuario || '').toLowerCase().includes(fUser)) return false;
+    return true;
+  });
+  if (!lista.length) { toast('Nenhum registro para exportar', 'error'); return; }
+
+  const cabecalho = ['Data/Hora', 'Evento', 'Processo', 'Detalhe', 'Usuário'];
+  const linhas = [cabecalho.join(';')].concat(lista.map(e => [
+    fmt(e.at), _AUDIT_EVENT_LABELS[e.evento] || e.evento, e.processId || '', e.detalhe, e.usuario
+  ].map(_csvCampo).join(';')));
+  _downloadCsv(linhas, `SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.csv`);
+  await _auditEvento('EXPORT_CSV', `Exportação CSV de ${lista.length} registro(s) de auditoria`);
+  toast(`${lista.length} registro(s) exportado(s).`, 'success');
+}
+
 
 
 
@@ -7206,6 +7242,31 @@ ${_qrFooterReport('Relatório de Fornecedores')}
 </body></html>`;
 
   _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, 'Relatório de Fornecedores');
+}
+
+async function exportarFornecedoresCSV() {
+  const q = (document.getElementById('forn-search')?.value || '').toLowerCase();
+  const todos = await listarFornecedores();
+  const lista = (q
+    ? todos.filter(f => (f.razao_social||'').toLowerCase().includes(q) || (f.cnpj_digits||'').includes(q) || (f.nome_fantasia||'').toLowerCase().includes(q))
+    : todos
+  ).sort((a, b) => (a.razao_social||'').localeCompare(b.razao_social||'', 'pt-BR'));
+  if (!lista.length) { toast('Nenhum fornecedor para exportar', 'error'); return; }
+
+  const fmtCnpj = d => d ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5') : '';
+  const cabecalho = ['Razão Social', 'Nome Fantasia', 'CNPJ', 'Porte', 'Situação', 'Município/UF', 'Certidões vencidas', 'Atualizado em'];
+  const linhas = [cabecalho.join(';')].concat(lista.map(f => {
+    const vencidas = (f.certidoes||[]).filter(c => certStatus(c) === 'expired').length;
+    const municipioUf = [f.municipio, f.uf].filter(Boolean).join('/');
+    const atualizado = f.updatedAt || f.addedAt;
+    return [
+      f.razao_social, f.nome_fantasia, fmtCnpj(f.cnpj_digits||f.cnpj), f.porte, f.situacao,
+      municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
+    ].map(_csvCampo).join(';');
+  }));
+  _downloadCsv(linhas, `SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.csv`);
+  await _auditEvento('EXPORT_CSV', `Exportação CSV de ${lista.length} fornecedor(es)`);
+  toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
 
 async function gerarRelatorioContratos() {
