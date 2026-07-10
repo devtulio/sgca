@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.19.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
+![Versão](https://img.shields.io/badge/versão-v0.20.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet)
 
 ## Descrição
 
@@ -63,9 +63,12 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Python 3.7+** (apenas biblioteca padrão — zero dependências externas)
 - **Google Chrome** ou **Microsoft Edge** (recomendado)
 - Windows 10/11
+- Opcional: `pip install -r requirements.txt` — só necessário para o módulo de assinatura com certificado ICP-Brasil (`pyhanko`)
 
 > **Servidor sem Python instalado (ex.: Windows Server bloqueado por política de TI):**
 > o `Iniciar SGCA.bat` detecta automaticamente a ausência do Python e extrai uma versão portátil (embarcável, sem instalador) incluída no próprio projeto (`python-3.12.9-embed-amd64.zip`) para `C:\Python312-embed\` — não exige instalação nem privilégio de administrador.
+>
+> Essa versão portátil não vem com `pip` pronto (limitação do próprio pacote embarcável do Python). Se esse servidor precisar do módulo de assinatura ICP-Brasil, rode **`Instalar Assinatura ICP-Brasil.bat`** depois — ele habilita o pip e instala o `pyhanko` (requer acesso à internet só nesse momento, para baixar do PyPI).
 
 ---
 
@@ -113,6 +116,8 @@ SGCA/
 ├── server.py                # Servidor Python (API REST + SQLite) — porta 3002
 ├── Iniciar SGCA.bat          # Inicializa o servidor
 ├── python-3.12.9-embed-amd64.zip  # Python portátil (fallback se não houver Python instalado)
+├── Instalar Assinatura ICP-Brasil.bat  # Opcional — instala pip + pyhanko no Python embarcável
+├── get-pip.py                # Usado só pelo script acima (Python embarcável não vem com pip)
 ├── Criar Atalho SGCA.bat     # Cria atalho na área de trabalho com ícone
 ├── Criar Atalho SGCA.ps1     # Script PowerShell de criação do atalho
 ├── Diagnostico SGCA.bat      # Roda o diagnóstico de rede (clique duplo)
@@ -124,6 +129,7 @@ SGCA/
 ├── backups/                  # Backups automáticos (criado automaticamente)
 ├── tests/                    # Suíte de testes automatizados do backend
 │   └── test_server.py
+├── requirements.txt          # Dependência opcional (pyhanko — só p/ assinatura ICP-Brasil)
 ├── README.md
 ├── CHANGELOG.md
 └── MANUAL.html

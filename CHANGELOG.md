@@ -5,6 +5,11 @@
 
 ---
 
+## [0.20.0] — 2026-07-10
+
+### Adicionado
+- **`Instalar Assinatura ICP-Brasil.bat`** (opcional) — habilita o pip via `get-pip.py` (incluído) e instala o `pyhanko` quando o servidor usa o Python embarcável, que não vem com pip. `Iniciar SGCA.bat` agora também habilita o módulo `site` na extração do Python embarcável (pré-requisito para o script funcionar depois). Mesma implementação do SGCD
+
 ## [0.19.0] — 2026-07-10
 
 ### Adicionado
