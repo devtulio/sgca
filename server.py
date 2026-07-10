@@ -1,4 +1,4 @@
-# SGCA v0.20.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.21.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -32,16 +32,21 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from urllib.parse import urlparse, parse_qs
 
-PORT          = 3002
+PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
-DB_PATH       = os.path.join(_BASE, 'sgca.db')
-UPLOADS_DIR   = os.path.join(_BASE, 'uploads')
-BACKUP_DIR    = os.path.join(_BASE, 'backups')
-PROFILE_DIR   = os.path.join(_BASE, 'browser-profile')
-LOG_PATH      = os.path.join(_BASE, 'sgca_errors.log')
+# SGCA_DATA_DIR: usado pelos testes E2E para isolar banco/uploads/backups do
+# sgca.db real sem precisar rodar o servidor a partir de outra pasta (os
+# arquivos estáticos como SGCA.html continuam servidos a partir de _BASE).
+_DATA_DIR     = os.environ.get('SGCA_DATA_DIR', _BASE)
+DB_PATH       = os.path.join(_DATA_DIR, 'sgca.db')
+UPLOADS_DIR   = os.path.join(_DATA_DIR, 'uploads')
+BACKUP_DIR    = os.path.join(_DATA_DIR, 'backups')
+PROFILE_DIR   = os.path.join(_DATA_DIR, 'browser-profile')
+LOG_PATH      = os.path.join(_DATA_DIR, 'sgca_errors.log')
 BACKUP_KEEP   = 7        # número de backups automáticos mantidos
 SESSION_TTL   = 15   # 15s — renovado pelo ping a cada 5s; expira rápido se browser fechar
 
+os.makedirs(_DATA_DIR, exist_ok=True)
 logging.basicConfig(
     filename=LOG_PATH, level=logging.ERROR,
     format='%(asctime)s %(levelname)s %(message)s',
