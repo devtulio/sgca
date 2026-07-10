@@ -5,6 +5,11 @@
 
 ---
 
+## [0.18.0] — 2026-07-09
+
+### Adicionado
+- **Troca de senha obrigatória no primeiro acesso** — o admin padrão (criado com `admin`/`admin123`) é obrigado a definir uma nova senha antes de acessar o sistema, em vez de depender só do aviso impresso no terminal. Nova coluna `usuarios.must_change_password` (migração automática, instalações existentes não são afetadas). Mesma implementação do SGCD
+
 ## [0.17.2] — 2026-07-09
 
 ### Corrigido

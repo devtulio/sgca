@@ -1,4 +1,4 @@
-# SGCA v0.17.2 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.18.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -240,6 +240,10 @@ def init_db():
                 conn.execute(f'ALTER TABLE usuarios ADD COLUMN {col} TEXT')
             except sqlite3.OperationalError:
                 pass
+        try:
+            conn.execute('ALTER TABLE usuarios ADD COLUMN must_change_password INTEGER DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass
         _migrar_anexos_dataurl(conn)
         conn.commit()
         # Sessões são descartadas a cada início do servidor (logout automático ao fechar janela)
@@ -247,11 +251,11 @@ def init_db():
         # Cria admin padrão se não houver usuários
         if conn.execute('SELECT COUNT(*) FROM usuarios').fetchone()[0] == 0:
             conn.execute(
-                'INSERT INTO usuarios (username,nome,senha_hash,admin) VALUES (?,?,?,1)',
+                'INSERT INTO usuarios (username,nome,senha_hash,admin,must_change_password) VALUES (?,?,?,1,1)',
                 ('admin', 'Administrador', _hash_password('admin123'))
             )
             conn.commit()
-            print('Usuário padrão criado: admin / admin123 — troque a senha nas Configurações.')
+            print('Usuário padrão criado: admin / admin123 — troque a senha no primeiro acesso.')
 
 def _fts_match_query(text):
     """Converte texto livre em uma query FTS5 (AND de prefixos por palavra)."""
@@ -993,7 +997,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             'user': {
                 'id': row['id'], 'username': row['username'], 'nome': row['nome'],
                 'cpf': row['cpf'], 'email': row['email'],
-                'cargo': row['cargo'], 'matricula': row['matricula'], 'admin': bool(row['admin'])
+                'cargo': row['cargo'], 'matricula': row['matricula'], 'admin': bool(row['admin']),
+                'mustChangePassword': bool(row['must_change_password'])
             }
         })
 
@@ -1605,6 +1610,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                     if not row or not _verify_password(data['old_password'], row['senha_hash']):
                         self._json(403, {'error': 'Senha atual incorreta'}); return
                 fields.append('senha_hash=?'); params.append(_hash_password(data['password']))
+                fields.append('must_change_password=0')
             if fields:
                 conn.execute(f'UPDATE usuarios SET {",".join(fields)} WHERE id=?', params + [uid])
         self._json(200, {'ok': True})

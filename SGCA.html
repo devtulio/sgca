@@ -2310,7 +2310,40 @@
   .pin-shake { animation: pin-shake .35s ease; }
   #overlay-pin { display:flex !important; }
   #overlay-pin.hidden { display:none !important; }
+  #overlay-force-pwd { display:flex !important; }
+  #overlay-force-pwd.hidden { display:none !important; }
 </style>
+
+<!-- ── Troca de senha obrigatória (primeiro acesso / senha padrão) ── -->
+<div class="overlay hidden" id="overlay-force-pwd" style="z-index:99999;background:#1a1f2e;align-items:center;justify-content:center">
+  <div style="position:relative;z-index:1;background:#fff;border-radius:16px;width:380px;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <div style="background:var(--accent);padding:28px 32px 24px;text-align:center">
+      <div style="width:52px;height:52px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e8eef7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:2px">Troca de senha obrigatória</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;font-weight:500">Defina uma nova senha para continuar</div>
+    </div>
+    <div style="padding:26px 32px 28px">
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:600;color:#444;display:block;margin-bottom:6px">Nova senha</label>
+        <input type="password" id="fp-nova" placeholder="mínimo 6 caracteres" autocomplete="new-password"
+          style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:8px;font-size:14px">
+      </div>
+      <div style="margin-bottom:6px">
+        <label style="font-size:11px;font-weight:600;color:#444;display:block;margin-bottom:6px">Confirmar nova senha</label>
+        <input type="password" id="fp-confirma" placeholder="••••••••" autocomplete="new-password"
+          style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:8px;font-size:14px"
+          onkeydown="if(event.key==='Enter') _confirmarTrocaSenhaObrigatoria()">
+      </div>
+      <p id="fp-erro" style="font-size:.75rem;color:#dc2626;margin:8px 0 0;display:none"></p>
+      <button onclick="_confirmarTrocaSenhaObrigatoria()"
+        style="width:100%;margin-top:18px;padding:11px 0;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">
+        Definir senha e entrar
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ── New Process Modal ── -->
 
@@ -2477,7 +2510,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.17.2';
+const SGCA_VERSION = '0.18.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -7738,9 +7771,13 @@ async function verificarSenha() {
     localStorage.setItem('sgca-token', d.token);
     localStorage.setItem('sgca-last-username', username);
     sessionStorage.setItem('sgca-session-auth', '1');
-    document.getElementById('overlay-pin').classList.add('hidden');
     document.getElementById('pin-input').value = '';
     erroEl.style.display = 'none';
+    if (d.user.mustChangePassword) {
+      document.getElementById('overlay-force-pwd').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('overlay-pin').classList.add('hidden');
     _loginCanvasStop();
     _onLoginSuccess();
   } else {
@@ -7754,6 +7791,25 @@ async function verificarSenha() {
     card.classList.add('pin-shake');
     setTimeout(() => document.getElementById('pin-input').focus(), 50);
   }
+}
+
+async function _confirmarTrocaSenhaObrigatoria() {
+  const nova     = document.getElementById('fp-nova').value;
+  const confirma = document.getElementById('fp-confirma').value;
+  const erroEl   = document.getElementById('fp-erro');
+  const show = msg => { erroEl.textContent = msg; erroEl.style.display = ''; };
+
+  if (!nova || nova.length < 6) { show('A senha deve ter no mínimo 6 caracteres.'); return; }
+  if (nova !== confirma) { show('As senhas não coincidem.'); return; }
+
+  const r = await API.put(`/api/usuarios/${_apiUser.id}`, { password: nova });
+  if (!r?.ok) { show((await API.json(r))?.error || 'Erro ao definir a senha.'); return; }
+
+  _apiUser.mustChangePassword = false;
+  document.getElementById('overlay-force-pwd').classList.add('hidden');
+  document.getElementById('overlay-pin').classList.add('hidden');
+  _loginCanvasStop();
+  _onLoginSuccess();
 }
 
 let _lcRaf = null, _lcNodes = [], _lcMouse = { x: -9999, y: -9999 };
