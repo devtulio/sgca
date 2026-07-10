@@ -114,6 +114,9 @@ Execute **`Diagnostico SGCA.bat`** (ou a opção **[3]** do `Iniciar SGCA.bat`) 
 SGCA/
 ├── SGCA.html                # Frontend — aplicação web
 ├── server.py                # Servidor Python (API REST + SQLite) — porta 3002
+├── tests/                    # Suíte de testes automatizados do backend
+│   ├── test_server.py
+│   └── e2e/                  # Testes E2E (Playwright) — navegador real de ponta a ponta
 ├── Iniciar SGCA.bat          # Inicializa o servidor
 ├── python-3.12.9-embed-amd64.zip  # Python portátil (fallback se não houver Python instalado)
 ├── Instalar Assinatura ICP-Brasil.bat  # Opcional — instala pip + pyhanko no Python embarcável
@@ -127,9 +130,7 @@ SGCA/
 ├── sgca.db                   # Banco de dados SQLite (criado automaticamente)
 ├── uploads/                  # Anexos armazenados (criado automaticamente)
 ├── backups/                  # Backups automáticos (criado automaticamente)
-├── tests/                    # Suíte de testes automatizados do backend
-│   ├── test_server.py
-│   └── e2e/                  # Testes E2E (Playwright) — navegador real de ponta a ponta
+├── browser-profile/          # Perfil do Chrome/Edge no Modo Pessoal (criado automaticamente)
 ├── requirements.txt          # Dependência opcional (pyhanko — só p/ assinatura ICP-Brasil)
 ├── README.md
 ├── CHANGELOG.md
