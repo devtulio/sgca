@@ -5,6 +5,18 @@
 
 ---
 
+## [0.23.0] — 2026-07-10
+
+### Adicionado — Acessibilidade (WCAG 2.1 AA)
+Correções de uma auditoria de acessibilidade dedicada (leitura de código + cálculo de contraste, 8 frentes: contraste de cor, texto alternativo, associação de rótulos, teclado, foco, alvo de toque, modais, landmarks).
+
+- **Navegação por teclado** — cards de estatística, itens de notificação, linhas de agenda, cards de kanban, itens de lista de fornecedor/busca global e outros elementos que usavam `<div onclick>` agora têm `role="button"` + `tabindex="0"`, ativados por Enter/Espaço via um único listener delegado
+- **Rótulos de formulário associados** — `<label for>` adicionado em mais de 60 campos que dependiam só de proximidade visual: modais de Fornecedor, Usuário, Contrato, Ata, Certidão, Sanção, painel de edição de fornecedor (endereço, contato, QSA), abas de Configurações (Organização, Backup, Segurança, SMTP), overlay de troca de senha obrigatória e modal de assinatura ICP-Brasil
+- **Contraste de texto corrigido** — `--gray-400` (usado como cor de texto em vários pontos: ícones de estatística, subtítulos, botão de editar título) tinha 2,54:1 de contraste sobre branco; unificado com `--gray-500` (4,83:1) no modo claro, preservando o valor original no modo escuro (já passava). Badge de estatística no modo escuro também ajustado (3,99:1 → 6,69:1)
+- **Indicador de foco visível** — adicionado `box-shadow` de foco nos campos que só trocavam a cor da borda (etapas do checklist, campos de informação, busca de fornecedor, filtros de auditoria, campos em modo escuro)
+- **Modais com semântica de diálogo** — `role="dialog"` + `aria-modal="true"` + `aria-labelledby` nos 9 modais do sistema; foco automático no primeiro campo ao abrir; Tab preso dentro do modal enquanto aberto; foco devolvido a quem acionou o modal ao fechar — via `MutationObserver` genérico, sem alterar as 9 funções de abrir/fechar existentes
+- **Alt text e área de toque** — botões de ícone (fechar, editar efeito de fundo, mostrar/ocultar senha) com área clicável ampliada sem alterar o tamanho visual; região de conteúdo principal (`#app`) agora é um landmark `<main>`
+
 ## [0.22.0] — 2026-07-10
 
 ### Corrigido
