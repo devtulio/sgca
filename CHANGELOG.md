@@ -5,6 +5,13 @@
 
 ---
 
+## [0.24.0] — 2026-07-11
+
+### Adicionado
+- **Campos CMMET no item da Ata** — nome padronizado, descrição técnica padronizada, código CMMET, código SCPI, classificação (natureza, classe, grupo, subgrupo), unidade SCPI e apresentação comercial, alinhados à estrutura da Carga Setorial do Catálogo Municipal de Materiais e Especificações Técnicas (CMMET) do órgão. Campos de governança do próprio catálogo (status, versão, responsável pela validação etc.) ficaram de fora por decisão do usuário — pertencem ao ciclo de vida do CMMET, não ao registro do item na ata
+
+---
+
 ## [0.23.2] — 2026-07-11
 
 ### Corrigido
