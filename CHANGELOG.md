@@ -5,6 +5,13 @@
 
 ---
 
+## [0.24.2] — 2026-07-11
+
+### Alterado
+- **Card "Valor Total Vigente/Registrado" com o dobro de largura** no Dashboard geral, na tela de Contratos e na tela de Atas — evita que valores maiores fiquem espremidos no espaço de uma coluna só de indicador
+
+---
+
 ## [0.24.1] — 2026-07-11
 
 ### Alterado

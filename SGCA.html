@@ -2548,7 +2548,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.24.1';
+const SGCA_VERSION = '0.24.2';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3743,7 +3743,7 @@ async function renderDashboardGeral() {
       <div class="stat-val">${atasVigentes.length}</div>
       <div class="stat-sub">de ${atas.length} no total</div>
     </div>
-    <div class="stat done">
+    <div class="stat done" style="grid-column:span 2">
       <div class="stat-top"><span class="stat-lbl">Valor Total Vigente</span></div>
       <div class="stat-val" style="font-size:1.3rem">${fmtMoney(valorTotal) || 'R$ 0,00'}</div>
       <div class="stat-sub">soma dos contratos vigentes</div>
@@ -3825,7 +3825,7 @@ async function renderContratosStats() {
       <div class="stat-val">${vencendo.length}</div>
       <div class="stat-sub">contratos</div>
     </div>
-    <div class="stat done">
+    <div class="stat done" style="grid-column:span 2">
       <div class="stat-top"><span class="stat-lbl">Valor Total Vigente</span></div>
       <div class="stat-val" style="font-size:1.3rem">${fmtMoney(valorTotal) || 'R$ 0,00'}</div>
       <div class="stat-sub">soma dos contratos vigentes</div>
@@ -5177,7 +5177,7 @@ async function renderAtasStats() {
       <div class="stat-val">${vencendo.length}</div>
       <div class="stat-sub">atas</div>
     </div>
-    <div class="stat done">
+    <div class="stat done" style="grid-column:span 2">
       <div class="stat-top"><span class="stat-lbl">Valor Total Registrado</span></div>
       <div class="stat-val" style="font-size:1.3rem">${fmtMoney(valorTotal) || 'R$ 0,00'}</div>
       <div class="stat-sub">soma dos itens das atas vigentes</div>
