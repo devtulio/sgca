@@ -31,6 +31,7 @@
     --gray-700:     #374151;
     --gray-800:     #1f2937;
     --gray-900:     #111827;
+    --bg-card: #fff;
     --radius: 8px;
     --shadow: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
     --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
@@ -736,6 +737,7 @@
     --gray-500:     #9a9691;
     --gray-700:     #c8c3bc;
     --gray-900:     #f0ece8;
+    --bg-card:      #2a2a2a;
     --shadow:       0 1px 4px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.3);
     --shadow-md:    0 4px 12px rgba(0,0,0,.6), 0 2px 4px rgba(0,0,0,.3);
   }
@@ -1728,12 +1730,12 @@
           </div>
           <div id="ata-item-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
             <input type="text" id="it-descricao" placeholder="Descrição do item" style="width:100%">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
               <input type="text" id="it-unidade" placeholder="Unidade">
               <input type="number" id="it-qtd" placeholder="Qtd. registrada">
               <input type="text" id="it-preco" placeholder="Preço unit. (R$)" oninput="maskMoney(this)">
-              <select id="it-fornecedor" onchange="_checkFornecedorSancao(this.value, 'it-fornecedor-aviso')"><option value="">Fornecedor…</option></select>
             </div>
+            <select id="it-fornecedor" onchange="_checkFornecedorSancao(this.value, 'it-fornecedor-aviso')" style="width:100%;margin-top:8px"><option value="">Fornecedor…</option></select>
             <div id="it-fornecedor-aviso"></div>
             <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
               <button class="btn btn-outline btn-sm" onclick="hideNovoItemForm()">Cancelar</button>
@@ -2524,7 +2526,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.23.1';
+const SGCA_VERSION = '0.23.2';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -5011,6 +5013,38 @@ ${_qrFooterReport('Termo de Recebimento')}
   await _gerarDocumento(win, html, `Termo de Recebimento — Contrato ${c.numero || c.id}`, c.id);
 }
 
+// Salva um arquivo texto pedindo ao usuário onde salvar (File System Access API,
+// suportada no Chrome/Edge — navegadores recomendados pelo sistema); em
+// navegadores sem suporte, cai no download tradicional (pasta padrão do navegador).
+// Retorna false se o usuário cancelou o diálogo, para o chamador não seguir
+// como se o arquivo tivesse sido salvo (ex.: não registrar auditoria).
+async function _salvarArquivoComo(conteudo, nomeArquivo, mimeType) {
+  if (window.showSaveFilePicker) {
+    try {
+      const ext = '.' + nomeArquivo.split('.').pop();
+      const handle = await window.showSaveFilePicker({
+        suggestedName: nomeArquivo,
+        types: [{ description: 'Arquivo', accept: { [mimeType]: [ext] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(conteudo);
+      await writable.close();
+      return true;
+    } catch (e) {
+      if (e.name === 'AbortError') return false; // usuário cancelou o diálogo
+      // outros erros (ex.: navegador bloqueou por política): cai no fallback abaixo
+    }
+  }
+  const blob = new Blob([conteudo], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nomeArquivo;
+  link.click();
+  URL.revokeObjectURL(url);
+  return true;
+}
+
 // ── Exportação PNCP (Contrato) ──────────────────────────────────
 async function exportarPNCPContrato() {
   const c = _contratos.find(x => x.id === _contratoAtualId);
@@ -5071,13 +5105,9 @@ async function exportarPNCPContrato() {
   };
 
   const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `PNCP_Contrato_${(c.numero || c.id).replace(/\//g,'-')}_${new Date().toISOString().slice(0,10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  const nomeArquivo = `PNCP_Contrato_${(c.numero || c.id).replace(/\//g,'-')}_${new Date().toISOString().slice(0,10)}.json`;
+  const salvo = await _salvarArquivoComo(json, nomeArquivo, 'application/json');
+  if (!salvo) return;
 
   if (nullFields.length) {
     toast(`JSON exportado com ${nullFields.length} campo(s) pendente(s) — veja "_pendencias" no arquivo.`, 'warn');
@@ -5376,13 +5406,9 @@ async function exportarPNCPAta() {
   };
 
   const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `PNCP_Ata_${(a.numero || a.id).replace(/\//g,'-')}_${new Date().toISOString().slice(0,10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  const nomeArquivo = `PNCP_Ata_${(a.numero || a.id).replace(/\//g,'-')}_${new Date().toISOString().slice(0,10)}.json`;
+  const salvo = await _salvarArquivoComo(json, nomeArquivo, 'application/json');
+  if (!salvo) return;
 
   if (nullFields.length) {
     toast(`JSON exportado com ${nullFields.length} campo(s) pendente(s) — veja "_pendencias" no arquivo.`, 'warn');

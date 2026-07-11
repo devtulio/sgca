@@ -5,7 +5,14 @@
 
 ---
 
-## [0.23.1] — 2026-07-11
+## [0.23.2] — 2026-07-11
+
+### Corrigido
+- **Painel de "Histórico do Registro" transparente** — usava `background: var(--bg-card)`, uma variável CSS nunca definida em nenhum tema; o painel ficava sem cor de fundo, deixando o conteúdo por trás visível através dele. Corrigido definindo `--bg-card` no tema claro e no escuro (também corrige o mesmo problema, até então despercebido, na lista de itens da Agenda de Vencimentos)
+- **Campo de Fornecedor espremido no cadastro de item da ARP** — dividia a largura do modal em 4 colunas iguais (Unidade/Qtd./Preço/Fornecedor); nomes de fornecedor reais não cabiam. Fornecedor passa a ocupar a linha inteira, abaixo de Unidade/Qtd./Preço (3 colunas)
+
+### Adicionado
+- **"Salvar como" ao exportar PNCP** — Contrato e Ata agora abrem o diálogo nativo do navegador para escolher onde salvar o arquivo (File System Access API, Chrome/Edge), em vez de sempre cair na pasta Downloads padrão; navegadores sem suporte à API continuam com o download tradicional
 
 ### Alterado
 - **Órgão Gerenciador da Ata pré-preenchido** — ao cadastrar uma nova Ata de Registro de Preços, o campo já vem preenchido com o nome do órgão configurado em Configurações → Organização (permanece editável, para os casos de registro de uma ARP de outro órgão gerenciador). Atas já existentes continuam mostrando o valor salvo, não o padrão
