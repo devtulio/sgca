@@ -5,6 +5,13 @@
 
 ---
 
+## [0.23.1] — 2026-07-11
+
+### Alterado
+- **Órgão Gerenciador da Ata pré-preenchido** — ao cadastrar uma nova Ata de Registro de Preços, o campo já vem preenchido com o nome do órgão configurado em Configurações → Organização (permanece editável, para os casos de registro de uma ARP de outro órgão gerenciador). Atas já existentes continuam mostrando o valor salvo, não o padrão
+
+---
+
 ## [0.23.0] — 2026-07-10
 
 ### Adicionado — Acessibilidade (WCAG 2.1 AA)
