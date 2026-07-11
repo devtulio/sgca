@@ -5,6 +5,13 @@
 
 ---
 
+## [0.24.1] — 2026-07-11
+
+### Alterado
+- **Modais de Contrato e Ata mais largos** (de 760px/680px para 820px em ambos) — dá mais espaço aos campos de classificação CMMET do item da Ata (Natureza/Classe/Grupo/Subgrupo, Apresentação Comercial) e mantém os dois modais com a mesma largura
+
+---
+
 ## [0.24.0] — 2026-07-11
 
 ### Adicionado
