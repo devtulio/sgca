@@ -5,6 +5,12 @@
 
 ---
 
+## [0.25.1] — 2026-07-13
+
+### Corrigido — Auditoria de consistência visual (P3)
+- **Seletor de tema "Roxo" com anel de foco/check navy** — o `accent-color` do radio button apontava para o azul institucional (`#1a3a6b`) em vez do roxo (`#5E2750`) mostrado na amostra ao lado. Mesmo bug corrigido também no SGCD
+- **Token `--gray-500` no lugar de `--text-secondary`** (indefinido) no rótulo de "ignorar validação SSL" das Configurações
+
 ## [0.25.0] — 2026-07-13
 
 ### Corrigido — Auditoria de consistência visual (P1)
