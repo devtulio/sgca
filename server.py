@@ -1,4 +1,4 @@
-# SGCA v0.25.2 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.25.3 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -681,6 +681,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 ).fetchall()
             self._json(200, [dict(r) for r in rows])
 
+        elif p == '/api/relatorio/integridade':
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
+            self._relatorio_integridade()
+
         # Backup
         elif p == '/api/backup':
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
@@ -824,11 +828,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
         elif p == '/api/backup/restore':
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
-            self._restore_backup(data)
+            self._restore_backup(data, s)
 
         elif p == '/api/backups/db/restore':
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
-            self._restore_db_backup(body)
+            self._restore_db_backup(body, s)
 
         else:
             self._json(404, {'error': 'Rota não encontrada'})
@@ -964,6 +968,9 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 conn.execute('DELETE FROM contratos')
                 conn.execute('DELETE FROM atas')
                 conn.execute('DELETE FROM audit_global')
+                _insert_audit_raw(conn, {'type': 'FACTORY_RESET', 'ts': _now(),
+                                          'user_id': s['user_id'], 'user_nome': s['nome'],
+                                          'label': 'Todos os dados apagados', 'detail': 'Reset de fábrica'})
             self._json(200, {'ok': True})
 
         else:
@@ -1653,7 +1660,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def _restore_backup(self, data):
+    def _restore_backup(self, data, s):
         if not data.get('_sgca'):
             self._json(400, {'error': 'Arquivo não é um backup SGCA válido'}); return
         _do_db_backup()  # backup do atual antes de substituir tudo
@@ -1722,9 +1729,15 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 v = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
                 conn.execute('INSERT OR REPLACE INTO sys_settings (key,value) VALUES (?,?)', (key, v))
 
+            # Registrado por último: as linhas acima apagam e reimportam audit_global
+            # a partir do payload, então logar antes seria perdido no DELETE.
+            _insert_audit_raw(conn, {'type': 'RESTAURAR_BACKUP', 'ts': _now(),
+                                      'user_id': s['user_id'], 'user_nome': s['nome'],
+                                      'label': 'Backup do sistema restaurado', 'detail': 'Restauração via arquivo JSON'})
+
         self._json(200, {'ok': True})
 
-    def _restore_db_backup(self, raw_bytes):
+    def _restore_db_backup(self, raw_bytes, s):
         # raw_bytes é o conteúdo bruto do arquivo .db enviado via multipart ou binário
         if len(raw_bytes) < 16 or raw_bytes[:16] != b'SQLite format 3\x00':
             self._json(400, {'error': 'Arquivo não é um banco SQLite válido'}); return
@@ -1743,6 +1756,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             # Substitui o banco atual com o backup via API de backup SQLite (seguro)
             with sqlite3.connect(tmp.name, factory=_ConnAutoClose) as src, get_db() as dst:
                 src.backup(dst)
+                # Registrado na conexão já restaurada — o backup() acima substitui todo o
+                # banco, então logar antes seria sobrescrito pelo conteúdo do arquivo restaurado.
+                _insert_audit_raw(dst, {'type': 'RESTAURAR_DB', 'ts': _now(),
+                                         'user_id': s['user_id'], 'user_nome': s['nome'],
+                                         'label': 'Banco de dados restaurado', 'detail': 'Restauração via arquivo .db'})
             self._json(200, {'ok': True})
         except Exception as e:
             _log.error('Erro ao restaurar banco: %s', e)
@@ -1750,6 +1768,55 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         finally:
             try: os.remove(tmp.name)
             except: pass
+
+    def _relatorio_integridade(self):
+        def _dir_size(path):
+            total = 0
+            if os.path.isdir(path):
+                for f in os.listdir(path):
+                    fp = os.path.join(path, f)
+                    if os.path.isfile(fp): total += os.path.getsize(fp)
+            return total
+
+        cfg = _get_backup_cfg()
+        bdir = cfg['path']
+        backups_db = sorted(
+            (f for f in os.listdir(bdir) if f.startswith('DB_SGCA_BACKUP_') and f.endswith('.db')),
+            reverse=True
+        ) if os.path.isdir(bdir) else []
+        backups_json = sorted(
+            (f for f in os.listdir(bdir) if f.startswith('SIS_SGCA_BACKUP_') and f.endswith('.json')),
+            reverse=True
+        ) if os.path.isdir(bdir) else []
+
+        with get_db() as conn:
+            contagens = {
+                'contratos_ativos': conn.execute('SELECT COUNT(*) FROM contratos WHERE deleted_at IS NULL').fetchone()[0],
+                'atas_ativas': conn.execute('SELECT COUNT(*) FROM atas WHERE deleted_at IS NULL').fetchone()[0],
+                'na_lixeira': (conn.execute('SELECT COUNT(*) FROM contratos WHERE deleted_at IS NOT NULL').fetchone()[0]
+                               + conn.execute('SELECT COUNT(*) FROM atas WHERE deleted_at IS NOT NULL').fetchone()[0]),
+                'fornecedores': conn.execute('SELECT COUNT(*) FROM fornecedores').fetchone()[0],
+                'arquivos': conn.execute('SELECT COUNT(*) FROM arquivos').fetchone()[0],
+                'usuarios_ativos': conn.execute('SELECT COUNT(*) FROM usuarios WHERE ativo=1').fetchone()[0],
+                'etiquetas': conn.execute('SELECT COUNT(*) FROM tags').fetchone()[0],
+                'assinaturas': conn.execute('SELECT COUNT(*) FROM signatures').fetchone()[0],
+            }
+            eventos = [dict(r) for r in conn.execute(
+                '''SELECT * FROM audit_global WHERE type IN
+                   ('SYNC_BACKUP','RESTAURAR_BACKUP','RESTAURAR_DB','FACTORY_RESET')
+                   ORDER BY ts DESC LIMIT 15''').fetchall()]
+            last_row = conn.execute("SELECT value FROM sys_settings WHERE key='auto_backup_last'").fetchone()
+
+        self._json(200, {
+            'auto_backup_enabled': cfg['enabled'], 'auto_backup_keep': cfg['keep'], 'backup_path': bdir,
+            'last_backup': last_row['value'] if last_row else None,
+            'db_size_bytes': os.path.getsize(DB_PATH) if os.path.isfile(DB_PATH) else 0,
+            'uploads_size_bytes': _dir_size(UPLOADS_DIR),
+            'uploads_count': len([f for f in os.listdir(UPLOADS_DIR)]) if os.path.isdir(UPLOADS_DIR) else 0,
+            'backups_db_count': len(backups_db), 'backups_json_count': len(backups_json),
+            'backups_db_size_bytes': sum(os.path.getsize(os.path.join(bdir, f)) for f in backups_db),
+            'contagens': contagens, 'eventos_recentes': eventos,
+        })
 
     # ── CNPJ Proxy ────────────────────────────────────────────────────────────
 
