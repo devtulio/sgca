@@ -5,6 +5,14 @@
 
 ---
 
+## [0.25.0] — 2026-07-13
+
+### Corrigido — Auditoria de consistência visual (P1)
+- **Texto ilegível no modo escuro** — `--gray-600` (11 usos) e `--gray-800` (2 usos) não tinham sobrescrita no `body.dark` e renderizavam a ~1,9:1 de contraste sobre o fundo escuro; adicionadas as mesmas sobrescritas já aplicadas ao SGCD
+- **Anel de foco no campo de confirmação do factory reset** (`#_wipe-input`) — ganhou a classe `.wipe-confirm-inp` com o mesmo anel visível do SGCD/SGDP
+- **Seções do menu lateral** (`.nav-section`) com opacidade .5 → .65, alinhando o contraste ao padrão dos irmãos (correção de a11y que não tinha sido portada)
+- **Resquícios do laranja da marca antiga removidos** — 7 pontos usavam `rgba(233,84,32,…)` (identidade anterior) em anéis de foco e brilhos; agora derivam do brand via `color-mix` e acompanham o tema de cor
+
 ## [0.24.2] — 2026-07-11
 
 ### Alterado
