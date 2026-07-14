@@ -5,6 +5,11 @@
 
 ---
 
+## [0.25.7] — 2026-07-14
+
+### Corrigido
+- **Classe `.dash-top` (cabeçalho de título + ações de cada tela) não estava definida no esqueleto compartilhado (`_esqueleto/base.css`)** — só a classe morta `.view-top` (nunca usada em nenhum dos 4 sistemas) existia lá. Sem efeito visível aqui porque SGCD/SGCA/SGDP definiam `.dash-top` localmente (byte-idêntico entre os 3), mas deixava o SGEA sem nenhum estilo no cabeçalho de cada tela. Corrigido movendo `.dash-top` para `base.css` e removendo a cópia local agora redundante
+
 ## [0.25.6] — 2026-07-14
 
 ### Removido
