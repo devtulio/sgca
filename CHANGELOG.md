@@ -5,6 +5,11 @@
 
 ---
 
+## [0.25.6] — 2026-07-14
+
+### Removido
+- **Handlers locais de Tab-trap e Enter/Espaço em `role="button"`, duplicados dos listeners genéricos do esqueleto compartilhado (`base.js`)** — o handler local de Enter/Espaço era um listener delegado próprio; o de Tab-trap ficava dentro da IIFE de foco automático dos modais (que continua local, pois gerencia o retorno de foco). Mesmo padrão já adotado pelo SGDP ao migrar para o esqueleto
+
 ## [0.25.5] — 2026-07-14
 
 ### Corrigido

@@ -2216,7 +2216,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.25.5';
+const SGCA_VERSION = '0.25.6';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -9063,27 +9063,9 @@ document.addEventListener('keydown', e => {
     }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
   });
 
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'Tab') return;
-    const modal = document.querySelector('.overlay:not(.hidden)');
-    if (!modal) return;
-    const focaveis = [...modal.querySelectorAll(FOCUSABLE_SEL)].filter(el => el.offsetParent !== null);
-    if (!focaveis.length) return;
-    const primeiro = focaveis[0], ultimo = focaveis[focaveis.length - 1];
-    if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus(); }
-    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
-  });
+  // Tab-trap dentro do modal aberto e Enter/Espaço em role="button" são os
+  // listeners genéricos do base.js.
 })();
-
-// Ativa por teclado qualquer elemento role="button" (cards de dashboard, itens
-// de kanban/busca/agenda) — um único listener delegado em vez de onkeydown
-// repetido em cada elemento clicável que não é <button> nativo.
-document.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.getAttribute('role') === 'button') {
-    e.preventDefault();
-    e.target.click();
-  }
-});
 
 if (location.protocol === 'file:') {
   document.getElementById('origin-block').style.display = 'flex';
