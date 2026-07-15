@@ -5,6 +5,11 @@
 
 ---
 
+## [0.26.0] — 2026-07-15
+
+### Adicionado
+- **Exclusão de Contratos e Atas** — botão "🗑️ Excluir" no rodapé do modal de edição (contrato/ata existente), seguindo o mesmo rigor de segurança do Factory Reset: (1) aviso geral com alerta informativo se houver fornecedor(es) vinculado(s) — não bloqueia, apenas avisa; (2) confirmação digitando `EXCLUIR <número>`; (3) contagem regressiva de 5s antes de habilitar o botão final. A exclusão move o registro para a Lixeira (soft-delete já existente no backend), com restauração disponível por 30 dias. Novos eventos de auditoria: `CONTRATO_EXCLUIDO` e `ATA_EXCLUIDA`
+
 ## [0.25.8] — 2026-07-14
 
 ### Removido

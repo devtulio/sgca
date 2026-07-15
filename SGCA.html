@@ -1349,6 +1349,7 @@
           <button class="btn btn-outline btn-sm" onclick="gerarTermoRecebimento()">📥 Termo de Recebimento</button>
           <button class="btn btn-outline btn-sm" onclick="exportarPNCPContrato()">📤 Exportar PNCP</button>
           <button class="btn btn-outline btn-sm" onclick="abrirHistoricoRegistro(_contratoAtualId, 'Histórico do Contrato', this)">🕘 Histórico</button>
+          <button class="btn btn-danger btn-outline btn-sm" onclick="excluirContratoAtual()">🗑️ Excluir Contrato</button>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" onclick="closeContratoModal()">Cancelar</button>
@@ -1455,9 +1456,10 @@
         </div>
       </div>
       <div class="modal-footer" style="justify-content:space-between">
-        <div id="ata-doc-actions" style="display:none;gap:8px">
+        <div id="ata-doc-actions" style="display:none;gap:8px;flex-wrap:wrap">
           <button class="btn btn-outline btn-sm" onclick="exportarPNCPAta()">📤 Exportar PNCP</button>
           <button class="btn btn-outline btn-sm" onclick="abrirHistoricoRegistro(_ataAtualId, 'Histórico da Ata', this)">🕘 Histórico</button>
+          <button class="btn btn-danger btn-outline btn-sm" onclick="excluirAtaAtual()">🗑️ Excluir Ata</button>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" onclick="closeAtaModal()">Cancelar</button>
@@ -2211,7 +2213,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.25.8';
+const SGCA_VERSION = '0.26.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2392,6 +2394,102 @@ async function factoryReset() {
 
   toast('✅ Wipe concluído. O sistema foi redefinido ao estado inicial.', 'success');
   setTimeout(() => location.reload(), 1800);
+}
+
+// ── Exclusão de Contrato/Ata — mesmo rigor de confirmação do Restaurar de
+// Fábrica (3 etapas), mas sem backup automático: diferente do wipe, aqui é
+// reversível pela Lixeira por 30 dias. Compartilhado entre Contrato e Ata.
+async function _confirmarExclusaoInstrumento({ tipoLabel, numero, resumo, fornecedores }) {
+  const dark  = document.body.classList.contains('dark');
+  const bg    = dark ? '#2a2a2a' : '#ffffff';
+  const txt   = dark ? '#f0ece8' : '#1a1a1a';
+  const sub   = dark ? '#9ca3af' : '#6b7280';
+  const inpBg = dark ? '#1a1a1a' : '#f9fafb';
+
+  // — Etapa 1: aviso geral + alerta de fornecedor vinculado (informativo, não bloqueia) —
+  const feminino = tipoLabel.toLowerCase() === 'ata';
+  const artigo = feminino ? 'a' : 'o';
+  const pronome = feminino ? 'Ela' : 'Ele';
+  const movidoA = feminino ? 'movida' : 'movido';
+  const avisoFornecedor = fornecedores.length
+    ? `\n\n⚠️ Vinculado ao(s) fornecedor(es): ${fornecedores.join(', ')}.`
+    : '';
+  const c1 = await customConfirm(
+    `Você está prestes a excluir ${artigo} ${tipoLabel}${numero ? ' Nº ' + numero : ''} — ${resumo}.\n\n${pronome} será ${movidoA} para a Lixeira e poderá ser restaurado(a) por 30 dias.${avisoFornecedor}`,
+    { title: `Excluir ${tipoLabel}`, icon: '⚠️', okLabel: 'Continuar', okClass: 'btn-danger' }
+  );
+  if (!c1) return false;
+
+  // — Etapa 2: digitar "EXCLUIR <número>" —
+  const frase = `EXCLUIR ${numero || ''}`.trim();
+  const digitado = await new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = `
+      <div style="background:${bg};color:${txt};border-radius:12px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.5);border:2px solid #dc2626">
+        <div style="font-size:1.05rem;font-weight:700;color:#dc2626;margin-bottom:12px">🔐 Confirmação de segurança (2/3)</div>
+        <p style="font-size:.88rem;line-height:1.6;margin-bottom:16px;color:${txt}">Para continuar, digite exatamente a frase abaixo no campo:</p>
+        <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:6px;padding:8px 12px;font-family:monospace;font-size:.95rem;font-weight:700;color:#dc2626;text-align:center;letter-spacing:2px;margin-bottom:16px">${escHtml(frase)}</div>
+        <input id="_del-input" type="text" placeholder="Digite a frase aqui..." autocomplete="off" spellcheck="false" class="wipe-confirm-inp"
+          style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.88rem;box-sizing:border-box;background:${inpBg};color:${txt}">
+        <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+          <button id="_del-cancel" class="btn btn-outline btn-sm" style="color:${txt}">✕ Cancelar</button>
+          <button id="_del-ok" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;opacity:.5;cursor:not-allowed" disabled>Confirmar →</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const inp = overlay.querySelector('#_del-input');
+    const ok  = overlay.querySelector('#_del-ok');
+    inp.addEventListener('input', () => {
+      const match = inp.value === frase;
+      ok.disabled = !match;
+      ok.style.opacity = match ? '1' : '.5';
+      ok.style.cursor  = match ? 'pointer' : 'not-allowed';
+    });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !ok.disabled) ok.click(); });
+    overlay.querySelector('#_del-cancel').addEventListener('click', () => { document.body.removeChild(overlay); resolve(false); });
+    ok.addEventListener('click', () => { document.body.removeChild(overlay); resolve(true); });
+    setTimeout(() => inp.focus(), 50);
+  });
+  if (!digitado) return false;
+
+  // — Etapa 3: contagem regressiva final —
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = `
+      <div style="background:${bg};color:${txt};border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.5);border:2px solid #dc2626;text-align:center">
+        <div style="font-size:2.2rem;margin-bottom:8px">🗑️</div>
+        <div style="font-size:1rem;font-weight:700;color:#dc2626;margin-bottom:14px">Última confirmação (3/3)</div>
+        <p style="font-size:.85rem;line-height:1.7;color:${txt};margin-bottom:14px">${tipoLabel} <strong>${escHtml(numero || '')}</strong> será ${movidoA} para a Lixeira.</p>
+        <p style="font-size:.8rem;color:${sub};margin-bottom:22px">Pode ser restaurado(a) em Lixeira por 30 dias.</p>
+        <button id="_del-final" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;min-width:180px;opacity:.5;cursor:not-allowed" disabled>
+          ⏳ Aguarde <span id="_del-count">5</span>s…
+        </button>
+        <br>
+        <button id="_del-abort" class="btn btn-outline btn-sm" style="margin-top:14px;color:${txt}">✕ Cancelar</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const btn   = overlay.querySelector('#_del-final');
+    const count = overlay.querySelector('#_del-count');
+    let n = 5;
+    const t = setInterval(() => {
+      n--;
+      if (n <= 0) {
+        clearInterval(t);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor  = 'pointer';
+        btn.innerHTML = `🗑️ Excluir ${tipoLabel} Agora`;
+      } else {
+        count.textContent = n;
+      }
+    }, 1000);
+    overlay.querySelector('#_del-abort').addEventListener('click', () => {
+      clearInterval(t); document.body.removeChild(overlay); resolve(false);
+    });
+    btn.addEventListener('click', () => { document.body.removeChild(overlay); resolve(true); });
+  });
 }
 
 async function exportBackup() {
@@ -3799,6 +3897,28 @@ async function saveContrato() {
   updateAgendaBadge();
 }
 
+async function excluirContratoAtual() {
+  if (!_contratoAtualId) return;
+  const c = _contratos.find(x => x.id === _contratoAtualId);
+  if (!c) return;
+  const forn = _fornecedoresCache.find(f => f.id === c.fornecedorId);
+  const confirmado = await _confirmarExclusaoInstrumento({
+    tipoLabel: 'Contrato',
+    numero: c.numero || c.id,
+    resumo: c.objeto || '(sem objeto)',
+    fornecedores: forn ? [forn.razao_social || forn.nome_fantasia || 'fornecedor sem nome'] : []
+  });
+  if (!confirmado) return;
+  const r = await API.del(`/api/contratos/${_contratoAtualId}`);
+  if (!r?.ok) { toast('Erro ao excluir contrato.', 'error'); return; }
+  await _auditEvento('CONTRATO_EXCLUIDO', `Contrato ${c.numero || c.id} excluído — movido para a Lixeira`, c.id);
+  toast('Contrato movido para a Lixeira.', 'success');
+  closeContratoModal();
+  renderContratos();
+  renderContratosStats();
+  updateAgendaBadge();
+}
+
 function renderAditivosList(c) {
   const list = c.aditivos || [];
   const tipoLabel = { prazo: 'Prazo', valor: 'Valor', qualitativo: 'Qualitativo', reequilibrio: 'Reequilíbrio', repactuacao: 'Repactuação' };
@@ -4937,6 +5057,32 @@ async function saveAta() {
   updateAgendaBadge();
 }
 
+async function excluirAtaAtual() {
+  if (!_ataAtualId) return;
+  const a = _atas.find(x => x.id === _ataAtualId);
+  if (!a) return;
+  const fornIds = [...new Set((a.itens || []).map(it => it.fornecedorId).filter(Boolean))];
+  const fornNomes = fornIds
+    .map(id => _fornecedoresCache.find(f => f.id === id))
+    .filter(Boolean)
+    .map(f => f.razao_social || f.nome_fantasia || 'fornecedor sem nome');
+  const confirmado = await _confirmarExclusaoInstrumento({
+    tipoLabel: 'Ata',
+    numero: a.numero || a.id,
+    resumo: a.processoOrigem || '(sem processo)',
+    fornecedores: fornNomes
+  });
+  if (!confirmado) return;
+  const r = await API.del(`/api/atas/${_ataAtualId}`);
+  if (!r?.ok) { toast('Erro ao excluir ata.', 'error'); return; }
+  await _auditEvento('ATA_EXCLUIDA', `Ata ${a.numero || a.id} excluída — movida para a Lixeira`, a.id);
+  toast('Ata movida para a Lixeira.', 'success');
+  closeAtaModal();
+  renderAtas();
+  renderAtasStats();
+  updateAgendaBadge();
+}
+
 function renderItensList(a) {
   const itens = a.itens || [];
   document.getElementById('ata-itens-lista').innerHTML = itens.length ? itens.map(it => {
@@ -5442,8 +5588,10 @@ function _auditLimparFiltros() {
 const _AUDIT_EVENT_LABELS = {
   CONTRATO_CRIADO: 'Contrato criado', CONTRATO_EDITADO: 'Contrato editado',
   CONTRATO_ADITIVO: 'Aditivo de contrato',
+  CONTRATO_EXCLUIDO: 'Contrato excluído (movido para a Lixeira)',
   CONTRATO_RESTAURADO: 'Contrato restaurado', CONTRATO_EXPURGADO: 'Contrato excluído definitivamente',
   ATA_CRIADA: 'Ata criada', ATA_EDITADA: 'Ata editada',
+  ATA_EXCLUIDA: 'Ata excluída (movida para a Lixeira)',
   ATA_RESTAURADO: 'Ata restaurada', ATA_EXPURGADO: 'Ata excluída definitivamente',
   CONTRATO_ASSINADO: 'Anexo assinado digitalmente (ICP-Brasil)', ATA_ASSINADA: 'Anexo assinado digitalmente (ICP-Brasil)',
   FORNECEDOR_ALTERADO: 'Fornecedor alterado', FORNECEDOR_EXCLUIDO: 'Fornecedor excluído',
@@ -5458,10 +5606,12 @@ const _AUDIT_EVENT_META = {
   CONTRATO_CRIADO:      { bg: '#e8eef7', color: '#1a3a6b' },
   CONTRATO_EDITADO:     { bg: '#FFF3D8', color: '#854F0B' },
   CONTRATO_ADITIVO:     { bg: '#EEEDFE', color: '#534AB7' },
+  CONTRATO_EXCLUIDO:    { bg: '#FCEBEB', color: '#A32D2D' },
   CONTRATO_RESTAURADO:  { bg: '#E1F5EE', color: '#0F6E56' },
   CONTRATO_EXPURGADO:   { bg: '#FCEBEB', color: '#A32D2D' },
   ATA_CRIADA:           { bg: '#e8eef7', color: '#1a3a6b' },
   ATA_EDITADA:          { bg: '#FFF3D8', color: '#854F0B' },
+  ATA_EXCLUIDA:         { bg: '#FCEBEB', color: '#A32D2D' },
   ATA_RESTAURADO:       { bg: '#E1F5EE', color: '#0F6E56' },
   ATA_EXPURGADO:        { bg: '#FCEBEB', color: '#A32D2D' },
   CONTRATO_ASSINADO:    { bg: '#E1F5EE', color: '#0F6E56' },
