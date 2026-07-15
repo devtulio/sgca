@@ -1,4 +1,4 @@
-# SGCA v0.26.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.27.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -579,6 +579,8 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._list_contratos(qs)
         elif p == '/api/indice-reajuste':
             self._proxy_indice(qs)
+        elif p == '/api/ceis-cnep':
+            self._proxy_ceis_cnep(qs)
         elif re.fullmatch(r'/api/contratos/[^/]+', p):
             self._get_contrato(p.split('/')[-1])
 
@@ -1838,6 +1840,38 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {'percentual': round((fator - 1) * 100, 2), 'meses': len(dados)})
         except Exception as e:
             self._json(502, {'message': f'Falha ao consultar Banco Central: {e}'})
+
+    # ── CEIS/CNEP (Portal da Transparência/CGU) ────────────────────────────────
+    # Consulta automatizada de sanções federais por CNPJ, complementando os
+    # links manuais já existentes no cadastro de Fornecedores. Exige chave de
+    # API gratuita (cadastro em api.portaldatransparencia.gov.br), salva em
+    # Configurações → Organização e lida aqui via sys_settings.
+
+    def _proxy_ceis_cnep(self, qs):
+        def qp(k): v = qs.get(k); return (v[0] if v else '').strip()
+        cnpj = re.sub(r'\D', '', qp('cnpj'))
+        if len(cnpj) != 14:
+            self._json(400, {'error': 'CNPJ inválido'}); return
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT value FROM sys_settings WHERE key='portal_transparencia_key'"
+            ).fetchone()
+        api_key = row['value'] if row else ''
+        if not api_key:
+            self._json(400, {'error': 'Chave de API do Portal da Transparência não configurada (Configurações → Organização)'}); return
+
+        resultado = {'ceis': [], 'cnep': [], 'erro': None}
+        for tipo in ('ceis', 'cnep'):
+            url = f'https://api.portaldatransparencia.gov.br/api-de-dados/{tipo}?cnpjSancionado={cnpj}&pagina=1'
+            req = urllib.request.Request(url, headers={'chave-api-dados': api_key, 'User-Agent': 'SGCA/2.0'})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    resultado[tipo] = json.loads(resp.read())
+            except urllib.error.HTTPError as e:
+                resultado['erro'] = f'{tipo.upper()}: HTTP {e.code} (verifique a chave de API)'
+            except Exception as e:
+                resultado['erro'] = f'{tipo.upper()}: {e}'
+        self._json(200, resultado)
 
     # ── E-mail ────────────────────────────────────────────────────────────────
 

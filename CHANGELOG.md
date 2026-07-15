@@ -5,6 +5,17 @@
 
 ---
 
+## [0.27.0] — 2026-07-15
+
+### Adicionado
+- **Termo de Rescisão** — novo campo "Motivo/Fundamentação da Rescisão" no Contrato (visível quando o status é "Rescindido") e botão "📄 Termo de Rescisão" no rodapé, que gera o documento formal com fundamento nos arts. 137 a 139 da Lei nº 14.133/2021, no mesmo padrão dos demais documentos gerados
+- **Consulta CEIS/CNEP automatizada** — botão "🔍 Consultar CEIS/CNEP" no cadastro de Fornecedores, complementando os links manuais já existentes. Consulta a API do Portal da Transparência/CGU via proxy do servidor, usando chave de API própria (gratuita) configurada em Configurações → Organização → Integrações
+- **Execução Financeira do Contrato e da Ata** — novo registro de pagamentos (data, valor, nº de empenho/NF, observações) com saldo calculado automaticamente contra o valor global do contrato ou o valor total registrado da ata, no mesmo padrão de sub-registro já usado em Fiscalização Mensal/Matriz de Risco/Subcontratação
+- **Exportação em Excel (.xlsx)** — botão "Exportar Excel" ao lado do "Exportar CSV" em Contratos, Atas, Fornecedores e Auditoria. Gera um arquivo `.xlsx` real (planilha nativa, valores numéricos, sem necessidade de abrir/converter), usando um writer OOXML mínimo próprio (ZIP sem compressão + XML), sem dependências externas
+
+### Removido
+- **~180 linhas de código morto** (`STEPS`, `FIELD_LABELS`, `DATE_FIELDS`, `MONEY_FIELDS`, `SELECT_FIELDS`) — o checklist de 18 etapas de dispensa de licitação, herdado do fork original do SGCD, nunca chegou a ser referenciado em nenhuma tela do SGCA
+
 ## [0.26.0] — 2026-07-15
 
 ### Adicionado

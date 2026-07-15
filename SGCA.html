@@ -854,6 +854,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
         </button>
+        <button class="btn btn-outline" onclick="exportarContratosXlsx()" title="Exportar contratos listados em Excel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar Excel
+        </button>
         <button class="btn btn-primary" onclick="openContratoModal()">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
           Novo Contrato
@@ -912,6 +916,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
         </button>
+        <button class="btn btn-outline" onclick="exportarAtasXlsx()" title="Exportar atas listadas em Excel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar Excel
+        </button>
         <button class="btn btn-primary" onclick="openAtaModal()">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
           Nova Ata
@@ -943,6 +951,10 @@
         <button class="btn btn-outline" onclick="exportarFornecedoresCSV()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
+        </button>
+        <button class="btn btn-outline" onclick="exportarFornecedoresXlsx()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar Excel
         </button>
         <button class="btn btn-outline" onclick="gerarRelatorioFornecedores()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -1154,12 +1166,16 @@
         </div>
         <div class="info-field">
           <label for="c-status">Status</label>
-          <select id="c-status">
+          <select id="c-status" onchange="_onStatusContratoChange()">
             <option value="vigente">Vigente</option>
             <option value="em_prorrogacao">Em prorrogação</option>
             <option value="encerrado">Encerrado</option>
             <option value="rescindido">Rescindido</option>
           </select>
+        </div>
+        <div class="info-field" id="c-motivo-rescisao-wrap" style="display:none">
+          <label for="c-motivo-rescisao">Motivo/Fundamentação da Rescisão</label>
+          <textarea id="c-motivo-rescisao" style="width:100%;min-height:60px"></textarea>
         </div>
         <div class="info-field">
           <label for="c-tags">Etiquetas</label>
@@ -1291,6 +1307,27 @@
           <div id="contrato-subcontratacoes-lista"></div>
         </div>
 
+        <div id="contrato-pagamentos-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand)">Execução Financeira</p>
+            <button class="btn btn-outline btn-sm" onclick="showNovoPagamentoContratoForm()">+ Registrar Pagamento</button>
+          </div>
+          <div id="contrato-pagamento-resumo" style="font-size:.8rem;color:var(--gray-600);margin-bottom:8px"></div>
+          <div id="contrato-pagamento-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+              <input type="date" id="pgc-data">
+              <input type="text" id="pgc-valor" placeholder="Valor (R$)" oninput="maskMoney(this)">
+              <input type="text" id="pgc-empenho" placeholder="Nº Empenho/NF">
+            </div>
+            <textarea id="pgc-obs" placeholder="Observações" style="width:100%;margin-top:8px;min-height:50px"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+              <button class="btn btn-outline btn-sm" onclick="hideNovoPagamentoContratoForm()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="savePagamentoContrato()">Salvar</button>
+            </div>
+          </div>
+          <div id="contrato-pagamentos-lista"></div>
+        </div>
+
         <div id="contrato-anexo-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
           <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin-bottom:8px">Anexos (PDF)</p>
           <div id="c-anexo-atual" style="font-size:.8rem;color:var(--gray-500);margin-bottom:8px"></div>
@@ -1347,6 +1384,7 @@
           <button class="btn btn-outline btn-sm" onclick="gerarExtratoContrato()">📄 Gerar Extrato</button>
           <button class="btn btn-outline btn-sm" onclick="gerarMatrizRisco()">⚠️ Matriz de Risco</button>
           <button class="btn btn-outline btn-sm" onclick="gerarTermoRecebimento()">📥 Termo de Recebimento</button>
+          <button class="btn btn-outline btn-sm" id="btn-termo-rescisao" style="display:none" onclick="gerarTermoRescisao()">📄 Termo de Rescisão</button>
           <button class="btn btn-outline btn-sm" onclick="exportarPNCPContrato()">📤 Exportar PNCP</button>
           <button class="btn btn-outline btn-sm" onclick="abrirHistoricoRegistro(_contratoAtualId, 'Histórico do Contrato', this)">🕘 Histórico</button>
           <button class="btn btn-danger btn-outline btn-sm" onclick="excluirContratoAtual()">🗑️ Excluir Contrato</button>
@@ -1454,6 +1492,27 @@
           </div>
           <div id="ata-itens-lista"></div>
         </div>
+
+        <div id="ata-pagamentos-section" style="display:none;border-top:1px solid var(--gray-200);margin-top:14px;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand)">Execução Financeira</p>
+            <button class="btn btn-outline btn-sm" onclick="showNovoPagamentoAtaForm()">+ Registrar Pagamento</button>
+          </div>
+          <div id="ata-pagamento-resumo" style="font-size:.8rem;color:var(--gray-600);margin-bottom:8px"></div>
+          <div id="ata-pagamento-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+              <input type="date" id="pga-data">
+              <input type="text" id="pga-valor" placeholder="Valor (R$)" oninput="maskMoney(this)">
+              <input type="text" id="pga-empenho" placeholder="Nº Empenho/NF">
+            </div>
+            <textarea id="pga-obs" placeholder="Observações" style="width:100%;margin-top:8px;min-height:50px"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+              <button class="btn btn-outline btn-sm" onclick="hideNovoPagamentoAtaForm()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="savePagamentoAta()">Salvar</button>
+            </div>
+          </div>
+          <div id="ata-pagamentos-lista"></div>
+        </div>
       </div>
       <div class="modal-footer" style="justify-content:space-between">
         <div id="ata-doc-actions" style="display:none;gap:8px;flex-wrap:wrap">
@@ -1538,6 +1597,10 @@
         <button class="btn btn-outline btn-sm" onclick="exportarAuditoriaCSV()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="exportarAuditoriaXlsx()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar Excel
         </button>
         <button class="btn btn-outline btn-sm" onclick="gerarRelatorioAuditoria()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -1704,6 +1767,12 @@
             <input type="text" id="s-aut-nome" placeholder="Ex: Maria Souza"></div>
           <div class="info-field"><label for="s-aut-cargo">Cargo</label>
             <input type="text" id="s-aut-cargo" placeholder="Ex: Prefeita Municipal"></div>
+        </fieldset>
+
+        <fieldset style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+          <legend style="font-size:.72rem;font-weight:700;color:var(--accent-light);padding:0 6px;text-transform:uppercase;letter-spacing:.4px">Integrações</legend>
+          <div class="info-field"><label for="s-portal-transparencia-key">Chave de API — Portal da Transparência <span style="color:var(--gray-400);font-weight:400">(consulta automática de CEIS/CNEP)</span></label>
+            <input type="text" id="s-portal-transparencia-key" placeholder="Obtida gratuitamente em api.portaldatransparencia.gov.br"></div>
         </fieldset>
 
         <fieldset style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px;margin-bottom:16px">
@@ -2213,7 +2282,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.26.0';
+const SGCA_VERSION = '0.27.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2735,186 +2804,7 @@ async function sincronizarBackup(file) {
   } catch (e) { toast('Erro na sincronização: ' + e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
-// STEPS DEFINITION — Lei 14.133/2021
-// ══════════════════════════════════════════════════════════════
-const STEPS = [
-  {
-    name: 'Documento de Formalização de Demanda (DFD)',
-    sub: 'Art. 12, §1º — justificativa da necessidade',
-    fields: ['responsavel','data_conclusao','observacoes'],
-    dfd: true
-  },
-  {
-    name: 'Estudo Técnico Preliminar (ETP)',
-    sub: 'Quando aplicável — Art. 18, §2º',
-    fields: ['responsavel','data_conclusao','observacoes'],
-    etp: true
-  },
-  {
-    name: 'Termo de Referência (TR)',
-    sub: 'Especificação do objeto, critérios e obrigações — Art. 6º, XXIII',
-    fields: ['responsavel','data_conclusao','observacoes'],
-    termoReferencia: true
-  },
-  {
-    name: 'Pesquisa de Preços / Estimativa do Valor',
-    sub: 'Registro de cotações e definição do preço de referência — IN SEGES nº 65/2021',
-    fields: ['responsavel','data_conclusao','valor_estimado','observacoes'],
-    cotacoes: true
-  },
-  {
-    name: 'Indicação de Dotação Orçamentária',
-    sub: 'Verificação de disponibilidade orçamentária — Art. 12, VII',
-    fields: ['responsavel','data_conclusao','observacoes'],
-    dotacaoOrcamentaria: true
-  },
-  {
-    name: 'Enquadramento Legal',
-    sub: 'Justificativa da hipótese de dispensa — Art. 75',
-    fields: ['responsavel','data_conclusao','fundamento','observacoes'],
-    enquadramentoLegal: true
-  },
-  {
-    name: 'Parecer do Controle Interno',
-    sub: 'Análise prévia pelo Controle Interno Municipal — Art. 8º, Lei 14.133/2021',
-    fields: ['responsavel','data_conclusao','num_parecer_ci','observacoes'],
-    controleInterno: true
-  },
-  {
-    name: 'Parecer Jurídico da Procuradoria-Geral',
-    sub: 'Análise jurídica da legalidade e adequação da contratação — Art. 53, Lei 14.133/2021',
-    fields: ['responsavel','data_conclusao','num_parecer','observacoes'],
-    parecerJuridico: true
-  },
-  {
-    name: 'Autorização da Autoridade Competente',
-    sub: 'Despacho de autorização do ordenador de despesa',
-    fields: ['responsavel','data_conclusao','autoridade','observacoes'],
-    autorizacao: true
-  },
-  {
-    name: 'Elaboração e Publicação do Aviso de Dispensa',
-    sub: 'Minuta, publicação no PNCP e Diário Oficial — Art. 75, §3º e Art. 54, §1º',
-    fields: ['responsavel','data_conclusao','prazo_propostas','endereco_envio','data_publicacao','data_encerramento','link_pncp','link_diario','link_site','observacoes'],
-    avisoDispensa: true
-  },
-  {
-    name: 'Recebimento e Análise de Propostas',
-    sub: 'Avaliação das propostas recebidas no prazo',
-    fields: ['responsavel','data_conclusao','observacoes'],
-    propostas: true
-  },
-  {
-    name: 'Habilitação do Fornecedor',
-    sub: 'Verificação regularidade fiscal, trabalhista e jurídica',
-    fields: ['responsavel','fornecedor','observacoes'],
-    certidoes: true
-  },
-  {
-    name: 'Justificativa da Escolha do Fornecedor',
-    sub: 'Razão da escolha do contratado — Art. 72, VI',
-    fields: ['responsavel','data_conclusao','justificativa_escolha','observacoes'],
-    justificativaEscolha: true
-  },
-  {
-    name: 'Adjudicação',
-    sub: 'Declaração do vencedor pelo agente de contratação',
-    fields: ['responsavel','data_conclusao','valor_adjudicado','observacoes'],
-    adjudicacao: true
-  },
-  {
-    name: 'Homologação',
-    sub: 'Aprovação pela autoridade competente — Art. 71',
-    fields: ['responsavel','data_conclusao','autoridade','observacoes'],
-    homologacao: true
-  },
-  {
-    name: 'Nota de Empenho',
-    sub: 'Reserva orçamentária e emissão da NE',
-    fields: ['responsavel','data_conclusao','num_empenho','dotacao','observacoes'],
-    notaEmpenho: true
-  },
-  {
-    name: 'Instrumento Contratual',
-    sub: 'Contrato, ARP, PCA ou dispensa de instrumento — Art. 95',
-    fields: ['responsavel','num_contrato','data_assinatura','vigencia_inicial','vigencia_final','valor_contrato','contratante','contratado','cnpj_contratado','gestor_contrato','fiscal_contrato','observacoes'],
-    extratoContrato: true
-  },
-  {
-    name: 'Publicação do Contrato no PNCP',
-    sub: 'Obrigatória em até 20 dias úteis — Art. 94',
-    fields: ['responsavel','data_publicacao','link_pncp','observacoes']
-  }
-];
-
-const FIELD_LABELS = {
-  responsavel: 'Responsável',
-  data_conclusao: 'Data de conclusão',
-  observacoes: 'Observações / Notas',
-  num_cotacoes: 'Nº de cotações obtidas',
-  valor_estimado: 'Valor estimado (R$)',
-  fundamento: 'Fundamento legal específico',
-  justificativa_escolha: 'Justificativa da escolha do fornecedor (razão da escolha — Art. 72, VI)',
-  num_parecer_ci: 'Nº do Parecer do Controle Interno',
-  num_parecer: 'Nº do Parecer Jurídico',
-  autoridade: 'Autoridade responsável',
-  data_publicacao: 'Data de publicação',
-  data_encerramento: 'Data de encerramento',
-  link_pncp: 'Link no PNCP',
-  link_diario: 'Link no Diário Oficial do Município',
-  link_site: 'Link no Site Oficial do Município',
-  num_propostas: 'Nº de propostas recebidas',
-  fornecedor_vencedor: 'Fornecedor vencedor',
-  fornecedor: 'Fornecedor',
-  cnpj: 'CNPJ',
-  valor_adjudicado: 'Valor adjudicado (R$)',
-  num_empenho: 'Nº da nota de empenho',
-  dotacao: 'Dotação orçamentária',
-  programa_acao: 'Programa/Ação',
-  elemento_despesa: 'Elemento de Despesa',
-  fonte_recursos: 'Fonte de Recursos',
-  dotacao_completa: 'Dotação Completa',
-  num_contrato: 'Nº do instrumento contratual',
-  vigencia: 'Vigência',
-  prazo_propostas: 'Prazo para recebimento de propostas',
-  endereco_envio: 'Endereço/e-mail para envio das propostas',
-  data_assinatura: 'Data de assinatura',
-  vigencia_inicial: 'Vigência inicial',
-  vigencia_final: 'Vigência final',
-  valor_contrato: 'Valor do contrato (R$)',
-  contratante: 'Contratante (órgão)',
-  contratado: 'Contratado (fornecedor)',
-  cnpj_contratado: 'CNPJ do contratado',
-  gestor_contrato: 'Gestor do contrato',
-  fiscal_contrato: 'Fiscal do contrato'
-};
-
-const DATE_FIELDS  = new Set(['data_conclusao','data_publicacao','data_encerramento','vigencia_inicial','vigencia_final','data_assinatura','prazo_propostas']);
-const MONEY_FIELDS = new Set(['valor_estimado','valor_adjudicado','valor_contrato']);
-
-const SELECT_FIELDS = {
-  fundamento: [
-    { v: 'Art. 75, I — obras e serviços de engenharia e serviços de manutenção de veículos automotores até R$ 130.984,20 (Decreto nº 12.807/2025)', l: 'Art. 75, I — Obras/Eng. (até R$ 130.984,20)' },
-    { v: 'Art. 75, II — outros bens e serviços até R$ 65.492,11 (Decreto nº 12.807/2025)', l: 'Art. 75, II — Bens e Serviços (até R$ 65.492,11)' },
-    { v: 'Art. 75, III — situação de emergência ou calamidade pública', l: 'Art. 75, III — Emergência/Calamidade' },
-    { v: 'Art. 75, IV — contratação com órgãos ou entidades da Administração Pública', l: 'Art. 75, IV — Contratação com Adm. Pública' },
-    { v: 'Art. 75, V — compras de gêneros perecíveis e hortifrutigranjeiros', l: 'Art. 75, V — Gêneros Perecíveis' },
-    { v: 'Art. 75, VI — contratação de remanescente de obra ou serviço', l: 'Art. 75, VI — Remanescente' },
-    { v: 'Art. 75, VII — contratação de profissional do setor artístico', l: 'Art. 75, VII — Profissional Artístico' },
-    { v: 'Art. 75, VIII — objeto destinado a pesquisa, ensino ou desenvolvimento institucional', l: 'Art. 75, VIII — Pesquisa/Ensino' },
-    { v: 'Art. 75, IX — contratação de fornecedor exclusivo (produto ou serviço singular)', l: 'Art. 75, IX — Fornecedor Exclusivo' },
-    { v: 'Art. 75, X — intervenção no domínio econômico para regular preços ou normalizar abastecimento', l: 'Art. 75, X — Intervenção Econômica' },
-    { v: 'Art. 75, XI — compra ou locação de imóvel para atendimento das finalidades precípuas da Adm.', l: 'Art. 75, XI — Imóvel' },
-    { v: 'Art. 75, XII — contratação de associação de pessoas com deficiência', l: 'Art. 75, XII — PcD' },
-    { v: 'Art. 75, XIII — contratação de instituição científica, tecnológica ou de inovação', l: 'Art. 75, XIII — C&T&I' },
-    { v: 'Art. 75, XIV — contratação de coleta, processamento e comercialização de resíduos sólidos', l: 'Art. 75, XIV — Resíduos Sólidos' },
-    { v: 'Art. 75, XV — aquisição por pessoa jurídica de direito público de bens destinados à pesquisa', l: 'Art. 75, XV — Bens de Pesquisa' },
-    { v: 'Art. 75, XVI — contratação de entidade privada sem fins lucrativos para atividades de interesse público', l: 'Art. 75, XVI — Entidade sem fins lucrativos' },
-  ]
-};
-
-// Lista unificada de certidões e cadastros oficiais — usada na etapa 11 E no cadastro de fornecedores
+// Lista unificada de certidões e cadastros oficiais — usada no cadastro de fornecedores
 const CERTIDOES = [
   // ── Cadastros e Consultas Oficiais ─────────────────────────────────────────
   { id:'cnpj',         nome:'CNPJ — Receita Federal',              url:'https://solucoes.receita.fazenda.gov.br/servicos/cnpjreva/cnpjreva_solicitacao.asp',                                                                     desc:'Comprovante de inscrição e situação cadastral' },
@@ -3394,6 +3284,31 @@ async function buscarCep(cepInputId, fieldPrefix) {
   } catch(e) { toast(e.message || 'Erro ao consultar CEP.', 'error'); }
 }
 
+// Consulta CEIS/CNEP (Portal da Transparência/CGU) via proxy do servidor —
+// complementa os links manuais já existentes, exige chave de API própria
+// (Configurações → Organização) obtida gratuitamente em api.portaldatransparencia.gov.br
+async function consultarCeisCnep(fornId, cnpjDigits) {
+  const el = document.getElementById(`forn-ceis-cnep-${fornId}`);
+  if (!el) return;
+  el.innerHTML = '<span style="color:var(--gray-400)">Consultando…</span>';
+  const r = await API.get(`/api/ceis-cnep?cnpj=${cnpjDigits}`);
+  const d = await API.json(r);
+  if (!r?.ok) {
+    el.innerHTML = `<span style="color:var(--red)">⚠️ ${escHtml(d?.error || 'Erro ao consultar CEIS/CNEP.')}</span>`;
+    return;
+  }
+  const total = (d.ceis || []).length + (d.cnep || []).length;
+  if (total === 0) {
+    el.innerHTML = `<span style="color:var(--green)">✅ Nenhuma sanção encontrada no CEIS/CNEP${d.erro ? ' (consulta parcial: ' + escHtml(d.erro) + ')' : ''}.</span>`;
+    return;
+  }
+  const linha = (tipo, s) => `<div style="padding:3px 0;border-bottom:1px solid var(--gray-100)">⚠️ <strong>${tipo}</strong> — ${escHtml(s.tipoSancao?.descricaoResumida || s.tipoSancao?.descricao || 'Sanção registrada')}${s.dataFimSancao ? ' — até ' + fmtDateBR(s.dataFimSancao) : ''}</div>`;
+  el.innerHTML =
+    `<div style="color:var(--red);font-weight:600;margin-bottom:2px">⚠️ ${total} sanção(ões) encontrada(s) — considere registrar na aba Sanções:</div>` +
+    (d.ceis || []).map(s => linha('CEIS', s)).join('') +
+    (d.cnep || []).map(s => linha('CNEP', s)).join('');
+}
+
 async function saveFornecedor(forn, processId) {
   const existing = await API.get(`/api/fornecedores/${forn.id}`).then(r => r?.ok ? API.json(r) : null);
   const prevProcessos = existing?.processos || [];
@@ -3787,6 +3702,8 @@ async function openContratoModal(id) {
   document.getElementById('c-gestor-email').value = c?.gestorEmail || '';
   document.getElementById('c-dotacao').value     = c?.dotacaoOrcamentaria || '';
   document.getElementById('c-status').value      = c?.status || 'vigente';
+  document.getElementById('c-motivo-rescisao').value = c?.motivoRescisao || '';
+  _onStatusContratoChange();
   document.getElementById('c-garantia-modalidade').value = c?.garantiaModalidade || '';
   document.getElementById('c-garantia-valor').value      = c?.garantiaValor ? fmtMoney(c.garantiaValor) : '';
   document.getElementById('c-garantia-vencimento').value = c?.garantiaVencimento || '';
@@ -3810,17 +3727,20 @@ async function openContratoModal(id) {
   document.getElementById('contrato-fiscalizacoes-section').style.display = c ? '' : 'none';
   document.getElementById('contrato-riscos-section').style.display = c ? '' : 'none';
   document.getElementById('contrato-subcontratacoes-section').style.display = c ? '' : 'none';
+  document.getElementById('contrato-pagamentos-section').style.display = c ? '' : 'none';
   document.getElementById('c-anexo-input').value = '';
   _renderAnexosContrato(c?.anexosContrato || (c?.anexoContrato ? [c.anexoContrato] : []));
   hideNovoAditivoForm();
   hideNovaFiscalizacaoForm();
   hideNovoRiscoForm();
   hideNovaSubcontratacaoForm();
+  hideNovoPagamentoContratoForm();
   if (c) {
     renderAditivosList(c);
     renderFiscalizacoesList(c);
     renderRiscosList(c);
     renderSubcontratacoesList(c);
+    renderPagamentosContratoList(c);
   }
 
   document.getElementById('contrato-modal-overlay').classList.remove('hidden');
@@ -3828,6 +3748,12 @@ async function openContratoModal(id) {
 function closeContratoModal() {
   document.getElementById('contrato-modal-overlay').classList.add('hidden');
   _contratoAtualId = null;
+}
+
+function _onStatusContratoChange() {
+  const rescindido = document.getElementById('c-status').value === 'rescindido';
+  document.getElementById('c-motivo-rescisao-wrap').style.display = rescindido ? '' : 'none';
+  document.getElementById('btn-termo-rescisao').style.display = (rescindido && _contratoAtualId) ? '' : 'none';
 }
 
 function _numeroJaExiste(items, numero, excludeId) {
@@ -3873,6 +3799,7 @@ async function saveContrato() {
     gestorEmail: document.getElementById('c-gestor-email').value.trim(),
     dotacaoOrcamentaria: document.getElementById('c-dotacao').value.trim(),
     status: document.getElementById('c-status').value,
+    motivoRescisao: document.getElementById('c-motivo-rescisao').value.trim(),
     garantiaModalidade: document.getElementById('c-garantia-modalidade').value,
     garantiaValor: parseValor(document.getElementById('c-garantia-valor').value),
     garantiaVencimento: document.getElementById('c-garantia-vencimento').value,
@@ -4256,6 +4183,62 @@ async function removeSubcontratacao(id) {
   const contrato = await _contratoListaRemover('subcontratacoes', id);
   if (!contrato) return;
   renderSubcontratacoesList(contrato);
+}
+
+// ── Execução Financeira (pagamentos) do Contrato ────────────────────────────
+function renderPagamentosContratoList(c) {
+  const list = (c.pagamentos || []).slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  const pago = list.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
+  const valorGlobal = parseFloat(c.valorGlobal) || 0;
+  const saldo = valorGlobal - pago;
+  const fm = v => fmtMoney(v) || 'R$ 0,00';
+  document.getElementById('contrato-pagamento-resumo').innerHTML =
+    `Pago: <strong>${fm(pago)}</strong> de ${fm(valorGlobal)} — saldo: <strong style="color:${saldo < 0 ? 'var(--red)' : 'var(--green)'}">${fm(saldo)}</strong>`;
+  document.getElementById('contrato-pagamentos-lista').innerHTML = list.length
+    ? list.map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:start;padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:.8rem">
+        <div>
+          <strong>${fmtDateBR(p.data)}</strong> — ${fmtMoney(p.valor)}${p.empenho ? ' — Empenho/NF: ' + escHtml(p.empenho) : ''}
+          ${p.obs ? `<br><span style="color:var(--gray-500)">${escHtml(p.obs)}</span>` : ''}
+        </div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="removePagamentoContrato('${p.id}')" title="Remover">✕</button>
+      </div>
+    `).join('')
+    : '<p style="font-size:.75rem;color:var(--gray-400)">Nenhum pagamento registrado</p>';
+}
+function showNovoPagamentoContratoForm() {
+  document.getElementById('contrato-pagamento-form').style.display = '';
+  document.getElementById('pgc-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('pgc-valor').value = '';
+  document.getElementById('pgc-empenho').value = '';
+  document.getElementById('pgc-obs').value = '';
+}
+function hideNovoPagamentoContratoForm() {
+  const f = document.getElementById('contrato-pagamento-form');
+  if (f) f.style.display = 'none';
+}
+async function savePagamentoContrato() {
+  const data = document.getElementById('pgc-data').value;
+  const valor = parseValor(document.getElementById('pgc-valor').value);
+  if (!data || !valor) { toast('Informe data e valor do pagamento', 'error'); return; }
+  const item = {
+    id: genId(), data, valor,
+    empenho: document.getElementById('pgc-empenho').value.trim(),
+    obs: document.getElementById('pgc-obs').value.trim()
+  };
+  const contrato = await _contratoListaAdd('pagamentos', item);
+  if (!contrato) { toast('Erro ao salvar pagamento', 'error'); return; }
+  await _auditEvento('CONTRATO_EDITADO', `Pagamento de ${fmtMoney(valor)} registrado no contrato ${contrato.numero || contrato.id}`, contrato.id);
+  toast('Pagamento registrado', 'success');
+  hideNovoPagamentoContratoForm();
+  renderPagamentosContratoList(contrato);
+}
+async function removePagamentoContrato(id) {
+  const ok = await customConfirm('Remover este registro de pagamento?', { okLabel: 'Remover' });
+  if (!ok) return;
+  const contrato = await _contratoListaRemover('pagamentos', id);
+  if (!contrato) return;
+  renderPagamentosContratoList(contrato);
 }
 
 // ── Anexo do contrato assinado (PDF) ─────────────────────────────
@@ -4788,6 +4771,79 @@ ${_qrFooterReport('Termo de Recebimento')}
   await _gerarDocumento(win, html, `Termo de Recebimento — Contrato ${c.numero || c.id}`, c.id);
 }
 
+async function gerarTermoRescisao() {
+  const c = _contratos.find(x => x.id === _contratoAtualId);
+  if (!c) return;
+  const u = getUser();
+  const forn = _fornecedoresCache.find(f => f.id === c.fornecedorId);
+  const hoje = new Date().toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' });
+  const blank = txt => txt || '_'.repeat(40);
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Termo de Rescisão - ${escHtml(c.numero || c.id)}</title>
+<style>${_DOC_CSS}
+  .section { margin-bottom: 16pt; }
+  .section-title { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8pt; border-bottom: 1px solid #ccc; padding-bottom: 4pt; }
+  .signature-block { margin-top: 40pt; display: flex; justify-content: space-around; }
+  .signature-line { border-top: 1px solid #000; width: 240pt; text-align: center; padding-top: 4pt; font-size: 10pt; }
+</style>
+</head>
+<body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+${_anexarBotaoHtml(c.id, 'Termo de Rescisão')}
+
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${blank(u.orgao)}</h1>
+  <h2>${blank(u.municipio)}</h2>
+</div>
+
+<div class="doc-title">
+  <h3>Termo de Rescisão Contratual</h3>
+  <div class="num" style="font-size:10pt;color:#555">Fundamento: Art. 137 a 139, Lei Federal nº 14.133/2021</div>
+</div>
+
+<table class="field-table">
+  <tr><td class="lbl">Contrato Nº</td><td>${blank(c.numero)}</td></tr>
+  <tr><td class="lbl">Contratado</td><td>${blank(forn?.razao_social)}${forn?.cnpj ? ' — CNPJ: ' + escHtml(forn.cnpj) : ''}</td></tr>
+  <tr><td class="lbl">Objeto</td><td>${blank(c.objeto)}</td></tr>
+  <tr><td class="lbl">Vigência Original</td><td>${c.vigenciaInicial ? fmtDateBR(c.vigenciaInicial) : '_'.repeat(20)} a ${c.vigenciaFinal ? fmtDateBR(c.vigenciaFinal) : '_'.repeat(20)}</td></tr>
+  <tr><td class="lbl">Valor Global</td><td>${c.valorGlobal ? fmtMoney(c.valorGlobal) : blank()}</td></tr>
+</table>
+
+<div class="section">
+  <div class="section-title">Motivo/Fundamentação da Rescisão</div>
+  <p style="line-height:1.7;text-align:justify">${blank(c.motivoRescisao)}</p>
+</div>
+
+<div class="section">
+  <div class="section-title">Declaração</div>
+  <p style="line-height:1.7;text-align:justify">
+    Fica rescindido, nos termos dos arts. 137 a 139 da Lei Federal nº 14.133/2021, o contrato acima identificado,
+    conforme motivo/fundamentação apresentado, assegurados ao contratado o contraditório e a ampla defesa, quando aplicável.
+  </p>
+</div>
+
+<div class="city-date">${blank(u.municipio)}, ${hoje}</div>
+
+<div class="signature-block">
+  <div class="signature-line">
+    <div><strong>${blank(u.aut_nome)}</strong></div>
+    <div style="font-size:9pt;margin-top:2pt">${blank(u.aut_cargo)}</div>
+  </div>
+</div>
+
+${_qrFooterReport('Termo de Rescisão')}
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  await _gerarDocumento(win, html, `Termo de Rescisão — Contrato ${c.numero || c.id}`, c.id);
+}
+
 // Salva um arquivo texto pedindo ao usuário onde salvar (File System Access API,
 // suportada no Chrome/Edge — navegadores recomendados pelo sistema); em
 // navegadores sem suporte, cai no download tradicional (pasta padrão do navegador).
@@ -5014,16 +5070,99 @@ async function openAtaModal(id) {
   itensSection.style.display = a ? '' : 'none';
   document.getElementById('ata-doc-actions').style.display = a ? 'flex' : 'none';
   document.getElementById('ata-anexo-section').style.display = a ? '' : 'none';
+  document.getElementById('ata-pagamentos-section').style.display = a ? '' : 'none';
   document.getElementById('a-anexo-input').value = '';
   _renderAnexosAta(a?.anexosAta || (a?.anexoAta ? [a.anexoAta] : []));
   hideNovoItemForm();
-  if (a) renderItensList(a);
+  hideNovoPagamentoAtaForm();
+  if (a) { renderItensList(a); renderPagamentosAtaList(a); }
 
   document.getElementById('ata-modal-overlay').classList.remove('hidden');
 }
 function closeAtaModal() {
   document.getElementById('ata-modal-overlay').classList.add('hidden');
   _ataAtualId = null;
+}
+
+async function _ataListaAdd(campo, item) {
+  if (!_ataAtualId) return null;
+  const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!ata) return null;
+  ata[campo] = [...(ata[campo] || []), item];
+  ata.updatedAt = Date.now();
+  const r = await API.put(`/api/atas/${ata.id}`, ata);
+  if (!r?.ok) return null;
+  const idx = _atas.findIndex(x => x.id === ata.id);
+  if (idx >= 0) _atas[idx] = ata;
+  return ata;
+}
+async function _ataListaRemover(campo, id) {
+  if (!_ataAtualId) return null;
+  const ata = await API.get(`/api/atas/${_ataAtualId}`).then(r => r?.ok ? API.json(r) : null);
+  if (!ata) return null;
+  ata[campo] = (ata[campo] || []).filter(x => x.id !== id);
+  ata.updatedAt = Date.now();
+  const r = await API.put(`/api/atas/${ata.id}`, ata);
+  if (!r?.ok) return null;
+  const idx = _atas.findIndex(x => x.id === ata.id);
+  if (idx >= 0) _atas[idx] = ata;
+  return ata;
+}
+
+// ── Execução Financeira (pagamentos) da Ata ─────────────────────────────────
+function renderPagamentosAtaList(a) {
+  const list = (a.pagamentos || []).slice().sort((x, y) => (y.data || '').localeCompare(x.data || ''));
+  const pago = list.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
+  const valorRegistrado = (a.itens || []).reduce((s, it) => s + (it.quantidadeRegistrada || 0) * (it.precoUnitario || 0), 0);
+  const saldo = valorRegistrado - pago;
+  const fm = v => fmtMoney(v) || 'R$ 0,00';
+  document.getElementById('ata-pagamento-resumo').innerHTML =
+    `Pago: <strong>${fm(pago)}</strong> de ${fm(valorRegistrado)} — saldo: <strong style="color:${saldo < 0 ? 'var(--red)' : 'var(--green)'}">${fm(saldo)}</strong>`;
+  document.getElementById('ata-pagamentos-lista').innerHTML = list.length
+    ? list.map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:start;padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:.8rem">
+        <div>
+          <strong>${fmtDateBR(p.data)}</strong> — ${fmtMoney(p.valor)}${p.empenho ? ' — Empenho/NF: ' + escHtml(p.empenho) : ''}
+          ${p.obs ? `<br><span style="color:var(--gray-500)">${escHtml(p.obs)}</span>` : ''}
+        </div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="removePagamentoAta('${p.id}')" title="Remover">✕</button>
+      </div>
+    `).join('')
+    : '<p style="font-size:.75rem;color:var(--gray-400)">Nenhum pagamento registrado</p>';
+}
+function showNovoPagamentoAtaForm() {
+  document.getElementById('ata-pagamento-form').style.display = '';
+  document.getElementById('pga-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('pga-valor').value = '';
+  document.getElementById('pga-empenho').value = '';
+  document.getElementById('pga-obs').value = '';
+}
+function hideNovoPagamentoAtaForm() {
+  const f = document.getElementById('ata-pagamento-form');
+  if (f) f.style.display = 'none';
+}
+async function savePagamentoAta() {
+  const data = document.getElementById('pga-data').value;
+  const valor = parseValor(document.getElementById('pga-valor').value);
+  if (!data || !valor) { toast('Informe data e valor do pagamento', 'error'); return; }
+  const item = {
+    id: genId(), data, valor,
+    empenho: document.getElementById('pga-empenho').value.trim(),
+    obs: document.getElementById('pga-obs').value.trim()
+  };
+  const ata = await _ataListaAdd('pagamentos', item);
+  if (!ata) { toast('Erro ao salvar pagamento', 'error'); return; }
+  await _auditEvento('ATA_EDITADA', `Pagamento de ${fmtMoney(valor)} registrado na ata ${ata.numero || ata.id}`, ata.id);
+  toast('Pagamento registrado', 'success');
+  hideNovoPagamentoAtaForm();
+  renderPagamentosAtaList(ata);
+}
+async function removePagamentoAta(id) {
+  const ok = await customConfirm('Remover este registro de pagamento?', { okLabel: 'Remover' });
+  if (!ok) return;
+  const ata = await _ataListaRemover('pagamentos', id);
+  if (!ata) return;
+  renderPagamentosAtaList(ata);
 }
 
 async function saveAta() {
@@ -5890,6 +6029,34 @@ async function exportarAuditoriaCSV() {
   toast(`${lista.length} registro(s) exportado(s).`, 'success');
 }
 
+async function exportarAuditoriaXlsx() {
+  const fTipo = document.getElementById('aud-tipo')?.value || '';
+  const fDe   = document.getElementById('aud-de')?.value;
+  const fAte  = document.getElementById('aud-ate')?.value;
+  const fUser = (document.getElementById('aud-q')?.value || '').toLowerCase();
+
+  let todos = (await listarAuditGlobal()).sort((a, b) => b.at - a.at);
+  if (fDe || fAte) {
+    const tsFrom = fDe ? new Date(fDe + 'T00:00:00').getTime() : null;
+    const tsTo   = fAte ? new Date(fAte + 'T23:59:59').getTime() : null;
+    todos = todos.filter(a => (tsFrom === null || a.at >= tsFrom) && (tsTo === null || a.at <= tsTo));
+  }
+  const lista = todos.filter(e => {
+    if (fTipo && e.evento !== fTipo) return false;
+    if (fUser && !(e.usuario || '').toLowerCase().includes(fUser)) return false;
+    return true;
+  });
+  if (!lista.length) { toast('Nenhum registro para exportar', 'error'); return; }
+
+  const cabecalho = ['Data/Hora', 'Evento', 'Processo', 'Detalhe', 'Usuário'];
+  const linhas = lista.map(e => [
+    fmt(e.at), _AUDIT_EVENT_LABELS[e.evento] || e.evento, e.processId || '', e.detalhe, e.usuario
+  ]);
+  _exportarXlsx(`SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  await _auditEvento('EXPORT_CSV', `Exportação Excel de ${lista.length} registro(s) de auditoria`);
+  toast(`${lista.length} registro(s) exportado(s).`, 'success');
+}
+
 
 
 
@@ -6053,7 +6220,9 @@ function _fornViewHtml(f) {
           <a href="https://certidoes-apf.apps.tcu.gov.br/" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:2px 8px">CEIS</a>
           <a href="https://certidoes-apf.apps.tcu.gov.br/" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:2px 8px">CNEP</a>
           <a href="https://portaldatransparencia.gov.br/sancoes/consulta?cpfCnpj=${f.cnpj_digits}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:2px 8px">Sanções</a>
+          <button class="btn btn-outline btn-sm" style="font-size:.7rem;padding:2px 8px" onclick="consultarCeisCnep('${f.id}','${f.cnpj_digits}')">🔍 Consultar CEIS/CNEP</button>
         </div>
+        <div id="forn-ceis-cnep-${f.id}" style="font-size:.75rem;margin-top:6px"></div>
       </div>
       <div style="text-align:right;flex-shrink:0;margin-left:10px">
         <span class="forn-sit ${sitCls}">${escHtml(f.situacao || '—')}</span>
@@ -7189,6 +7358,31 @@ async function exportarFornecedoresCSV() {
   toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
 
+async function exportarFornecedoresXlsx() {
+  const q = (document.getElementById('forn-search')?.value || '').toLowerCase();
+  const todos = await listarFornecedores();
+  const lista = (q
+    ? todos.filter(f => (f.razao_social||'').toLowerCase().includes(q) || (f.cnpj_digits||'').includes(q) || (f.nome_fantasia||'').toLowerCase().includes(q))
+    : todos
+  ).sort((a, b) => (a.razao_social||'').localeCompare(b.razao_social||'', 'pt-BR'));
+  if (!lista.length) { toast('Nenhum fornecedor para exportar', 'error'); return; }
+
+  const fmtCnpj = d => d ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5') : '';
+  const cabecalho = ['Razão Social', 'Nome Fantasia', 'CNPJ', 'Porte', 'Situação', 'Município/UF', 'Certidões vencidas', 'Atualizado em'];
+  const linhas = lista.map(f => {
+    const vencidas = (f.certidoes||[]).filter(c => certStatus(c) === 'expired').length;
+    const municipioUf = [f.municipio, f.uf].filter(Boolean).join('/');
+    const atualizado = f.updatedAt || f.addedAt;
+    return [
+      f.razao_social, f.nome_fantasia, fmtCnpj(f.cnpj_digits||f.cnpj), f.porte, f.situacao,
+      municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
+    ];
+  });
+  _exportarXlsx(`SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  await _auditEvento('EXPORT_CSV', `Exportação Excel de ${lista.length} fornecedor(es)`);
+  toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
+}
+
 async function gerarRelatorioContratos() {
   const u = getUser();
   const now = new Date();
@@ -7366,6 +7560,131 @@ function _csvCampo(v) {
   return `"${String(v ?? '').replace(/"/g, '""')}"`;
 }
 
+// ══════════════════════════════════════════════════════════════
+// EXPORTAR EXCEL (.xlsx) — writer OOXML mínimo, sem dependências.
+// ZIP em modo "store" (sem compressão) + XML mínimo (1 planilha, células
+// inline-string ou numéricas) — evita adicionar uma lib de compressão só
+// para gerar uma tabela simples.
+// ══════════════════════════════════════════════════════════════
+function _crc32(bytes) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function _zipStore(files) {
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+  const enc = new TextEncoder();
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const crc = _crc32(f.data);
+    const size = f.data.length;
+
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, size, true);
+    lv.setUint32(22, size, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    parts.push(local, f.data);
+
+    const centralEntry = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(centralEntry.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint32(42, offset, true);
+    centralEntry.set(nameBytes, 46);
+    central.push(centralEntry);
+
+    offset += local.length + f.data.length;
+  }
+  const centralSize   = central.reduce((s, c) => s + c.length, 0);
+  const centralOffset = offset;
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, centralOffset, true);
+  return new Blob([...parts, ...central, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+function _colLetter(n) {
+  let s = '', i = n + 1;
+  while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); }
+  return s;
+}
+function _xlsxCellXml(col, row, value) {
+  const ref = `${col}${row}`;
+  if (value == null || value === '') return `<c r="${ref}"/>`;
+  if (typeof value === 'number' && isFinite(value)) return `<c r="${ref}"><v>${value}</v></c>`;
+  const esc = String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc}</t></is></c>`;
+}
+function _exportarXlsx(nomeArquivo, cabecalho, linhas) {
+  const rowsXml = [cabecalho, ...linhas].map((row, ri) =>
+    `<row r="${ri + 1}">${row.map((v, ci) => _xlsxCellXml(_colLetter(ci), ri + 1, v)).join('')}</row>`
+  ).join('');
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rowsXml}</sheetData></worksheet>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`;
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Dados" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`;
+  const enc = new TextEncoder();
+  const blob = _zipStore([
+    { name: '[Content_Types].xml',        data: enc.encode(contentTypes) },
+    { name: '_rels/.rels',                data: enc.encode(rootRels) },
+    { name: 'xl/workbook.xml',            data: enc.encode(workbookXml) },
+    { name: 'xl/_rels/workbook.xml.rels', data: enc.encode(workbookRels) },
+    { name: 'xl/worksheets/sheet1.xml',   data: enc.encode(sheetXml) },
+  ]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 async function exportarContratosCsv() {
   if (!_contratos.length) { toast('Nenhum contrato para exportar', 'error'); return; }
   await _loadFornecedoresCache();
@@ -7382,6 +7701,22 @@ async function exportarContratosCsv() {
   toast('CSV exportado com sucesso', 'success');
 }
 
+async function exportarContratosXlsx() {
+  if (!_contratos.length) { toast('Nenhum contrato para exportar', 'error'); return; }
+  await _loadFornecedoresCache();
+  const fornNome = id => _fornecedoresCache.find(f => f.id === id)?.razao_social || _fornecedoresCache.find(f => f.id === id)?.nome_fantasia || '';
+  const statusLabel = { vigente: 'Vigente', em_prorrogacao: 'Em prorrogação', encerrado: 'Encerrado', rescindido: 'Rescindido' };
+  const cabecalho = ['Número', 'Processo', 'Objeto', 'Fornecedor', 'Status', 'Valor Global', 'Vigência Inicial', 'Vigência Final', 'Fiscal', 'Gestor', 'Dotação Orçamentária'];
+  const linhas = _contratos.map(c => [
+    c.numero, c.processoOrigem, c.objeto, fornNome(c.fornecedorId),
+    statusLabel[c.status] || c.status, c.valorGlobal != null ? c.valorGlobal : '',
+    c.vigenciaInicial, c.vigenciaFinal, c.fiscalNome, c.gestorNome, c.dotacaoOrcamentaria
+  ]);
+  _exportarXlsx(`contratos_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  await _auditEvento('EXPORT_CSV', `Exportação Excel de ${_contratos.length} contrato(s)`);
+  toast('Excel exportado com sucesso', 'success');
+}
+
 async function exportarAtasCsv() {
   if (!_atas.length) { toast('Nenhuma ata para exportar', 'error'); return; }
   const statusLabel = { vigente: 'Vigente', vencida: 'Vencida', cancelada: 'Cancelada' };
@@ -7393,6 +7728,19 @@ async function exportarAtasCsv() {
   _downloadCsv(linhas, `atas_${new Date().toISOString().slice(0, 10)}.csv`);
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${_atas.length} ata(s)`);
   toast('CSV exportado com sucesso', 'success');
+}
+
+async function exportarAtasXlsx() {
+  if (!_atas.length) { toast('Nenhuma ata para exportar', 'error'); return; }
+  const statusLabel = { vigente: 'Vigente', vencida: 'Vencida', cancelada: 'Cancelada' };
+  const cabecalho = ['Número', 'Processo', 'Órgão Gerenciador', 'Status', 'Data de Assinatura', 'Vigência Final', 'Itens Registrados'];
+  const linhas = _atas.map(a => [
+    a.numero, a.processoOrigem, a.orgaoGerenciador,
+    statusLabel[a.status] || a.status, a.dataAssinatura, a.vigenciaFinal, (a.itens || []).length
+  ]);
+  _exportarXlsx(`atas_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  await _auditEvento('EXPORT_CSV', `Exportação Excel de ${_atas.length} ata(s)`);
+  toast('Excel exportado com sucesso', 'success');
 }
 
 // AUTORIZAÇÃO DE ABERTURA — Lei 14.133/2021
@@ -8003,6 +8351,7 @@ function showSettings() {
   document.getElementById('s-cnpj-orgao').value    = u.cnpj_orgao    || '';
   document.getElementById('s-codigo-ibge').value   = u.codigo_ibge   || '';
   document.getElementById('s-uf').value            = u.uf            || '';
+  document.getElementById('s-portal-transparencia-key').value = u.portal_transparencia_key || '';
   // Segurança — senha
   document.getElementById('s-senha-atual').value     = '';
   document.getElementById('s-senha-nova').value      = '';
@@ -8067,6 +8416,7 @@ async function saveSettings() {
     cnpj_orgao:       document.getElementById('s-cnpj-orgao').value.trim(),
     codigo_ibge:      document.getElementById('s-codigo-ibge').value.trim(),
     uf:               document.getElementById('s-uf').value.trim().toUpperCase(),
+    portal_transparencia_key: document.getElementById('s-portal-transparencia-key').value.trim(),
     dark_mode:        document.getElementById('s-dark-mode').value,
     layout_width:     document.getElementById('s-layout-width').value,
     font_size:        document.getElementById('s-font-size').value,

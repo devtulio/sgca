@@ -217,6 +217,17 @@ class TestContratos(SGCATestCase):
         status, data = self.request('GET', '/api/indice-reajuste?indice=IPCA-E&de=01-01-2025&ate=2026-01-01', token=token)
         self.assertEqual(status, 400)
 
+    def test_ceis_cnep_rejeita_cnpj_invalido(self):
+        token = self.login()
+        status, data = self.request('GET', '/api/ceis-cnep?cnpj=123', token=token)
+        self.assertEqual(status, 400)
+
+    def test_ceis_cnep_exige_chave_de_api_configurada(self):
+        token = self.login()
+        status, data = self.request('GET', '/api/ceis-cnep?cnpj=12345678000199', token=token)
+        self.assertEqual(status, 400)
+        self.assertIn('Chave de API', data['error'])
+
 
 class TestAtas(SGCATestCase):
 
