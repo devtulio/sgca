@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.27.1-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
+![Versão](https://img.shields.io/badge/versão-v0.27.2-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
 
 ## Descrição
 
@@ -51,10 +51,15 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Trilha de auditoria global** — tabela com filtros por tipo de evento, período e usuário (vocabulário próprio do domínio de contratos/atas)
 - **Backup automático** ao encerrar o sistema (JSON + banco de dados SQLite) com rotação configurável
 - **Sincronização de fornecedores entre agentes/máquinas** — mescla dados de outra instalação sem substituir o banco inteiro
+- **Exclusão de Contratos e Atas** — move para a Lixeira após confirmação em três etapas (mesmo rigor do Factory Reset), com alerta informativo se houver fornecedor vinculado
 - **Lixeira** — fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias
+- **Termo de Rescisão** — documento formal gerado quando o status do Contrato é "Rescindido" (Art. 137 a 139, Lei nº 14.133/2021)
+- **Execução Financeira** do Contrato e da Ata — registro de pagamentos (data, valor, nº de empenho/nota fiscal) com saldo calculado automaticamente contra o valor global/registrado
+- **Consulta CEIS/CNEP automatizada** — sanções federais por CNPJ via API do Portal da Transparência/CGU, no cadastro de Fornecedores
+- **Exportação em Excel (.xlsx)**, além de CSV, em Contratos, Atas, Fornecedores e Auditoria
 - **Diagnóstico e correção automática de rede** — verifica IP, porta, perfil de rede e firewall
 
-> Fora de escopo por decisão de projeto: controle de empenhos/pagamentos (fica a cargo do sistema contábil/financeiro do órgão).
+> Fora de escopo por decisão de projeto: execução orçamentária/financeira completa (empenho, liquidação, pagamento formal) integrada ao sistema contábil do órgão — o SGCA registra apenas um controle simples de pagamentos por contrato/ata, não substitui o sistema financeiro oficial.
 
 ---
 

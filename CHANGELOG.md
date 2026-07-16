@@ -5,6 +5,12 @@
 
 ---
 
+## [0.27.2] — 2026-07-15
+
+### Corrigido
+- **Card "Valor Total Vigente" do Dashboard ainda ficava com o dobro de largura na correção anterior (v0.27.1)** — a tela de Dashboard tem mais cards que Contratos/Atas, então a coluna calculada pelo grid fica mais estreita ali, e a margem que sobrava para o valor caber numa linha só (com a fonte de 1,3rem usada até então) era mínima o bastante para variar por navegador/monitor. Reduzida a fonte do valor de 1,3rem para 1,1rem nos três cards, dando folga real para o caso comum caber na largura padrão; o mecanismo de expansão automática (v0.27.1) continua como reforço para valores realmente grandes
+- **README.md desatualizado desde a v0.27.0** — a lista de funcionalidades não mencionava Termo de Rescisão, Execução Financeira, Consulta CEIS/CNEP nem Exportação Excel, e ainda trazia uma nota de "fora de escopo" para controle de pagamentos que a Execução Financeira tornou incorreta
+
 ## [0.27.1] — 2026-07-15
 
 ### Corrigido
