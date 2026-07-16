@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.1] — 2026-07-15
+
+### Corrigido
+- **Card "Valor Total Vigente/Registrado" sempre com o dobro de largura** (Dashboard, Contratos e Atas), mesmo quando o valor cabia tranquilamente na largura padrão dos outros cards. Agora ele começa com a mesma largura dos demais e só expande para 2 colunas quando o valor formatado realmente não couber numa linha só — medido dinamicamente após cada renderização
+
 ## [0.27.0] — 2026-07-15
 
 ### Adicionado
