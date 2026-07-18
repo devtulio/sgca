@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.4] — 2026-07-17
+
+### Removido
+- **Limpeza de CSS morto** — removidas 241 regras de estilo (~551 linhas) que definiam classes nunca usadas no HTML/JS (estilos órfãos de componentes que não chegaram a ser construídos ou foram renomeados: timeline de etapas, tabela de processos, painéis de fracionamento, cartões de proposta, upload zone, skeletons, entre muitas outras). Três regras que misturavam classes vivas e mortas foram aparadas para manter só as vivas. Sem qualquer efeito visual. Verificado com lint, testes unitários e E2E.
+
 ## [0.27.3] — 2026-07-17
 
 ### Alterado
