@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.11] — 2026-07-18
+
+### Adicionado
+- **Coloração dos cards de Fornecedores conforme o Diagnóstico de Integridade** — o cadastro de Fornecedores passa a colorir cada card de acordo com as mesmas checagens do Diagnóstico (Configurações → Diagnóstico): card avermelhado com borda esquerda vermelha para CNPJ duplicado (erro crítico), amarelado para CNPJ inválido (aviso), com um selinho indicando o motivo. Reutiliza as mesmas checagens do `runDiagnostico()`, sem duplicar a lógica de validação
+
 ## [0.27.10] — 2026-07-18
 
 ### Corrigido (acessibilidade — WCAG 2.1 AA)
