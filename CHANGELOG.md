@@ -5,6 +5,14 @@
 
 ---
 
+## [0.27.12] — 2026-07-18
+
+### Alterado
+- **Ordenação de Fornecedores simplificada** — removidas as opções "Situação (Ativa primeiro)" e "Certidões vencidas"; adicionada "↑ Mais antigo". Restam: Mais recente, Mais antigo, A → Z, Z → A
+
+### Corrigido
+- **Ordenação "Mais recente" nunca funcionava de verdade** — `updatedAt`/`addedAt` do fornecedor vêm ora como epoch numérico (gravado pelo frontend), ora como string ISO (gravado pelo `_now()` do server.py); a comparação `a.updatedAt - b.updatedAt` entre duas strings sempre resulta em `NaN`, então o `sort()` não reordenava nada — a lista ficava na ordem que a API retornava. Corrigido normalizando os dois formatos para epoch antes de comparar. Bug pré-existente, encontrado ao implementar a opção "Mais antigo" acima (mesma comparação quebrada)
+
 ## [0.27.11] — 2026-07-18
 
 ### Adicionado
