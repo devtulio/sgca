@@ -28,12 +28,7 @@
   #app:not(.layout-expanded) #view-atas,
   #app:not(.layout-expanded) #view-settings { max-width: 960px; margin: 0 auto; }
 
-  /* ── Skeleton loading ────────────────────────────── */
-  @keyframes skeleton-pulse {
-    0%   { opacity: 1; }
-    50%  { opacity: .45; }
-    100% { opacity: 1; }
-  }/* .dash-top é o genérico do base.css. */
+  /* .dash-top é o genérico do base.css. */
 
   .stats {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
@@ -228,7 +223,7 @@
 
   /* ── Task 2: Fade animation between views ─────────────── */
   .view { animation: fadeIn .2s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   /* ── Task 7: tooltip global dos step-dots ── */
   #step-dot-tooltip {
     position: fixed; background: #1a1a1a; color: #fff; font-size: .65rem;
@@ -1763,12 +1758,6 @@
 
 <div id="toast"></div>
 <div id="step-dot-tooltip"></div>
-<div id="backup-alert-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9000;background:#7c2d12;color:#fff;padding:10px 20px;display:none;align-items:center;gap:12px;font-size:.82rem;border-top:3px solid #f97316">
-  <span style="font-size:1.1em">⚠</span>
-  <span id="backup-alert-msg" style="flex:1"></span>
-  <button onclick="exportBackup()" style="background:#f97316;color:#fff;border:none;padding:5px 14px;border-radius:6px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap">💾 Exportar Backup</button>
-  <button onclick="document.getElementById('backup-alert-banner').style.display='none'" style="background:transparent;color:#fca97d;border:1px solid #fca97d;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer;white-space:nowrap">Lembrar depois</button>
-</div>
 
 <script>const SGX_APP_ID = 'sgca';</script>
 <script src="base.js"></script>
@@ -1789,7 +1778,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.27.4';
+const SGCA_VERSION = '0.27.5';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2090,8 +2079,6 @@ async function exportBackup() {
     });
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    localStorage.setItem('sgca-last-manual-export', Date.now().toString());
-    document.getElementById('backup-alert-banner').style.display = 'none';
     toast(`Backup exportado — ${contratos} contratos, ${atas} atas, ${fornecedores.length} fornecedores.`, 'success');
   } catch(e) { toast('Erro ao exportar: ' + e.message, 'error'); }
 }
@@ -8946,9 +8933,6 @@ async function restaurarBackupDB(file) {
   else toast(`Erro ao restaurar: ${d?.error || 'falha desconhecida'}`, 'error');
 }
 
-async function checkBackupAlert() {
-  // Nenhum alerta necessário — backups automáticos gerenciados pelo servidor
-}
 
 window.addEventListener('beforeunload', () => {
   // Sessões são invalidadas pelo servidor ao reiniciar (após heartbeat timeout).
@@ -9032,8 +9016,6 @@ if (location.protocol === 'file:') {
   throw new Error('Acesso direto via file:// bloqueado.');
 }
 
-const _skeletonStart = Date.now();
-const _SKELETON_MIN_MS = 1500;
 
 // Inicialização: verifica token e mostra login se necessário.
 // Após login bem-sucedido, _onLoginSuccess() dispara carregarDashboard().
@@ -9043,7 +9025,6 @@ function carregarDashboard() {
     .then(() => { try { renderNotificacoes(); } catch {} })
     .then(() => { try { updateAgendaBadge(); } catch {} })
     .then(() => {
-      checkBackupAlert();
       const u = getUser();
       if (!u.nome) {
         showSettings();

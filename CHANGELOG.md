@@ -5,6 +5,12 @@
 
 ---
 
+## [0.27.5] — 2026-07-17
+
+### Removido
+- **Banner de alerta de backup morto** — o `#backup-alert-banner` nunca era exibido (a função `checkBackupAlert()` era vazia; os backups são automáticos no servidor). Removidos markup, função e chamada.
+- **Resíduos de skeleton** — keyframes órfãos (`skeleton-pulse`, `shimmer`) e constantes JS não usadas, deixados após a remoção do CSS morto na v0.27.4.
+
 ## [0.27.4] — 2026-07-17
 
 ### Removido
