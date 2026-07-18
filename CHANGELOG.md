@@ -5,6 +5,12 @@
 
 ---
 
+## [0.27.14] — 2026-07-18
+
+### Alterado
+- **Exportar CSV/Excel de Fornecedores agora respeita os filtros ativos na tela** (busca + botões Todos/Ativos/Inativos/Pendências) — antes exportava sempre o cadastro inteiro (só a busca por texto era aplicada). Reaproveita a mesma checagem de filtro usada pelos botões
+- **Todos os botões Exportar CSV/Excel (Contratos, Atas, Fornecedores, Auditoria) abrem o diálogo nativo do navegador para escolher onde salvar** (File System Access API, Chrome/Edge), em vez de sempre cair na pasta Downloads padrão — mesmo mecanismo já usado na Exportação PNCP desde a v0.23.2; navegadores sem suporte continuam com o download tradicional. Cancelar o diálogo não gera evento de auditoria nem toast de sucesso
+
 ## [0.27.13] — 2026-07-18
 
 ### Adicionado

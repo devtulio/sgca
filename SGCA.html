@@ -1789,7 +1789,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.27.13';
+const SGCA_VERSION = '0.27.14';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -5103,14 +5103,8 @@ async function renderFornecedores() {
   // cnpjDupSet usa 'all' (não a lista filtrada) — a duplicata de um fornecedor
   // pode estar fora do filtro/busca ativo e ainda assim precisa ser detectada.
   const cnpjDupSet = _cnpjDuplicadosSet(all);
-  const passaFiltro = f => {
-    if (_fornFiltro === 'ativos')     return cnpjSitClass(f.situacao) === 'ativa';
-    if (_fornFiltro === 'inativos')   return cnpjSitClass(f.situacao) === 'inativa';
-    if (_fornFiltro === 'pendencias') return !!_fornecedorIssue(f, cnpjDupSet) || (f.certidoes || []).some(c => certStatus(c) === 'expired');
-    return true;
-  };
   const lista = all
-    .filter(f => passaFiltro(f) && (!q || f.razao_social?.toLowerCase().includes(q) || f.cnpj?.includes(q) || f.nome_fantasia?.toLowerCase().includes(q)))
+    .filter(f => _fornecedorPassaFiltro(f, _fornFiltro, cnpjDupSet) && (!q || f.razao_social?.toLowerCase().includes(q) || f.cnpj?.includes(q) || f.nome_fantasia?.toLowerCase().includes(q)))
     .sort((a, b) => {
       if (sort === 'az')     return (a.razao_social||'').localeCompare(b.razao_social||'', 'pt-BR');
       if (sort === 'za')     return (b.razao_social||'').localeCompare(a.razao_social||'', 'pt-BR');
@@ -5551,7 +5545,7 @@ async function exportarAuditoriaCSV() {
   const linhas = [cabecalho.join(';')].concat(lista.map(e => [
     fmt(e.at), _AUDIT_EVENT_LABELS[e.evento] || e.evento, e.processId || '', e.detalhe, e.usuario
   ].map(_csvCampo).join(';')));
-  _downloadCsv(linhas, `SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.csv`);
+  if (!(await _downloadCsv(linhas, `SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${lista.length} registro(s) de auditoria`);
   toast(`${lista.length} registro(s) exportado(s).`, 'success');
 }
@@ -5579,7 +5573,7 @@ async function exportarAuditoriaXlsx() {
   const linhas = lista.map(e => [
     fmt(e.at), _AUDIT_EVENT_LABELS[e.evento] || e.evento, e.processId || '', e.detalhe, e.usuario
   ]);
-  _exportarXlsx(`SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  if (!(await _exportarXlsx(`SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${lista.length} registro(s) de auditoria`);
   toast(`${lista.length} registro(s) exportado(s).`, 'success');
 }
@@ -6853,13 +6847,21 @@ ${_qrFooterReport('Relatório de Fornecedores')}
   _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), html, 'Relatório de Fornecedores');
 }
 
-async function exportarFornecedoresCSV() {
+// Reconstrói a mesma lista filtrada exibida na tela (busca + botões
+// Ativos/Inativos/Pendências) — usado pelas duas exportações abaixo, pra
+// exportar sempre o que está sendo exibido, não o cadastro inteiro.
+async function _fornecedoresListaFiltrada() {
   const q = (document.getElementById('forn-search')?.value || '').toLowerCase();
   const todos = await listarFornecedores();
-  const lista = (q
-    ? todos.filter(f => (f.razao_social||'').toLowerCase().includes(q) || (f.cnpj_digits||'').includes(q) || (f.nome_fantasia||'').toLowerCase().includes(q))
-    : todos
-  ).sort((a, b) => (a.razao_social||'').localeCompare(b.razao_social||'', 'pt-BR'));
+  const cnpjDupSet = _cnpjDuplicadosSet(todos);
+  return todos
+    .filter(f => _fornecedorPassaFiltro(f, _fornFiltro, cnpjDupSet) &&
+      (!q || (f.razao_social||'').toLowerCase().includes(q) || (f.cnpj_digits||'').includes(q) || (f.nome_fantasia||'').toLowerCase().includes(q)))
+    .sort((a, b) => (a.razao_social||'').localeCompare(b.razao_social||'', 'pt-BR'));
+}
+
+async function exportarFornecedoresCSV() {
+  const lista = await _fornecedoresListaFiltrada();
   if (!lista.length) { toast('Nenhum fornecedor para exportar', 'error'); return; }
 
   const fmtCnpj = d => d ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5') : '';
@@ -6873,18 +6875,13 @@ async function exportarFornecedoresCSV() {
       municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
     ].map(_csvCampo).join(';');
   }));
-  _downloadCsv(linhas, `SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.csv`);
+  if (!(await _downloadCsv(linhas, `SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${lista.length} fornecedor(es)`);
   toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
 
 async function exportarFornecedoresXlsx() {
-  const q = (document.getElementById('forn-search')?.value || '').toLowerCase();
-  const todos = await listarFornecedores();
-  const lista = (q
-    ? todos.filter(f => (f.razao_social||'').toLowerCase().includes(q) || (f.cnpj_digits||'').includes(q) || (f.nome_fantasia||'').toLowerCase().includes(q))
-    : todos
-  ).sort((a, b) => (a.razao_social||'').localeCompare(b.razao_social||'', 'pt-BR'));
+  const lista = await _fornecedoresListaFiltrada();
   if (!lista.length) { toast('Nenhum fornecedor para exportar', 'error'); return; }
 
   const fmtCnpj = d => d ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5') : '';
@@ -6898,7 +6895,7 @@ async function exportarFornecedoresXlsx() {
       municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
     ];
   });
-  _exportarXlsx(`SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  if (!(await _exportarXlsx(`SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${lista.length} fornecedor(es)`);
   toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
@@ -7059,14 +7056,9 @@ let _tblSort = { key: null, dir: 'asc' };
 // EXPORTAR CSV
 // ══════════════════════════════════════════════════════════════
 
-function _downloadCsv(linhas, nomeArquivo) {
-  const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = nomeArquivo;
-  a.click();
-  URL.revokeObjectURL(url);
+// Retorna false se o usuário cancelou o diálogo "Salvar como" (ver _salvarArquivoComo).
+async function _downloadCsv(linhas, nomeArquivo) {
+  return _salvarArquivoComo('﻿' + linhas.join('\r\n'), nomeArquivo, 'text/csv');
 }
 function _csvCampo(v) {
   return `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -7157,7 +7149,8 @@ function _xlsxCellXml(col, row, value) {
   const esc = String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc}</t></is></c>`;
 }
-function _exportarXlsx(nomeArquivo, cabecalho, linhas) {
+// Retorna false se o usuário cancelou o diálogo "Salvar como" (ver _salvarArquivoComo).
+async function _exportarXlsx(nomeArquivo, cabecalho, linhas) {
   const rowsXml = [cabecalho, ...linhas].map((row, ri) =>
     `<row r="${ri + 1}">${row.map((v, ci) => _xlsxCellXml(_colLetter(ci), ri + 1, v)).join('')}</row>`
   ).join('');
@@ -7189,12 +7182,7 @@ function _exportarXlsx(nomeArquivo, cabecalho, linhas) {
     { name: 'xl/_rels/workbook.xml.rels', data: enc.encode(workbookRels) },
     { name: 'xl/worksheets/sheet1.xml',   data: enc.encode(sheetXml) },
   ]);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nomeArquivo;
-  a.click();
-  URL.revokeObjectURL(url);
+  return _salvarArquivoComo(blob, nomeArquivo, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
 async function exportarContratosCsv() {
@@ -7208,7 +7196,7 @@ async function exportarContratosCsv() {
     statusLabel[c.status] || c.status, c.valorGlobal != null ? String(c.valorGlobal).replace('.', ',') : '',
     c.vigenciaInicial, c.vigenciaFinal, c.fiscalNome, c.gestorNome, c.dotacaoOrcamentaria
   ].map(_csvCampo).join(';')));
-  _downloadCsv(linhas, `contratos_${new Date().toISOString().slice(0, 10)}.csv`);
+  if (!(await _downloadCsv(linhas, `contratos_${new Date().toISOString().slice(0, 10)}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${_contratos.length} contrato(s)`);
   toast('CSV exportado com sucesso', 'success');
 }
@@ -7224,7 +7212,7 @@ async function exportarContratosXlsx() {
     statusLabel[c.status] || c.status, c.valorGlobal != null ? c.valorGlobal : '',
     c.vigenciaInicial, c.vigenciaFinal, c.fiscalNome, c.gestorNome, c.dotacaoOrcamentaria
   ]);
-  _exportarXlsx(`contratos_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  if (!(await _exportarXlsx(`contratos_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${_contratos.length} contrato(s)`);
   toast('Excel exportado com sucesso', 'success');
 }
@@ -7237,7 +7225,7 @@ async function exportarAtasCsv() {
     a.numero, a.processoOrigem, a.orgaoGerenciador,
     statusLabel[a.status] || a.status, a.dataAssinatura, a.vigenciaFinal, (a.itens || []).length
   ].map(_csvCampo).join(';')));
-  _downloadCsv(linhas, `atas_${new Date().toISOString().slice(0, 10)}.csv`);
+  if (!(await _downloadCsv(linhas, `atas_${new Date().toISOString().slice(0, 10)}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${_atas.length} ata(s)`);
   toast('CSV exportado com sucesso', 'success');
 }
@@ -7250,7 +7238,7 @@ async function exportarAtasXlsx() {
     a.numero, a.processoOrigem, a.orgaoGerenciador,
     statusLabel[a.status] || a.status, a.dataAssinatura, a.vigenciaFinal, (a.itens || []).length
   ]);
-  _exportarXlsx(`atas_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas);
+  if (!(await _exportarXlsx(`atas_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${_atas.length} ata(s)`);
   toast('Excel exportado com sucesso', 'success');
 }
@@ -7780,6 +7768,15 @@ function _fornecedorIssue(f, cnpjDupSet) {
   if (c && cnpjDupSet.has(c)) return { sev: 'erro', label: 'CNPJ duplicado' };
   if (f.cnpj && !validarCnpj(f.cnpj)) return { sev: 'aviso', label: 'CNPJ inválido' };
   return null;
+}
+// Usado tanto pelos botões de filtro (Ativos/Inativos/Pendências) quanto pelas
+// exportações CSV/Excel de Fornecedores, pra exportar sempre o mesmo conjunto
+// que está sendo exibido na tela.
+function _fornecedorPassaFiltro(f, filtro, cnpjDupSet) {
+  if (filtro === 'ativos')     return cnpjSitClass(f.situacao) === 'ativa';
+  if (filtro === 'inativos')   return cnpjSitClass(f.situacao) === 'inativa';
+  if (filtro === 'pendencias') return !!_fornecedorIssue(f, cnpjDupSet) || (f.certidoes || []).some(c => certStatus(c) === 'expired');
+  return true;
 }
 
 // ══════════════════════════════════════════════════════════════

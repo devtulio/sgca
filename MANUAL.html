@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.27.13</title>
+<title>Manual Operacional — SGCA v0.27.14</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       margin: 20mm 20mm 25mm;
       size: A4;
       @top-center {
-        content: "SGCA v0.27.13 — Manual Operacional";
+        content: "SGCA v0.27.14 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -103,7 +103,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.27.13</div>
+    <div class="cover-version">Versão v0.27.14</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -187,7 +187,7 @@
 <h2 id="sec8">8. Cadastro de Fornecedores</h2>
 <p>O módulo de Fornecedores permite consultar CNPJ automaticamente (via ReceitaWS, com fallback para BrasilAPI), preencher endereço por CEP (ViaCEP), e manter o controle de certidões de regularidade fiscal e trabalhista com alertas de vencimento.</p>
 <p>Cada card da lista é colorido automaticamente conforme as mesmas checagens do Painel de Diagnóstico (Seção 13): vermelho com o selo "🔴 CNPJ duplicado" quando dois fornecedores compartilham o mesmo CNPJ, amarelo com o selo "🟡 CNPJ inválido" quando os dígitos verificadores não conferem. Um fornecedor sem esses problemas não recebe destaque.</p>
-<p>Abaixo da busca, os botões <strong>Todos</strong>/<strong>Ativos</strong>/<strong>Inativos</strong>/<strong>Pendências</strong> filtram a lista: Ativos mostra só situação cadastral "ATIVA"; Inativos agrupa "BAIXADA", "INAPTA" e "CANCELADA"; Pendências mostra fornecedores com CNPJ inválido/duplicado (mesma checagem da coloração dos cards) ou com pelo menos uma certidão vencida.</p>
+<p>Abaixo da busca, os botões <strong>Todos</strong>/<strong>Ativos</strong>/<strong>Inativos</strong>/<strong>Pendências</strong> filtram a lista: Ativos mostra só situação cadastral "ATIVA"; Inativos agrupa "BAIXADA", "INAPTA" e "CANCELADA"; Pendências mostra fornecedores com CNPJ inválido/duplicado (mesma checagem da coloração dos cards) ou com pelo menos uma certidão vencida. As exportações <strong>Exportar CSV</strong>/<strong>Exportar Excel</strong> (aqui e em Contratos, Atas e Auditoria) respeitam a busca e os filtros ativos na tela, e abrem o diálogo nativo do navegador para escolher onde salvar o arquivo (Chrome/Edge); em navegadores sem esse recurso, o arquivo cai na pasta de downloads padrão.</p>
 <p>Também é possível importar fornecedores em lote via CSV (botão "Importar CSV") e gerar um relatório consolidado (botão "Relatório"). O botão <strong>Relatório de Sanções</strong> gera um relatório global com as sanções de todos os fornecedores cadastrados, útil para prestação de contas. Os botões <strong>Exportar CSV</strong>/<strong>Exportar Excel</strong> baixam a lista de fornecedores filtrada, no formato escolhido.</p>
 <p>Ao expandir um fornecedor na lista, o botão <strong>📄 Ver Contratos</strong> leva direto para a tela de Contratos já filtrada pelos contratos vinculados àquele fornecedor (um selo indica o filtro ativo, removível a qualquer momento). O botão <strong>Excluir Fornecedor</strong> move o cadastro para a Lixeira — mas fica bloqueado, com aviso explicativo, enquanto o fornecedor tiver contratos ou itens de ata vinculados, para evitar que essas referências fiquem "órfãs". O botão <strong>🔍 Consultar CEIS/CNEP</strong>, ao lado dos links manuais já existentes, consulta automaticamente o Cadastro de Empresas Inidôneas e Suspensas e o Cadastro Nacional de Empresas Punidas pelo CNPJ do fornecedor, via API do Portal da Transparência/CGU — exige uma chave de API própria e gratuita, configurada em Configurações → Organização → Integrações (obtida em api.portaldatransparencia.gov.br).</p>
 <p>A aba <strong>Sanções</strong> permite registrar internamente advertências, multas, suspensões, impedimentos de licitar e declarações de inidoneidade aplicadas ao fornecedor, com data de aplicação, prazo final (quando houver) e fundamentação/processo. Sanções sem prazo final vencido aparecem marcadas como "Vigente"; o botão <strong>📄 Relatório</strong>, na mesma aba, gera um documento formal com o histórico de sanções do fornecedor. Sanções do tipo suspensão, impedimento ou inidoneidade, enquanto vigentes, geram um aviso ao selecionar o fornecedor em um Contrato ou item de Ata, e o fim do prazo aparece na Agenda de Vencimentos.</p>
