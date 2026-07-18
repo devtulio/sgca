@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.8] — 2026-07-18
+
+### Alterado
+- **Rótulos de "Cor de destaque" (Institucional/Azul/Verde/Roxo) agora em caixa normal**, alinhados ao SGDP — antes vinham em MAIÚSCULAS/negrito por causa do wrapper `.info-field`. Removido o wrapper apenas desse seletor. Verificado no navegador.
+
 ## [0.27.7] — 2026-07-18
 
 ### Corrigido
