@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.7] — 2026-07-18
+
+### Corrigido
+- **Bolinhas de cor em "Cor de destaque" apareciam como finos palitos verticais** (o quadradinho de cor era espremido de 14px para ~2px pelo `.info-field input{width:100%}` no label flex). Adicionado `flex-shrink:0` às amostras, que voltam a ser círculos de 14px. Mesmo ajuste em SGCD e SGEA.
+
 ## [0.27.6] — 2026-07-18
 
 ### Corrigido
