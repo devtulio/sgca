@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.10] — 2026-07-18
+
+### Corrigido (acessibilidade — WCAG 2.1 AA)
+- **`alt` na prévia do brasão** (WCAG 1.1.1) — a imagem de pré-visualização do brasão nas Configurações passou a ter texto alternativo, igualando SGCD/SGDP.
+
 ## [0.27.9] — 2026-07-18
 
 ### Corrigido
