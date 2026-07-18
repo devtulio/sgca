@@ -1789,7 +1789,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.27.14';
+const SGCA_VERSION = '0.27.15';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -6875,7 +6875,7 @@ async function exportarFornecedoresCSV() {
       municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
     ].map(_csvCampo).join(';');
   }));
-  if (!(await _downloadCsv(linhas, `SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.csv`))) return;
+  if (!(await _downloadCsv(linhas, `SGCA_fornecedores${_fornFiltroSufixo()}_${new Date().toISOString().slice(0, 10)}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${lista.length} fornecedor(es)`);
   toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
@@ -6895,7 +6895,7 @@ async function exportarFornecedoresXlsx() {
       municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
     ];
   });
-  if (!(await _exportarXlsx(`SGCA_fornecedores_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
+  if (!(await _exportarXlsx(`SGCA_fornecedores${_fornFiltroSufixo()}_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${lista.length} fornecedor(es)`);
   toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
@@ -7777,6 +7777,12 @@ function _fornecedorPassaFiltro(f, filtro, cnpjDupSet) {
   if (filtro === 'inativos')   return cnpjSitClass(f.situacao) === 'inativa';
   if (filtro === 'pendencias') return !!_fornecedorIssue(f, cnpjDupSet) || (f.certidoes || []).some(c => certStatus(c) === 'expired');
   return true;
+}
+// Sufixo pro nome do arquivo exportado, pra diferenciar Ativos/Inativos/Pendências
+// (Todos não leva sufixo, pra manter o nome de arquivo já usado antes deste filtro existir).
+function _fornFiltroSufixo() {
+  const label = { ativos: 'Ativos', inativos: 'Inativos', pendencias: 'Pendencias' }[_fornFiltro];
+  return label ? `_${label}` : '';
 }
 
 // ══════════════════════════════════════════════════════════════

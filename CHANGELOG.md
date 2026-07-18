@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.15] — 2026-07-18
+
+### Corrigido
+- **Nome do arquivo exportado de Fornecedores não diferenciava o filtro ativo** — CSV e Excel de Ativos/Inativos/Pendências saíam todos com o mesmo nome (`SGCA_fornecedores_DATA`). Agora o nome leva o sufixo do filtro: `SGCA_fornecedores_Ativos_DATA`, `_Inativos_`, `_Pendencias_` (Todos continua sem sufixo)
+
 ## [0.27.14] — 2026-07-18
 
 ### Alterado
