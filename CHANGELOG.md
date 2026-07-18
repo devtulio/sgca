@@ -5,6 +5,12 @@
 
 ---
 
+## [0.27.3] — 2026-07-17
+
+### Alterado
+- **Ícones da barra lateral agora são emoji** (📊 Dashboard, 📄 Contratos, 📑 Atas de RP, 🏢 Fornecedores, 📅 Agenda, 🗑️ Lixeira, 🕘 Auditoria, ⚙️ Configurações), no mesmo estilo do SGEA — substituindo os ícones SVG de linha.
+- **Notificações movidas para o bloco de usuário** — o sino (🔔, com o mesmo contador) saiu da lista de menu e passou a ficar no rodapé da barra lateral, ao lado do botão de sair, num layout mais compacto igual ao do SGEA. O painel de notificações e seu comportamento continuam idênticos.
+
 ## [0.27.2] — 2026-07-15
 
 ### Corrigido
