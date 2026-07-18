@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.13] — 2026-07-18
+
+### Adicionado
+- **Botões de filtro em Fornecedores** (Todos/Ativos/Inativos/Pendências), abaixo da busca. Ativos = situação "ATIVA"; Inativos = "BAIXADA"/"INAPTA"/"CANCELADA"; Pendências = CNPJ inválido ou duplicado (mesma checagem que já colore os cards) OU pelo menos uma certidão vencida
+
 ## [0.27.12] — 2026-07-18
 
 ### Alterado

@@ -167,6 +167,7 @@
   .forn-issue-badge { font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
   .forn-issue-badge.forn-issue-erro  { background: #fecaca; color: #7f1d1d; }
   .forn-issue-badge.forn-issue-aviso { background: #fde68a; color: #78350f; }
+  .forn-filtro-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
   .forn-inline-body { border-top: 1px solid var(--gray-200); padding: 14px; margin: 8px -14px -12px; }
   .forn-inline-edit-header { background: var(--gray-100); border-radius: var(--radius) var(--radius) 0 0; padding: 8px 14px; margin: 8px -14px 0; border-top: 1px solid var(--gray-200); }
   body.dark .forn-list-item.expanded { border-color: #666; }
@@ -495,6 +496,12 @@
         <option value="az">A → Z</option>
         <option value="za">Z → A</option>
       </select>
+    </div>
+    <div id="forn-filtro-buttons" style="display:flex;gap:8px;margin:10px 0">
+      <button class="btn btn-outline btn-sm forn-filtro-btn active" data-filtro="" onclick="setFornFiltro('')">Todos</button>
+      <button class="btn btn-outline btn-sm forn-filtro-btn" data-filtro="ativos" onclick="setFornFiltro('ativos')">Ativos</button>
+      <button class="btn btn-outline btn-sm forn-filtro-btn" data-filtro="inativos" onclick="setFornFiltro('inativos')">Inativos</button>
+      <button class="btn btn-outline btn-sm forn-filtro-btn" data-filtro="pendencias" onclick="setFornFiltro('pendencias')">Pendências</button>
     </div>
     <div id="forn-results-info" style="display:none;font-size:.75rem;color:var(--gray-500);margin-bottom:8px;padding:0 2px"></div>
     <div id="forn-ranking" style="display:none;background:var(--bg-card);border-radius:10px;border:1px solid var(--gray-100);padding:12px 14px;margin-bottom:14px"></div>
@@ -1782,7 +1789,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.27.12';
+const SGCA_VERSION = '0.27.13';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -5093,8 +5100,17 @@ async function renderFornecedores() {
     const v = f.updatedAt || f.addedAt || 0;
     return typeof v === 'number' ? v : (new Date(v).getTime() || 0);
   };
+  // cnpjDupSet usa 'all' (não a lista filtrada) — a duplicata de um fornecedor
+  // pode estar fora do filtro/busca ativo e ainda assim precisa ser detectada.
+  const cnpjDupSet = _cnpjDuplicadosSet(all);
+  const passaFiltro = f => {
+    if (_fornFiltro === 'ativos')     return cnpjSitClass(f.situacao) === 'ativa';
+    if (_fornFiltro === 'inativos')   return cnpjSitClass(f.situacao) === 'inativa';
+    if (_fornFiltro === 'pendencias') return !!_fornecedorIssue(f, cnpjDupSet) || (f.certidoes || []).some(c => certStatus(c) === 'expired');
+    return true;
+  };
   const lista = all
-    .filter(f => !q || f.razao_social?.toLowerCase().includes(q) || f.cnpj?.includes(q) || f.nome_fantasia?.toLowerCase().includes(q))
+    .filter(f => passaFiltro(f) && (!q || f.razao_social?.toLowerCase().includes(q) || f.cnpj?.includes(q) || f.nome_fantasia?.toLowerCase().includes(q)))
     .sort((a, b) => {
       if (sort === 'az')     return (a.razao_social||'').localeCompare(b.razao_social||'', 'pt-BR');
       if (sort === 'za')     return (b.razao_social||'').localeCompare(a.razao_social||'', 'pt-BR');
@@ -5105,7 +5121,7 @@ async function renderFornecedores() {
   // Contagem de resultados
   const info = document.getElementById('forn-results-info');
   if (info) {
-    if (q) {
+    if (q || _fornFiltro) {
       info.style.display = '';
       info.textContent = `${lista.length} de ${all.length} fornecedor${all.length !== 1 ? 'es' : ''} encontrado${lista.length !== 1 ? 's' : ''}`;
     } else {
@@ -5119,12 +5135,10 @@ async function renderFornecedores() {
   const el = document.getElementById('forn-list');
   if (!lista.length) {
     el.innerHTML = `<p style="color:var(--gray-500);text-align:center;padding:40px 20px">
-      ${q ? 'Nenhum fornecedor encontrado.' : 'Nenhum fornecedor cadastrado ainda.<br><small>Fornecedores são adicionados automaticamente ao consultar o CNPJ no passo de Habilitação.</small>'}
+      ${q || _fornFiltro ? 'Nenhum fornecedor encontrado.' : 'Nenhum fornecedor cadastrado ainda.<br><small>Fornecedores são adicionados automaticamente ao consultar o CNPJ no passo de Habilitação.</small>'}
     </p>`;
     return;
   }
-  // Map O(1) para contagem de processos por fornecedor no header
-  const cnpjDupSet = _cnpjDuplicadosSet(all); // usa 'all' — duplicata pode cair fora do filtro de busca
   el.innerHTML = lista.map(f => {
     const sitCls = cnpjSitClass(f.situacao);
     const issue = _fornecedorIssue(f, cnpjDupSet);
@@ -5667,6 +5681,13 @@ function escHtml(s) {
 let _fornModalData  = null;
 let _currentForn    = null;
 let _expandedFornId = null;
+let _fornFiltro      = '';
+
+function setFornFiltro(v) {
+  _fornFiltro = v;
+  document.querySelectorAll('.forn-filtro-btn').forEach(b => b.classList.toggle('active', b.dataset.filtro === v));
+  renderFornecedores();
+}
 
 function _fornViewHtml(f) {
   const sitCls = cnpjSitClass(f.situacao);
