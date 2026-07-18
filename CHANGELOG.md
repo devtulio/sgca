@@ -5,6 +5,11 @@
 
 ---
 
+## [0.27.6] — 2026-07-18
+
+### Corrigido
+- **Itens de menu `admin-only` (ex.: Auditoria) não apareciam nem para administradores.** Eram revelados com `style.display = ''`, que caía na regra `.admin-only { display:none }` do estilo compartilhado e mantinha o item oculto mesmo para admins. Agora, para administradores, a classe `.admin-only` é removida (o elemento volta ao display natural); para não-admins continua oculto. Mesma correção aplicada em SGCD e SGDP.
+
 ## [0.27.5] — 2026-07-17
 
 ### Removido
