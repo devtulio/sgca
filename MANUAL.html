@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.27.15</title>
+<title>Manual Operacional — SGCA v0.29.1</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       margin: 20mm 20mm 25mm;
       size: A4;
       @top-center {
-        content: "SGCA v0.29.0 — Manual Operacional";
+        content: "SGCA v0.29.1 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -103,7 +103,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.29.0</div>
+    <div class="cover-version">Versão v0.29.1</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -206,7 +206,7 @@
 <p>O sistema realiza backup automático (JSON + banco SQLite) ao encerrar, com rotação configurável em Configurações → Backup. É possível também exportar/restaurar manualmente e sincronizar fornecedores entre instalações diferentes (mescla o que é novo, revisa conflitos, sem substituir o banco inteiro).</p>
 
 <h2 id="sec13">13. Painel de Diagnóstico de Rede</h2>
-<p>Em Configurações → Diagnóstico, o sistema verifica IP, porta 3002, perfil de rede, regra de firewall e antivírus de terceiros, corrigindo automaticamente o que estiver ao alcance do Windows (com elevação de Administrador quando necessário), além de apontar inconsistências no cadastro de fornecedores (CNPJ duplicado ou inválido) — as mesmas inconsistências coloram o card do fornecedor na tela de Fornecedores (vermelho para CNPJ duplicado, amarelo para CNPJ inválido), com um selo indicando o motivo. O mesmo diagnóstico está disponível via <strong>Diagnostico SGCA.bat</strong>.</p>
+<p>Em Configurações → Diagnóstico, o sistema verifica IP, porta 3002, perfil de rede, regra de firewall e antivírus de terceiros, corrigindo automaticamente o que estiver ao alcance do Windows (com elevação de Administrador quando necessário), além de apontar inconsistências no cadastro de fornecedores (CNPJ duplicado ou inválido) — as mesmas inconsistências coloram o card do fornecedor na tela de Fornecedores (vermelho para CNPJ duplicado, amarelo para CNPJ inválido), com um selo indicando o motivo. Clicar num aviso de fornecedor na lista do diagnóstico leva direto para o cadastro daquele fornecedor, já aberto para edição. O mesmo diagnóstico está disponível via <strong>Diagnostico SGCA.bat</strong>.</p>
 
 <h2 id="sec14">14. Lixeira</h2>
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>

@@ -5,6 +5,14 @@
 
 ---
 
+## [0.29.1] — 2026-07-19
+
+### Adicionado
+- **Avisos/erros de fornecedor no Diagnóstico de Integridade agora são clicáveis** — clicar num item de "CNPJ duplicado" ou "CNPJ inválido" na lista do diagnóstico (Configurações → Diagnóstico) leva direto ao cadastro daquele fornecedor, já aberto para edição. Limpa busca/filtro da tela de Fornecedores antes de abrir, para garantir que o card apareça mesmo se Ativos/Inativos estivesse selecionado numa visita anterior
+
+### Corrigido
+- **`<title>` do MANUAL.html ficou defasado por 3 versões** (`v0.27.15` enquanto o resto do manual já estava em `v0.29.0`) — os bumps de versão anteriores não alcançavam essa linha porque o `sed` só substitui o valor esperado da versão anterior, não "o que estiver desatualizado"
+
 ## [0.29.0] — 2026-07-19
 
 ### Adicionado

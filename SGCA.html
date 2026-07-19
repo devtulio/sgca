@@ -1761,7 +1761,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.29.0';
+const SGCA_VERSION = '0.29.1';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -5687,6 +5687,18 @@ async function openFornDetail(id, editMode = false, tab = 'dados') {
   }
   await toggleFornCard(id, editMode, tab);
 }
+// Chamado ao clicar num aviso/erro do Diagnóstico (Configurações) que aponta
+// um fornecedor específico — sempre navega e re-renderiza com busca/filtro
+// limpos antes de abrir, pra garantir que o card apareça mesmo se Ativos/
+// Inativos estivesse ativo numa visita anterior à tela de Fornecedores.
+async function abrirFornecedorDoDiagnostico(id) {
+  const searchEl = document.getElementById('forn-search');
+  if (searchEl) searchEl.value = '';
+  _fornFiltro = '';
+  await showFornecedores();
+  document.querySelectorAll('.forn-filtro-btn').forEach(b => b.classList.toggle('active', b.dataset.filtro === ''));
+  await toggleFornCard(id, true);
+}
 function _collapseFornCard(id) {
   const el = document.querySelector(`.forn-list-item[data-forn-id="${id}"]`);
   if (el) {
@@ -7681,19 +7693,16 @@ async function runDiagnostico() {
   const issues = [];
   const ok = [];
 
-  // Fornecedores com CNPJ duplicado
-  const cnpjMap = new Map();
+  // Fornecedores com CNPJ duplicado ou inválido — mesma checagem usada pra
+  // colorir os cards em Fornecedores (_fornecedorIssue), garantindo que o
+  // diagnóstico e a coloração nunca divirjam. Cada item carrega fornecedorId
+  // pra permitir clicar e abrir o cadastro direto (ver abrirFornecedorDoDiagnostico).
+  const cnpjDupSet = _cnpjDuplicadosSet(forns);
   for (const f of forns) {
-    const c = cleanCnpj(f.cnpj);
-    if (!c) continue;
-    if (cnpjMap.has(c)) issues.push({ sev: 'erro', msg: `CNPJ duplicado ${f.cnpj} — fornecedores: "${cnpjMap.get(c)}" e "${f.razao_social || f.nome_fantasia || f.id}"` });
-    else cnpjMap.set(c, f.razao_social || f.nome_fantasia || f.id);
-  }
-
-  // Fornecedores com CNPJ inválido
-  for (const f of forns) {
-    if (f.cnpj && !validarCnpj(f.cnpj))
-      issues.push({ sev: 'aviso', msg: `Fornecedor "${f.razao_social || f.nome_fantasia || f.id}" — CNPJ inválido: ${f.cnpj}` });
+    const issue = _fornecedorIssue(f, cnpjDupSet);
+    if (!issue) continue;
+    const nome = f.razao_social || f.nome_fantasia || f.id;
+    issues.push({ sev: issue.sev, msg: `Fornecedor "${nome}" — ${issue.label}: ${f.cnpj}`, fornecedorId: f.id });
   }
 
   // Verificações globais OK
@@ -7717,7 +7726,10 @@ async function runDiagnostico() {
   const renderGroup = (items, label) => items.length === 0 ? '' :
     `<div style="margin-bottom:14px">
        <div style="font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.4px;color:${cor[items[0].sev]};margin-bottom:6px">${icon[items[0].sev]} ${label} (${items.length})</div>
-       ${items.map(i => `<div style="background:${bg[i.sev]};border-left:3px solid ${cor[i.sev]};padding:5px 10px;border-radius:0 4px 4px 0;margin-bottom:4px;font-size:.78rem">${escHtml(i.msg)}</div>`).join('')}
+       ${items.map(i => i.fornecedorId
+         ? `<div role="button" tabindex="0" onclick="abrirFornecedorDoDiagnostico('${i.fornecedorId}')" title="Clique para editar o fornecedor" style="background:${bg[i.sev]};border-left:3px solid ${cor[i.sev]};padding:5px 10px;border-radius:0 4px 4px 0;margin-bottom:4px;font-size:.78rem;cursor:pointer">${escHtml(i.msg)}</div>`
+         : `<div style="background:${bg[i.sev]};border-left:3px solid ${cor[i.sev]};padding:5px 10px;border-radius:0 4px 4px 0;margin-bottom:4px;font-size:.78rem">${escHtml(i.msg)}</div>`
+       ).join('')}
      </div>`;
 
   const resumo = erros.length === 0 && avisos.length === 0
