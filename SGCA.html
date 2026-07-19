@@ -1761,7 +1761,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.29.1';
+const SGCA_VERSION = '0.29.2';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2571,6 +2571,22 @@ function validarCnpj(s) {
     return r < 2 ? 0 : 11 - r;
   };
   return calc(12) === parseInt(d[12]) && calc(13) === parseInt(d[13]);
+}
+
+// Valida dígitos verificadores do CPF (algoritmo oficial da Receita Federal) —
+// fornecedores pessoa física guardam o CPF no mesmo campo "cnpj" (não há
+// campo próprio de CPF no cadastro), então precisa de validação separada.
+function validarCpf(s) {
+  const d = cleanCnpj(s);
+  if (d.length !== 11) return false;
+  if (/^(\d)\1+$/.test(d)) return false; // todos iguais
+  const calc = (n) => {
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += parseInt(d[i]) * (n + 1 - i);
+    const r = (sum * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  return calc(9) === parseInt(d[9]) && calc(10) === parseInt(d[10]);
 }
 
 // Rate limiting: impede múltiplas consultas CNPJ simultâneas
@@ -7661,8 +7677,9 @@ function _cnpjDuplicadosSet(forns) {
 }
 function _fornecedorIssue(f, cnpjDupSet) {
   const c = cleanCnpj(f.cnpj);
-  if (c && cnpjDupSet.has(c)) return { sev: 'erro', label: 'CNPJ duplicado' };
-  if (f.cnpj && !validarCnpj(f.cnpj)) return { sev: 'aviso', label: 'CNPJ inválido' };
+  if (c && cnpjDupSet.has(c)) return { sev: 'erro', label: c.length === 11 ? 'CPF duplicado' : 'CNPJ duplicado' };
+  if (c.length === 11) { if (!validarCpf(c)) return { sev: 'aviso', label: 'CPF inválido' }; }
+  else if (f.cnpj && !validarCnpj(f.cnpj)) return { sev: 'aviso', label: 'CNPJ inválido' };
   return null;
 }
 // Usado tanto pelos botões de filtro (Ativos/Inativos/Pendências) quanto pelas

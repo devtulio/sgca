@@ -5,6 +5,11 @@
 
 ---
 
+## [0.29.2] — 2026-07-19
+
+### Corrigido
+- **Fornecedores pessoa física eram sinalizados com "CNPJ inválido" indevidamente** — o campo `cnpj` do cadastro guarda tanto CNPJ (14 dígitos) quanto CPF (11 dígitos) de pessoas físicas, mas o Diagnóstico de Integridade e a coloração de cards em Fornecedores sempre validavam com o algoritmo de dígito verificador do CNPJ, que rejeita qualquer número de 11 dígitos. Agora documentos de 11 dígitos são validados com o algoritmo oficial de CPF (nova função `validarCpf`); um CPF malformado passa a aparecer como "CPF inválido" (em vez de "CNPJ inválido"), e duplicidade de documento entre dois cadastros de 11 dígitos aparece como "CPF duplicado"
+
 ## [0.29.1] — 2026-07-19
 
 ### Adicionado
