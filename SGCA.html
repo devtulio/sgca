@@ -1707,34 +1707,6 @@
   </div>
 </div>
 
-<!-- ── Modal Assinatura Digital ICP-Brasil ── -->
-<div class="overlay hidden" id="modal-assinar" role="dialog" aria-modal="true" aria-labelledby="modal-assinar-titulo">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <h3 id="modal-assinar-titulo">Assinatura Digital — <span id="assinar-anexo-label"></span></h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModalAssinar()">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:.78rem;color:var(--gray-500);margin-bottom:12px">
-        Assina o PDF com certificado ICP-Brasil A1 (arquivo <code>.pfx</code>). A senha do certificado não é armazenada — usada apenas no momento da assinatura.
-      </p>
-      <div class="info-field">
-        <label for="f-assinar-cert">Certificado (.pfx) *</label>
-        <input id="f-assinar-cert" type="file" accept=".pfx,.p12">
-      </div>
-      <div class="info-field">
-        <label for="f-assinar-senha">Senha do certificado *</label>
-        <input id="f-assinar-senha" type="password" autocomplete="off">
-      </div>
-      <p id="assinar-status" style="font-size:.78rem;margin-top:8px"></p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="fecharModalAssinar()">Cancelar</button>
-      <button class="btn btn-primary" id="btn-assinar-confirmar" onclick="assinarAnexo()">🔏 Assinar</button>
-    </div>
-  </div>
-</div>
-
 <!-- ── Modal Histórico de Campo ── -->
 <div id="field-hist-panel">
   <div style="padding:10px 12px 6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-500);border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between">
@@ -1789,7 +1761,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.27.15';
+const SGCA_VERSION = '0.28.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3777,9 +3749,6 @@ function _renderAnexosContrato(anexos) {
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
       📄 <a href="/api/arquivos/${anexo.arquivo_id}?token=${_apiToken}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
       <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
-      ${anexo.assinado
-        ? `<span style="font-size:.68rem;color:var(--success);font-weight:600">✓ Assinado por ${escHtml(anexo.assinadoPor||'')} — <a href="/verificar/${escHtml(anexo.codVerificacao||'')}" target="_blank">verificar</a></span>`
-        : `<button class="btn btn-ghost btn-sm" style="font-size:.68rem;padding:1px 6px" onclick="abrirModalAssinar('contrato','${_contratoAtualId}','${anexo.arquivo_id}','${escHtml(anexo.nome)}')" title="Assinar digitalmente (ICP-Brasil)">🔏 Assinar</button>`}
       <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoContrato(${i})" title="Remover anexo">✕</button>
     </div>`).join('');
 }
@@ -3861,9 +3830,6 @@ function _renderAnexosAta(anexos) {
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
       📄 <a href="/api/arquivos/${anexo.arquivo_id}?token=${_apiToken}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
       <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
-      ${anexo.assinado
-        ? `<span style="font-size:.68rem;color:var(--success);font-weight:600">✓ Assinado por ${escHtml(anexo.assinadoPor||'')} — <a href="/verificar/${escHtml(anexo.codVerificacao||'')}" target="_blank">verificar</a></span>`
-        : `<button class="btn btn-ghost btn-sm" style="font-size:.68rem;padding:1px 6px" onclick="abrirModalAssinar('ata','${_ataAtualId}','${anexo.arquivo_id}','${escHtml(anexo.nome)}')" title="Assinar digitalmente (ICP-Brasil)">🔏 Assinar</button>`}
       <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoAta(${i})" title="Remover anexo">✕</button>
     </div>`).join('');
 }
@@ -3913,74 +3879,6 @@ async function removeAnexoAta(idx) {
   if (aidx >= 0) _atas[aidx] = ata;
   toast('Anexo removido.', 'success');
   _renderAnexosAta(anexos);
-}
-
-// ── Assinatura digital ICP-Brasil de anexo (Contrato/Ata) ──────────
-let _assinarCtx = null; // { entityType: 'contrato'|'ata', entityId, arquivoId }
-
-function abrirModalAssinar(entityType, entityId, arquivoId, label) {
-  _assinarCtx = { entityType, entityId, arquivoId };
-  document.getElementById('assinar-anexo-label').textContent = label;
-  document.getElementById('f-assinar-cert').value = '';
-  document.getElementById('f-assinar-senha').value = '';
-  document.getElementById('assinar-status').textContent = '';
-  document.getElementById('modal-assinar').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-}
-
-function fecharModalAssinar() {
-  document.getElementById('modal-assinar').classList.add('hidden');
-  document.body.style.overflow = '';
-  _assinarCtx = null;
-}
-
-async function assinarAnexo() {
-  if (!_assinarCtx) return;
-  const certFile = document.getElementById('f-assinar-cert').files[0];
-  const senha = document.getElementById('f-assinar-senha').value;
-  const status = document.getElementById('assinar-status');
-  if (!certFile) { status.textContent = 'Selecione o arquivo do certificado (.pfx).'; status.style.color = 'var(--danger)'; return; }
-  if (!senha)    { status.textContent = 'Informe a senha do certificado.'; status.style.color = 'var(--danger)'; return; }
-
-  const btn = document.getElementById('btn-assinar-confirmar');
-  btn.disabled = true;
-  status.style.color = '';
-  status.textContent = '⏳ Assinando…';
-
-  const { entityType, entityId, arquivoId } = _assinarCtx;
-  const certDataUrl = await _lerArquivoComoDataUrl(certFile);
-  const rota = entityType === 'contrato' ? 'contratos' : 'atas';
-  const r = await API.post(`/api/${rota}/${entityId}/anexos/${arquivoId}/assinar`, {
-    cert_b64: certDataUrl.split(',')[1], senha
-  });
-  btn.disabled = false;
-  const d = await API.json(r);
-  if (!r?.ok) { status.textContent = d?.error || 'Erro ao assinar.'; status.style.color = 'var(--danger)'; return; }
-
-  const verifUrl = `${location.origin}/verificar/${d.cod_verificacao}`;
-  status.style.color = 'var(--success)';
-  status.innerHTML = `✔ Assinado com sucesso.<br>Código de verificação: <strong style="font-family:monospace">${escHtml(d.cod_verificacao)}</strong><br>
-    <a href="${escHtml(verifUrl)}" target="_blank" rel="noopener">${escHtml(verifUrl)}</a>`;
-  toast('Anexo assinado digitalmente.', 'success');
-
-  const evento = entityType === 'contrato' ? 'CONTRATO_ASSINADO' : 'ATA_ASSINADA';
-  await _auditEvento(evento, `Assinado por ${getUser()?.nome || ''} — cód. ${d.cod_verificacao}`, entityId);
-
-  if (entityType === 'contrato') {
-    const contrato = await API.get(`/api/contratos/${entityId}`).then(rr => rr?.ok ? API.json(rr) : null);
-    if (contrato) {
-      const idx = _contratos.findIndex(c => c.id === contrato.id);
-      if (idx >= 0) _contratos[idx] = contrato;
-      _renderAnexosContrato(contrato.anexosContrato || []);
-    }
-  } else {
-    const ata = await API.get(`/api/atas/${entityId}`).then(rr => rr?.ok ? API.json(rr) : null);
-    if (ata) {
-      const idx = _atas.findIndex(a => a.id === ata.id);
-      if (idx >= 0) _atas[idx] = ata;
-      _renderAnexosAta(ata.anexosAta || []);
-    }
-  }
 }
 
 // ── Documentos gerados (Contrato) ───────────────────────────────
@@ -5456,7 +5354,6 @@ async function gerarRelatorioIntegridade() {
     ['Contratos ativos', c.contratos_ativos], ['Atas ativas', c.atas_ativas], ['Na lixeira', c.na_lixeira],
     ['Fornecedores cadastrados', c.fornecedores], ['PDFs anexados', c.arquivos],
     ['Usuários ativos', c.usuarios_ativos], ['Etiquetas', c.etiquetas],
-    ['Assinaturas digitais registradas', c.assinaturas],
   ].map(([lbl, n]) => `<tr><td>${escHtml(lbl)}</td><td style="text-align:right;font-weight:700">${n}</td></tr>`).join('');
 
   const dias = d.last_backup ? Math.floor((Date.now() - new Date(d.last_backup).getTime()) / 86400000) : null;
@@ -7396,10 +7293,6 @@ document.getElementById('confirm-overlay').addEventListener('click', e => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// ASSINATURA ELETRÔNICA — 3 módulos (Simples / gov.br / ICP-Brasil)
-// ══════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════
 // THEME — claro / escuro
 // ══════════════════════════════════════════════════════════════
 function applyTheme(dark) {
@@ -8844,13 +8737,12 @@ function _qrFooterReport(label) {
 // uma lib pesada de HTML→PDF). Em vez disso, depois de salvar como PDF pelo
 // próprio diálogo de impressão do navegador, o usuário reanexa esse PDF aqui
 // mesmo na janela do documento; o anexo entra na lista de Anexos do Contrato,
-// de onde já dá para assinar com certificado ICP-Brasil (mesmo fluxo dos
-// anexos enviados manualmente).
+// junto dos anexos enviados manualmente.
 function _anexarBotaoHtml(contratoId, docNome) {
   return `
 <div class="no-print" style="margin:14pt 0;padding:10pt;background:#f5f5f5;border-radius:6px;font-size:9pt;color:#333">
   <label style="cursor:pointer;display:block">
-    📎 Depois de salvar como PDF acima, anexe o arquivo aqui para poder assiná-lo digitalmente no SGCA:
+    📎 Depois de salvar como PDF acima, anexe o arquivo aqui para guardá-lo junto ao registro:
     <input type="file" accept="application/pdf" style="display:block;margin-top:6pt" onchange="_anexarDocumentoGerado(this, '${contratoId}', '${escHtml(docNome).replace(/'/g, "\\'")}')">
   </label>
   <div id="anexar-doc-status" style="margin-top:6pt"></div>
@@ -8868,7 +8760,7 @@ async function _anexarDocumentoGerado(input, contratoId, docNome) {
     const reader = new FileReader();
     const dataurl = await new Promise((resolve, reject) => { reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
     await opener._anexarDocumentoAoRegistro(contratoId, docNome + '.pdf', dataurl.split(',')[1]);
-    status.textContent = 'Anexado! Volte ao SGCA e assine em Anexos (PDF), se necessário.';
+    status.textContent = 'Anexado! O arquivo já está na lista de Anexos do registro.';
     status.style.color = '#1a7a3d';
   } catch (e) {
     status.textContent = 'Erro ao anexar: ' + e.message;
@@ -9031,7 +8923,6 @@ document.addEventListener('keydown', e => {
     if (!document.getElementById('ata-modal-overlay').classList.contains('hidden')) { closeAtaModal(); return; }
     if (!document.getElementById('usuario-modal-overlay').classList.contains('hidden')) { fecharModalUsuario(); return; }
     if (!document.getElementById('modal-csv').classList.contains('hidden')) { fecharModalCsv(); return; }
-    if (!document.getElementById('modal-assinar').classList.contains('hidden')) { fecharModalAssinar(); return; }
     if (!document.getElementById('confirm-overlay').classList.contains('hidden')) { document.getElementById('confirm-overlay').classList.add('hidden'); return; }
   }
 });

@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.27.15-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
+![Versão](https://img.shields.io/badge/versão-v0.28.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
 
 ## Descrição
 
@@ -42,7 +42,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Alerta de vigência total próxima do limite legal** — soma da vigência inicial com todas as prorrogações, aviso configurável por contrato (Art. 107)
 - **Aniversário de reajuste** na Agenda de Vencimentos — lembrete 12 meses após o último aditivo de reequilíbrio/repactuação (ou desde a assinatura, se nunca houve um)
 - **Lembrete de Fiscalização Mensal por e-mail** — aviso automático ao fiscal e ao gestor quando o contrato passa 30 dias sem registro de fiscalização
-- **Assinatura de documentos gerados** — Extrato, Termos Aditivos, Matriz de Risco e Termo de Recebimento podem ser salvos como PDF e reanexados ao contrato para assinatura com certificado ICP-Brasil, reaproveitando o mesmo fluxo dos anexos
+- **Documentos gerados reanexáveis** — Extrato, Termos Aditivos, Matriz de Risco e Termo de Recebimento podem ser salvos como PDF e reanexados ao contrato, guardados junto dos demais anexos
 - **Autenticação multiusuário** com hashing PBKDF2-HMAC-SHA256 e gestão de usuários pelo admin
 - **Cadastro de fornecedores** com consulta automática de CNPJ via ReceitaWS/BrasilAPI, controle de certidões com alertas de vencimento e exclusão (lixeira) — bloqueada enquanto o fornecedor tiver contratos ou atas vinculados
 - **Coloração dos cards de Fornecedores** conforme o Diagnóstico de Integridade — vermelho para CNPJ duplicado, amarelo para CNPJ inválido, com selo indicando o motivo
@@ -69,12 +69,10 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Python 3.7+** (apenas biblioteca padrão — zero dependências externas)
 - **Google Chrome** ou **Microsoft Edge** (recomendado)
 - Windows 10/11
-- Opcional: `pip install -r requirements.txt` — só necessário para o módulo de assinatura com certificado ICP-Brasil (`pyhanko`)
+- Nenhuma dependência externa — o SGCA roda 100% com a biblioteca padrão do Python
 
 > **Servidor sem Python instalado (ex.: Windows Server bloqueado por política de TI):**
 > o `Iniciar SGCA.bat` detecta automaticamente a ausência do Python e extrai uma versão portátil (embarcável, sem instalador) incluída no próprio projeto (`python-3.12.9-embed-amd64.zip`) para `C:\Python312-embed\` — não exige instalação nem privilégio de administrador.
->
-> Essa versão portátil não vem com `pip` pronto (limitação do próprio pacote embarcável do Python). Se esse servidor precisar do módulo de assinatura ICP-Brasil, rode **`Instalar Assinatura ICP-Brasil.bat`** depois — ele habilita o pip e instala o `pyhanko` (requer acesso à internet só nesse momento, para baixar do PyPI).
 
 ---
 
@@ -136,7 +134,6 @@ SGCA/
 │   └── e2e/                  # Testes E2E (Playwright) — navegador real de ponta a ponta
 ├── Iniciar SGCA.bat          # Inicializa o servidor
 ├── python-3.12.9-embed-amd64.zip  # Python portátil (fallback se não houver Python instalado)
-├── Instalar Assinatura ICP-Brasil.bat  # Opcional — instala pip + pyhanko no Python embarcável
 ├── get-pip.py                # Usado só pelo script acima (Python embarcável não vem com pip)
 ├── Criar Atalho SGCA.bat     # Cria atalho na área de trabalho com ícone
 ├── Criar Atalho SGCA.ps1     # Script PowerShell de criação do atalho
@@ -148,7 +145,7 @@ SGCA/
 ├── uploads/                  # Anexos armazenados (criado automaticamente)
 ├── backups/                  # Backups automáticos (criado automaticamente)
 ├── browser-profile/          # Perfil do Chrome/Edge no Modo Pessoal (criado automaticamente)
-├── requirements.txt          # Dependência opcional (pyhanko — só p/ assinatura ICP-Brasil)
+├── requirements.txt          # Sem dependências externas (stdlib do Python)
 ├── README.md
 ├── CHANGELOG.md
 └── MANUAL.html

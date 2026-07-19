@@ -5,6 +5,11 @@
 
 ---
 
+## [0.28.0] — 2026-07-18
+
+### Removido
+- **Assinatura digital ICP-Brasil.** A assinatura de anexos de Contrato e Ata com certificado A1 (`.pfx`) foi removida por completo: botão/modal de assinar, a página pública de verificação (`/verificar/<código>`), o registro de assinaturas, a dependência opcional `pyhanko` (o SGCA volta a rodar 100% com a biblioteca padrão do Python) e o script `Instalar Assinatura ICP-Brasil.bat`. A tabela `signatures` e seus dados são descartados na inicialização; backups antigos que ainda tragam esse bloco são aceitos e o bloco é ignorado. **O bloco de assinatura manuscrita nos documentos gerados permanece.** A reanexação de documentos gerados (Extrato, Termos, etc.) continua funcionando — apenas sem a etapa de assinatura digital.
+
 ## [0.27.15] — 2026-07-18
 
 ### Corrigido
