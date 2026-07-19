@@ -5,6 +5,11 @@
 
 ---
 
+## [0.29.0] — 2026-07-19
+
+### Adicionado
+- **Marca d'água "MINUTA"** nos documentos de contrato (Extrato, Termos de Aditivo/Apostilamento, Matriz de Risco, Termo de Recebimento, Termo de Rescisão) enquanto o contrato **ainda não tem um PDF assinado anexado** ao registro. Assim que um PDF assinado é anexado, os documentos passam a ser gerados sem a marca. Os relatórios gerenciais (Auditoria, Contratos, Atas, Fornecedores etc.) nunca recebem a marca. Alinha o comportamento ao do SGCD.
+
 ## [0.28.1] — 2026-07-18
 
 ### Alterado

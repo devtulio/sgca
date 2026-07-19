@@ -74,7 +74,7 @@
       margin: 20mm 20mm 25mm;
       size: A4;
       @top-center {
-        content: "SGCA v0.27.15 — Manual Operacional";
+        content: "SGCA v0.29.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -103,7 +103,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.27.15</div>
+    <div class="cover-version">Versão v0.29.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -171,6 +171,7 @@
 <p>Ao editar um contrato já existente, a seção <strong>Aditivos e Apostilamentos</strong> fica disponível para registrar prorrogações de prazo, acréscimos/supressões de valor, alterações qualitativas, reequilíbrios e repactuações. Ao abrir um novo aditivo de prazo, o sistema já sugere a nova vigência (vigência atual + 12 meses, editável) como ponto de partida. Um aditivo de prazo atualiza automaticamente a vigência final do contrato; um aditivo de valor recalcula o valor global e exibe um alerta quando a variação acumulada se aproxima ou ultrapassa o limite legal de 25% (Art. 125, Lei nº 14.133/2021). Aditivos de reequilíbrio/repactuação permitem informar um <strong>índice</strong> (IPCA-E, IGP-M, INCC-M, INPC ou outro) e o percentual de variação — o sistema calcula automaticamente o valor de reajuste e o novo valor global antes de salvar.</p>
 <p>Também é possível anexar um ou mais <strong>PDFs do contrato assinado</strong> ao registro (termo, portaria de nomeação do fiscal, planilha orçamentária etc.), cada um com seu próprio link de download e botão de remoção.</p>
 <p>No rodapé do contrato (ao editar um já existente) ficam disponíveis: <strong>📄 Gerar Extrato</strong>, que produz o Extrato de Contrato para publicação no Diário Oficial/PNCP; <strong>📤 Exportar PNCP</strong>, que baixa um JSON com os dados do contrato no formato esperado pelo Portal Nacional de Contratações Públicas; o botão <strong>🕘 Histórico</strong>, que mostra a trilha de auditoria (criação, edições, aditivos, anexos, exportações) filtrada só para aquele contrato; o botão <strong>🗑️ Excluir Contrato</strong>, que move o contrato para a Lixeira após uma confirmação em três etapas (aviso — com alerta informativo caso haja fornecedor vinculado —, digitação de "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos), no mesmo padrão de segurança do Factory Reset; e, quando o status do contrato é "Rescindido", o botão <strong>📄 Termo de Rescisão</strong>, que gera o documento formal com base no motivo/fundamentação informado no campo correspondente (arts. 137 a 139, Lei nº 14.133/2021). Cada aditivo/apostilamento registrado também tem seu próprio botão <strong>📄</strong> para gerar o respectivo termo (Aditivo de Prazo/Valor/Qualitativo ou Apostilamento de Reequilíbrio/Repactuação, conforme o tipo). Na tela de listagem, o botão <strong>Relatório</strong> gera um relatório consolidado de todos os contratos filtrados (documento A4), e os botões <strong>Exportar CSV</strong>/<strong>Exportar Excel</strong> baixam a mesma lista em planilha, no formato escolhido.</p>
+<p><strong>Marca d'água "MINUTA":</strong> enquanto o contrato não tiver um <strong>PDF assinado anexado</strong> ao registro, todos os documentos gerados a partir dele (Extrato, Termos de Aditivo/Apostilamento, Matriz de Risco, Termo de Recebimento, Termo de Rescisão) saem com a marca d'água diagonal <em>MINUTA</em>. Assim que um PDF assinado é anexado ao contrato, os documentos passam a ser gerados sem a marca. Os relatórios gerenciais (Auditoria, Contratos, Atas, Fornecedores) nunca recebem a marca.</p>
 <p>A seção <strong>Execução Financeira</strong>, também disponível ao editar um contrato já existente, registra os pagamentos efetuados (data, valor, nº de empenho/nota fiscal e observações) e calcula automaticamente o saldo entre o valor pago e o valor global do contrato.</p>
 
 <h2 id="sec6">6. Atas de Registro de Preços</h2>

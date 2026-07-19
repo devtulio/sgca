@@ -1761,7 +1761,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.28.1';
+const SGCA_VERSION = '0.29.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -7168,6 +7168,28 @@ async function _gerarDocumento(win, html, docNome, processId) {
   }
   if (docNome) {
     _auditEvento('DOCUMENTO_GERADO', docNome, processId);
+  }
+
+  // Marca d'água "MINUTA" em documento de contrato ainda sem PDF assinado anexado.
+  // Só documentos de contrato passam processId; relatórios não recebem e nunca viram
+  // minuta. Se o contrato não estiver no cache, não marca (evita falso "MINUTA").
+  if (processId) {
+    const c = _contratos.find(x => x.id === processId);
+    const temPdfAssinado = c && ((c.anexosContrato && c.anexosContrato.length) || c.anexoContrato);
+    if (c && !temPdfAssinado) {
+      const watermarkCss = `<style>
+        @media print { body::before { content:'MINUTA'; } }
+        body::before {
+          content: 'MINUTA';
+          position: fixed; top: 50%; left: 50%;
+          transform: translate(-50%, -50%) rotate(-35deg);
+          font-size: 96pt; font-weight: 900; font-family: Arial, sans-serif;
+          color: rgba(220,0,0,.07); pointer-events: none; z-index: 9999;
+          letter-spacing: 8px; white-space: nowrap; user-select: none;
+        }
+      </style>`;
+      html = html.replace('</head>', watermarkCss + '</head>');
+    }
   }
 
   const custom = localStorage.getItem('sgca-brasao-dataurl');
