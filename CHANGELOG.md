@@ -5,6 +5,11 @@
 
 ---
 
+## [0.29.3] — 2026-07-19
+
+### Alterado
+- **Motor de exportação Excel (.xlsx) movido para o `base.js` compartilhado** da família (`_exportarXlsx`/`_zipStore`/`_colLetter`/`_xlsxCellXml`/`_crc32`). Refactor interno — sem qualquer mudança de comportamento no SGCA; o objetivo foi disponibilizar o mesmo gerador de planilhas para SGCD e SGEA sem duplicar código.
+
 ## [0.29.2] — 2026-07-19
 
 ### Corrigido
