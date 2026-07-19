@@ -5,6 +5,11 @@
 
 ---
 
+## [0.28.1] — 2026-07-18
+
+### Alterado
+- **Helper de exportação consolidado no `base.js` compartilhado** (`_salvarArquivoComo`) e o download do **modelo de importação de fornecedores** passou a usar o diálogo "Salvar como" como os demais exports.
+
 ## [0.28.0] — 2026-07-18
 
 ### Removido
