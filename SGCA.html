@@ -423,6 +423,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           Relatório
         </button>
+        <button class="btn btn-outline" onclick="abrirFiorilliModal()" title="Importa o CSV 'Listagem de Licitações Integradas e Pedidos' (Fiorilli Compras 07.05.02) e atualiza a quantidade utilizada dos itens das atas">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Alimentar do Fiorilli
+        </button>
         <button class="btn btn-outline" onclick="exportarAtasCsv()" title="Exportar atas listadas em CSV">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
@@ -511,6 +515,44 @@
   <!-- ── Fornecedor Pick (propostas) ── -->
 
   <!-- ── Conformidade ── -->
+
+  <!-- ── Alimentar do Fiorilli (atas × relatório 07.05.02 do Compras) ── -->
+  <div class="overlay hidden" id="fiorilli-modal" role="dialog" aria-modal="true" aria-labelledby="fiorilli-modal-titulo">
+    <div class="modal" style="max-width:860px;width:96vw">
+      <div class="modal-header">
+        <h2 id="fiorilli-modal-titulo">Alimentar do Fiorilli — quantidade utilizada das atas</h2>
+        <button class="btn btn-ghost btn-icon" onclick="fecharFiorilliModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="fio-step-upload">
+          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:.8rem;color:var(--gray-600);line-height:1.6">
+            <div style="font-weight:600;margin-bottom:6px;color:var(--gray-700)">Como gerar o arquivo</div>
+            No Fiorilli (módulo Compras/Almoxarifado): <strong>07. Relatórios → 07.05. Licitações → 07.05.02. Listagem de Licitações Integradas e Pedidos</strong> → exportar <strong>CSV (Dados)</strong>.<br>
+            Pode exportar <strong>todas as licitações de uma vez</strong> (recomendado) ou uma específica — o importador detecta sozinho.<br>
+            O casamento é por <strong>Processo Licitatório de Origem</strong> da ata + <strong>Código Fiorilli/CADPRO</strong> do item. A quantidade utilizada gravada é a <strong>pedida líquida</strong> (Σ pedidos − anulações) do Fiorilli — substituição idempotente, o Fiorilli nunca é alterado.
+          </div>
+          <div style="border:2px dashed var(--gray-300);border-radius:8px;padding:32px;text-align:center;cursor:pointer" onclick="document.getElementById('fio-file-input').click()" role="button" tabindex="0">
+            <div style="font-size:2rem;margin-bottom:8px">📂</div>
+            <div style="font-size:.85rem;color:var(--gray-600)">Clique para selecionar o CSV do Fiorilli</div>
+            <input type="file" id="fio-file-input" accept=".csv,text/csv" style="display:none" onchange="carregarFiorilliCsv(this)">
+          </div>
+          <p id="fio-upload-erro" style="display:none;color:var(--danger);font-size:.8rem;margin-top:10px"></p>
+        </div>
+        <div id="fio-step-preview" style="display:none">
+          <div id="fio-cards" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
+          <div id="fio-preview-body" style="max-height:420px;overflow-y:auto"></div>
+        </div>
+        <div id="fio-step-done" style="display:none;text-align:center;padding:24px">
+          <div style="font-size:2rem">✅</div>
+          <div id="fio-done-msg" style="font-size:.9rem;color:var(--gray-600);margin-top:8px"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="fecharFiorilliModal()">Cancelar</button>
+        <button class="btn btn-primary" id="fio-btn-aplicar" style="display:none" onclick="aplicarFiorilli()">Gravar utilizadas</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Fornecedor Modal ── -->
   <div class="overlay hidden" id="forn-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="forn-modal-titulo">
@@ -973,9 +1015,10 @@
           <div id="ata-item-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
             <input type="text" id="it-descricao" placeholder="Nome padronizado do item" style="width:100%">
             <textarea id="it-descricao-tecnica" placeholder="Descrição técnica padronizada (opcional)" style="width:100%;margin-top:8px;min-height:44px"></textarea>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
               <input type="text" id="it-codigo-cmmet" placeholder="Código CMMET (ex: CMMET-MAT-TIC-AIO-0001)">
               <input type="text" id="it-codigo-scpi" placeholder="Código SCPI">
+              <input type="text" id="it-codigo-fiorilli" placeholder="Código Fiorilli/CADPRO (NNN.NNN.NNN)" title="Chave do Alimentar do Fiorilli — código do item no catálogo de produtos">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px">
               <select id="it-natureza">
@@ -1790,7 +1833,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.30.3';
+const SGCA_VERSION = '0.31.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -4659,7 +4702,7 @@ function renderItensList(a) {
     const saldo = (it.quantidadeRegistrada || 0) - (it.quantidadeUtilizada || 0);
     const pctUsado = it.quantidadeRegistrada ? Math.min(100, Math.round((it.quantidadeUtilizada || 0) / it.quantidadeRegistrada * 100)) : 0;
     const forn = _fornecedoresCache.find(f => f.id === it.fornecedorId);
-    const classificacao = [it.codigoCmmet, [it.natureza, it.grupo, it.subgrupo].filter(Boolean).join('/')].filter(Boolean).join(' · ');
+    const classificacao = [it.codigoFiorilli && ('Fiorilli ' + it.codigoFiorilli), it.codigoCmmet, [it.natureza, it.grupo, it.subgrupo].filter(Boolean).join('/')].filter(Boolean).join(' · ');
     return `
       <div style="padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:.8rem" title="${escHtml(it.descricaoTecnica || '')}">
         <div style="display:flex;justify-content:space-between">
@@ -4685,6 +4728,7 @@ function showNovoItemForm() {
   document.getElementById('it-descricao-tecnica').value = '';
   document.getElementById('it-codigo-cmmet').value = '';
   document.getElementById('it-codigo-scpi').value = '';
+  document.getElementById('it-codigo-fiorilli').value = '';
   document.getElementById('it-natureza').value = '';
   document.getElementById('it-classe').value = '';
   document.getElementById('it-grupo').value = '';
@@ -4710,6 +4754,7 @@ async function saveAtaItem() {
     descricaoTecnica: document.getElementById('it-descricao-tecnica').value.trim(),
     codigoCmmet: document.getElementById('it-codigo-cmmet').value.trim(),
     codigoScpi: document.getElementById('it-codigo-scpi').value.trim(),
+    codigoFiorilli: document.getElementById('it-codigo-fiorilli').value.trim(),
     natureza: document.getElementById('it-natureza').value,
     classe: document.getElementById('it-classe').value.trim(),
     grupo: document.getElementById('it-grupo').value.trim(),
@@ -4731,6 +4776,204 @@ async function saveAtaItem() {
   renderItensList(ata);
   renderAtasStats();
 }
+
+// ══════════════════════════════════════════════════════════════
+// ALIMENTAR DO FIORILLI — importa o CSV "Listagem de Licitações
+// Integradas e Pedidos" (Compras 07.05.02) e grava a quantidade
+// utilizada dos itens das atas por SUBSTITUIÇÃO (snapshot idempotente).
+// Chave composta: processo licitatório (normalizado) + codigoFiorilli
+// (CADPRO). Read-only para o Fiorilli — só as atas do SGCA mudam.
+// ══════════════════════════════════════════════════════════════
+let _fioPreview = null;
+
+function abrirFiorilliModal() {
+  _fioPreview = null;
+  document.getElementById('fio-step-upload').style.display = '';
+  document.getElementById('fio-step-preview').style.display = 'none';
+  document.getElementById('fio-step-done').style.display = 'none';
+  document.getElementById('fio-btn-aplicar').style.display = 'none';
+  document.getElementById('fio-upload-erro').style.display = 'none';
+  document.getElementById('fio-file-input').value = '';
+  document.getElementById('fiorilli-modal').classList.remove('hidden');
+}
+function fecharFiorilliModal() {
+  document.getElementById('fiorilli-modal').classList.add('hidden');
+}
+
+// Normaliza identificadores de processo: "000007/25", "7/25", "07/2025" → "7/2025"
+function _fioNormProc(sVal) {
+  const m = String(sVal || '').match(/(\d+)\s*\/\s*(\d{2,4})/);
+  if (!m) return null;
+  const num = parseInt(m[1], 10);
+  let ano = parseInt(m[2], 10);
+  if (ano < 100) ano += 2000;
+  return `${num}/${ano}`;
+}
+function _fioNum(v) {
+  const t = String(v ?? '').trim().replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(t);
+  return isNaN(n) ? 0 : n;
+}
+
+async function carregarFiorilliCsv(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const erroEl = document.getElementById('fio-upload-erro');
+  const falha = msg => { erroEl.textContent = msg; erroEl.style.display = ''; };
+  erroEl.style.display = 'none';
+
+  let text = await file.text();
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const linhas = text.split(/\r?\n/).filter(l => l.trim());
+  if (linhas.length < 2) { falha('Arquivo vazio ou sem dados.'); return; }
+  const hdr = linhas[0].split(';').map(h => h.trim());
+  const OBRIG = ['PROCLIC', 'CADPRO', 'QTD', 'QTDANU', 'QTDENT', 'DISC1', 'UNID1', 'NUMPED', 'NUMLIC'];
+  const faltando = OBRIG.filter(c => !hdr.includes(c));
+  if (faltando.length) { falha(`Este não parece ser o CSV do relatório 07.05.02 — colunas ausentes: ${faltando.join(', ')}.`); return; }
+  const col = Object.fromEntries(hdr.map((h, i) => [h, i]));
+
+  // agrega pedida líquida / entregue por (processo, CADPRO)
+  const procs = new Map();  // procNorm -> { raw, lics:Set, itens: Map(cad -> agg) }
+  for (let i = 1; i < linhas.length; i++) {
+    const c = linhas[i].split(';');
+    const cad = (c[col.CADPRO] || '').trim();
+    if (!/^\d{3}\.\d{3}\.\d{3}$/.test(cad)) continue;
+    const proc = _fioNormProc(c[col.PROCLIC]);
+    if (!proc) continue;
+    if (!procs.has(proc)) procs.set(proc, { raw: (c[col.PROCLIC] || '').trim(), lics: new Set(), itens: new Map() });
+    const P = procs.get(proc);
+    P.lics.add((c[col.NUMLIC] || '').trim());
+    if (!P.itens.has(cad)) P.itens.set(cad, { pedida: 0, entregue: 0, desc: (c[col.DISC1] || '').trim(), unid: (c[col.UNID1] || '').trim(), pedidos: new Set() });
+    const it = P.itens.get(cad);
+    it.pedida += _fioNum(c[col.QTD]) - _fioNum(c[col.QTDANU]);
+    it.entregue += _fioNum(c[col.QTDENT]);
+    const ped = (c[col.NUMPED] || '').trim();
+    if (ped) it.pedidos.add(ped);
+  }
+  if (!procs.size) { falha('Nenhuma linha de item válida (CADPRO NNN.NNN.NNN) encontrada.'); return; }
+
+  // garante a lista de atas carregada
+  if (!_atas.length) {
+    const r = await API.get('/api/atas?per=2000');
+    const d = await API.json(r);
+    _atas = d?.items || d || [];
+  }
+
+  // casamento: dentro do processo, o item vai pra ata que tem o codigoFiorilli
+  const porAta = new Map();       // ataId -> { ata, rows: [] }
+  const semCadastro = [];         // item do Fiorilli sem destino
+  const ambiguos = [];            // codigo em mais de uma ata do processo
+  const procsSemAta = [];         // processo do arquivo sem ata no SGCA (informativo)
+  let semMudanca = 0;
+  for (const [proc, P] of procs) {
+    const candidatas = _atas.filter(a => _fioNormProc(a.processoOrigem) === proc);
+    if (!candidatas.length) {
+      procsSemAta.push({ proc, raw: P.raw, nItens: P.itens.size });
+      continue;
+    }
+    for (const [cad, agg] of P.itens) {
+      const destinos = candidatas.filter(a => (a.itens || []).some(it => (it.codigoFiorilli || '').trim() === cad));
+      const pedida = Math.round(agg.pedida * 10000) / 10000;
+      if (destinos.length === 0) {
+        semCadastro.push({ proc, cad, ...agg, pedida });
+      } else if (destinos.length > 1) {
+        ambiguos.push({ proc, cad, ...agg, pedida, atas: destinos.map(a => a.numero) });
+      } else {
+        const ata = destinos[0];
+        const item = ata.itens.find(it => (it.codigoFiorilli || '').trim() === cad);
+        const atual = item.quantidadeUtilizada || 0;
+        if (Math.abs(atual - pedida) < 0.0001) { semMudanca++; continue; }
+        if (!porAta.has(ata.id)) porAta.set(ata.id, { ata, rows: [] });
+        porAta.get(ata.id).rows.push({
+          cad, item, novaUtilizada: pedida, atual, entregue: Math.round(agg.entregue * 10000) / 10000,
+          registrada: item.quantidadeRegistrada || 0,
+          saldoNovo: (item.quantidadeRegistrada || 0) - pedida,
+        });
+      }
+    }
+  }
+  _fioPreview = { porAta, semCadastro, ambiguos, procsSemAta, nProcs: procs.size, semMudanca };
+  _fioRenderPreview();
+}
+
+function _fioRenderPreview() {
+  const { porAta, semCadastro, ambiguos, procsSemAta, nProcs, semMudanca } = _fioPreview;
+  const nAtualizar = [...porAta.values()].reduce((s, g) => s + g.rows.length, 0);
+  const nNeg = [...porAta.values()].reduce((s, g) => s + g.rows.filter(r => r.saldoNovo < 0).length, 0);
+  const card = (n, rot, cor) => `<div style="flex:1;min-width:120px;background:var(--bg-card);border:1px solid var(--gray-200);border-left:4px solid ${cor};border-radius:8px;padding:8px 12px"><div style="font-size:1.3rem;font-weight:800">${n}</div><div style="font-size:.68rem;color:var(--gray-500);text-transform:uppercase;letter-spacing:.4px">${rot}</div></div>`;
+  document.getElementById('fio-cards').innerHTML =
+    card(nProcs, `processo${nProcs !== 1 ? 's' : ''} no arquivo`, 'var(--brand)') +
+    card(porAta.size, 'atas a atualizar', 'var(--brand)') +
+    card(nAtualizar, 'itens a gravar', 'var(--success)') +
+    card(semMudanca, 'já em dia', 'var(--gray-300)') +
+    card(semCadastro.length + ambiguos.length, 'pendências de cadastro', semCadastro.length + ambiguos.length ? 'var(--warning)' : 'var(--gray-300)') +
+    (nNeg ? card(nNeg, 'saldo ficará negativo', 'var(--danger)') : '');
+
+  let html = '';
+  for (const { ata, rows } of porAta.values()) {
+    html += `<div style="margin-bottom:14px">
+      <div style="font-weight:700;font-size:.82rem;margin-bottom:6px">Ata ${escHtml(ata.numero || ata.id)} <span style="color:var(--gray-500);font-weight:400">· processo ${escHtml(ata.processoOrigem || '—')} · ${rows.length} item(ns)</span></div>
+      <div class="list-table-wrap"><table class="list-table">
+        <thead><tr><th>Código</th><th>Item (SGCA)</th><th class="col-num">Registrada</th><th class="col-num">Utilizada atual → nova</th><th class="col-num">Saldo novo</th><th class="col-num">Entregue (Fiorilli)</th></tr></thead>
+        <tbody>${rows.map(r => `<tr>
+          <td style="white-space:nowrap">${escHtml(r.cad)}</td>
+          <td>${escHtml(r.item.descricao || '')}</td>
+          <td class="col-num">${r.registrada}</td>
+          <td class="col-num">${r.atual} → <strong>${r.novaUtilizada}</strong></td>
+          <td class="col-num">${r.saldoNovo < 0 ? `<span class="badge badge-danger">${r.saldoNovo}</span>` : r.saldoNovo}</td>
+          <td class="col-num" style="color:var(--gray-500)">${r.entregue}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }
+  const bloco = (titulo, cor, linhas) => linhas.length ? `<div style="margin-bottom:12px">
+      <div style="font-weight:700;font-size:.78rem;color:${cor};margin-bottom:4px">${titulo} (${linhas.length})</div>
+      <div style="font-size:.75rem;color:var(--gray-600);line-height:1.6;max-height:140px;overflow-y:auto;background:var(--gray-50);border-radius:6px;padding:8px 10px">${linhas.join('<br>')}</div>
+    </div>` : '';
+  html += bloco('Itens do Fiorilli sem cadastro correspondente — preencha o Código Fiorilli no item da ata (worklist)', 'var(--warning)',
+    semCadastro.map(x => `${escHtml(x.cad)} · ${escHtml(x.desc)} — pedida ${x.pedida} ${escHtml(x.unid)} (proc. ${escHtml(x.proc)})`));
+  html += bloco('Código em mais de uma ata do mesmo processo — ambíguo, não será gravado', 'var(--danger)',
+    ambiguos.map(x => `${escHtml(x.cad)} · ${escHtml(x.desc)} — atas ${x.atas.map(escHtml).join(', ')} (proc. ${escHtml(x.proc)})`));
+  html += bloco('Processos do arquivo sem ata no SGCA (normal em import global)', 'var(--gray-500)',
+    procsSemAta.map(x => `${escHtml(x.raw)} — ${x.nItens} item(ns) no arquivo`));
+  if (!porAta.size) html += '<p style="font-size:.8rem;color:var(--gray-500)">Nenhum item a atualizar — ou as atas já estão em dia, ou faltam Códigos Fiorilli nos itens (ver worklist acima).</p>';
+
+  document.getElementById('fio-preview-body').innerHTML = html;
+  document.getElementById('fio-step-upload').style.display = 'none';
+  document.getElementById('fio-step-preview').style.display = '';
+  document.getElementById('fio-btn-aplicar').style.display = porAta.size ? '' : 'none';
+}
+
+async function aplicarFiorilli() {
+  const btn = document.getElementById('fio-btn-aplicar');
+  btn.disabled = true; btn.textContent = '⏳ Gravando…';
+  let atasOk = 0, itensOk = 0, erros = 0;
+  try {
+    for (const { ata, rows } of _fioPreview.porAta.values()) {
+      const novosItens = (ata.itens || []).map(it => {
+        const r = rows.find(x => x.item.id === it.id);
+        return r ? { ...it, quantidadeUtilizada: r.novaUtilizada } : it;
+      });
+      const resp = await API.put(`/api/atas/${ata.id}`, { itens: novosItens, fiorilliAlimentadoEm: new Date().toISOString() });
+      if (!resp?.ok) { erros++; continue; }
+      const atualizada = await API.json(resp);
+      const idx = _atas.findIndex(a => a.id === ata.id);
+      if (idx >= 0) _atas[idx] = atualizada;
+      atasOk++; itensOk += rows.length;
+      await _auditEvento('ATA_ALIMENTADA_FIORILLI', `Ata ${ata.numero || ata.id}: ${rows.length} item(ns) com utilizada atualizada do Fiorilli (processo ${ata.processoOrigem || '—'})`);
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Gravar utilizadas';
+  }
+  document.getElementById('fio-step-preview').style.display = 'none';
+  document.getElementById('fio-btn-aplicar').style.display = 'none';
+  document.getElementById('fio-step-done').style.display = '';
+  document.getElementById('fio-done-msg').textContent =
+    `${itensOk} item(ns) atualizados em ${atasOk} ata(s).` + (erros ? ` ${erros} ata(s) com erro — tente de novo.` : '');
+  renderAtas(); renderAtasStats();
+  toast(erros ? 'Alimentação concluída com erros.' : 'Quantidades utilizadas atualizadas do Fiorilli.', erros ? 'error' : 'success');
+}
+
 async function removeAtaItem(iid) {
   if (!_ataAtualId) return;
   const ok = await customConfirm('Remover este item da ata?', { okLabel: 'Remover' });

@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.30.3-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
+![Versão](https://img.shields.io/badge/versão-v0.31.0-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
 
 ## Descrição
 
@@ -56,6 +56,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Lixeira** — fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias
 - **Termo de Rescisão** — documento formal gerado quando o status do Contrato é "Rescindido" (Art. 137 a 139, Lei nº 14.133/2021)
 - **Execução Financeira** do Contrato e da Ata — registro de pagamentos (data, valor, nº de empenho/nota fiscal) com saldo calculado automaticamente contra o valor global/registrado
+- **Alimentar do Fiorilli** — importa o relatório "Listagem de Licitações Integradas e Pedidos" (módulo Compras 07.05.02, CSV) do sistema contábil oficial e preenche a quantidade utilizada de cada item das Atas pela quantidade líquida pedida (Σ pedidos − Σ cancelamentos), casando por processo licitatório + código Fiorilli; somente leitura sobre o Fiorilli e idempotente, com prévia por ata (saldo negativo sinalizado) e lista dos itens ainda sem código cadastrado
 - **Consulta CEIS/CNEP automatizada** — sanções federais por CNPJ via API do Portal da Transparência/CGU, no cadastro de Fornecedores
 - **Exportação em Excel (.xlsx)**, além de CSV, em Contratos, Atas, Fornecedores e Auditoria
 - **Diagnóstico e correção automática de rede** — verifica IP, porta, perfil de rede e firewall

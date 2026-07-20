@@ -5,6 +5,12 @@
 
 ---
 
+## [0.31.0] — 2026-07-20
+
+### Adicionado
+- **Alimentar do Fiorilli** — novo botão na barra de ferramentas da tela de Atas que preenche automaticamente a **quantidade utilizada** dos itens a partir do sistema contábil oficial (Fiorilli), dispensando a digitação manual. Importa o relatório **"Listagem de Licitações Integradas e Pedidos"** (módulo Compras → 07. Relatórios → 07.05. Licitações → 07.05.02, export **CSV Dados**); um mesmo arquivo pode conter um processo licitatório ou todos, com detecção automática. Casa cada item por **processo licitatório + código Fiorilli/CADPRO** e grava a quantidade líquida pedida (Σ pedidos − Σ cancelamentos) por substituição (idempotente — reimportar não altera). Prévia agrupada por ata (valor atual → novo, com saldo negativo sinalizado) e lista dos itens do relatório ainda sem código cadastrado nas atas. **Somente leitura** em relação ao Fiorilli, que continua sendo o razão oficial.
+- Novo campo **código Fiorilli/CADPRO** no cadastro de item da ata (chave de casamento com o relatório oficial).
+
 ## [0.30.3] — 2026-07-20
 
 ### Alterado

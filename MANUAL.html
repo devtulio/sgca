@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.30.3</title>
+<title>Manual Operacional — SGCA v0.31.0</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.30.3 — Manual Operacional";
+        content: "SGCA v0.31.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.30.3</div>
+    <div class="cover-version">Versão v0.31.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -174,9 +174,10 @@
 
 <h2 id="sec6">6. Atas de Registro de Preços</h2>
 <p>A tela <strong>Atas de RP</strong> mostra, no topo, indicadores de atas vigentes, atas vencendo em 30 dias, valor total registrado (soma dos itens das atas vigentes) e itens com saldo baixo, seguidos de um gráfico com os vencimentos de contratos e atas nos próximos 6 meses — depois vem a lista de atas cadastradas com número, órgão gerenciador, status (Vigente/Vencida/Cancelada) e indicador de vigência.</p>
-<p>Cada ata pode ter vários <strong>itens registrados</strong>: nome padronizado, descrição técnica padronizada, código CMMET e código SCPI (referência ao Catálogo Municipal de Materiais e Especificações Técnicas, quando aplicável), classificação (natureza, classe, grupo e subgrupo), unidade de contratação, unidade SCPI, apresentação comercial, quantidade registrada, preço unitário e fornecedor vinculado. Ao consumir o saldo de um item (quantidade utilizada), uma barra de progresso mostra visualmente o percentual já utilizado, destacada em vermelho quando o consumo atinge 80% ou mais da quantidade registrada.</p>
+<p>Cada ata pode ter vários <strong>itens registrados</strong>: nome padronizado, descrição técnica padronizada, código CMMET, código SCPI (referência ao Catálogo Municipal de Materiais e Especificações Técnicas, quando aplicável) e <strong>código Fiorilli/CADPRO</strong> (usado para casar o item com o relatório do sistema contábil oficial — ver a seção sobre "Alimentar do Fiorilli" adiante), classificação (natureza, classe, grupo e subgrupo), unidade de contratação, unidade SCPI, apresentação comercial, quantidade registrada, preço unitário e fornecedor vinculado. Ao consumir o saldo de um item (quantidade utilizada), uma barra de progresso mostra visualmente o percentual já utilizado, destacada em vermelho quando o consumo atinge 80% ou mais da quantidade registrada.</p>
 <p>Ao editar uma ata já existente, o botão <strong>📤 Exportar PNCP</strong> no rodapé baixa um JSON com os dados da ata e de todos os seus itens (incluindo saldo disponível e fornecedor) no formato esperado pelo PNCP, o botão <strong>🕘 Histórico</strong> mostra a trilha de auditoria filtrada só para aquela ata, e o botão <strong>🗑️ Excluir Ata</strong> move a ata para a Lixeira após a mesma confirmação em três etapas descrita para Contratos (Seção 5) — o alerta de fornecedor vinculado, quando houver, lista todos os fornecedores distintos usados nos itens da ata. O mesmo aviso de sanção vigente do fornecedor aparece ao selecioná-lo em um item da ata. Também é possível anexar um ou mais <strong>PDFs da ata assinada</strong> ao registro, no mesmo padrão do anexo de Contrato. O número da ata é sugerido automaticamente e validado contra duplicidade, como em Contratos. Na tela de listagem, o botão <strong>Relatório</strong> gera um relatório consolidado de todas as atas filtradas, e os botões <strong>Exportar CSV</strong>/<strong>Exportar Excel</strong> baixam a mesma lista em planilha, no formato escolhido.</p>
 <p>A seção <strong>Execução Financeira</strong>, também disponível ao editar uma ata já existente, registra os pagamentos efetuados (data, valor, nº de empenho/nota fiscal e observações) e calcula automaticamente o saldo entre o valor pago e o valor total registrado (soma da quantidade registrada × preço unitário de todos os itens).</p>
+<p>O botão <strong>Alimentar do Fiorilli</strong>, na barra de ferramentas da tela de Atas, preenche automaticamente a <strong>quantidade utilizada</strong> dos itens a partir do sistema contábil oficial (Fiorilli), dispensando a digitação manual do saldo consumido. O relatório-fonte é a <strong>"Listagem de Licitações Integradas e Pedidos"</strong> (módulo Compras → 07. Relatórios → 07.05. Licitações → 07.05.02), exportada como <strong>CSV (Dados)</strong>. O mesmo arquivo pode conter um único processo licitatório ou todos de uma vez — o importador detecta automaticamente. Cada item é casado por <strong>processo licitatório + código Fiorilli</strong>, e a quantidade utilizada é definida como a quantidade líquida pedida (soma dos pedidos menos os cancelamentos). Antes de gravar, uma <strong>prévia</strong> agrupa as mudanças por ata (mostrando o valor atual → novo de cada item), sinaliza itens cujo saldo ficará negativo e lista, separadamente, os itens presentes no relatório mas ainda sem código Fiorilli cadastrado nas atas (para você completar o cadastro). A operação é <strong>somente leitura</strong> em relação ao Fiorilli — nunca escreve nada no sistema oficial — e idempotente: reimportar o mesmo relatório não altera nada.</p>
 
 <h2 id="sec7">7. Agenda de Vencimentos</h2>
 <p>A tela <strong>Agenda</strong> reúne, num só lugar, os vencimentos de vigência de todos os Contratos e Atas de Registro de Preços não encerrados/cancelados, os vencimentos de <strong>garantia contratual</strong> ainda não devolvida, e o fim do prazo de <strong>sanções</strong> aplicadas a fornecedores, agrupados em Vencidos, Próximos 7 dias, Este mês e Mais adiante. Um filtro permite restringir a lista a contratos, atas, garantias ou sanções. Clicar em um evento abre diretamente o respectivo cadastro.</p>
