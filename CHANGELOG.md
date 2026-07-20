@@ -5,6 +5,17 @@
 
 ---
 
+## [0.30.0] — 2026-07-19
+
+### Adicionado
+- **Config de e-mail (SMTP) por usuário** — 8 colunas `smtp_*` em `usuarios` (migração aditiva) + seção **"Meu E-mail (SMTP)"** em Configurações → Comunicação, disponível a todos os usuários. O envio manual do **Resumo da Agenda** estando logado sai pela conta do usuário (`get_user_smtp(user_id)` com **fallback** para a config do sistema). Botão "Copiar do sistema" (host/porta/segurança, sem a senha). Admin edita a config de qualquer usuário no modal de Usuários. Novo endpoint `GET /api/usuarios/{id}/smtp` (self ou admin); `PUT /api/usuarios/{id}` aceita os campos `smtp_*` (não-admin só no próprio registro). O **resumo diário automático** (e os avisos ao fiscal) continuam usando a config do sistema.
+
+### Alterado
+- **Config SMTP migrada do navegador para o servidor** (mesma mudança do SGCD v2.35.0): fim da cópia por navegador em `localStorage` com senha cifrada; `/send-email` resolve a config server-side e **a senha nunca passa pelo navegador** — o modo antigo ficou restrito ao "Testar conexão" (testa valores digitados, sem salvar). `GET /api/settings` deixou de retornar `smtp_pass` (expõe só `smtp_pass_set`). Seção SMTP de Configurações dividida em "E-mail do sistema" (admin) e "Meu E-mail" (por usuário). Removida a cadeia de criptografia client-side; `backup.smtp` de backups antigos é ignorado na restauração.
+
+### Migração para quem já usa
+- A config do **admin** já estava no servidor (`sys_settings`) — nada a fazer. Configs que usuários não-admin tinham **por navegador** não migram: cada um reinforma a própria conta em "Meu E-mail (SMTP)".
+
 ## [0.29.3] — 2026-07-19
 
 ### Alterado
