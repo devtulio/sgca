@@ -5,6 +5,11 @@
 
 ---
 
+## [0.30.3] — 2026-07-20
+
+### Alterado
+- **Lote 4 da auditoria de design**: fim do fallback de brasão nos documentos (buscava um `brasao.png` local) — sem brasão configurado em Configurações, o documento sai sem imagem, como no SGEA. Instalações com brasão configurado não mudam. Token `--violet` e regras de fronteira novas no `base.css`/`DESIGN.md` compartilhados.
+
 ## [0.30.2] — 2026-07-20
 
 ### Alterado

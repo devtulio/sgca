@@ -1790,7 +1790,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.30.2';
+const SGCA_VERSION = '0.30.3';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -7084,21 +7084,7 @@ const _DOC_CSS = `
   @page { @bottom-right { content: "Folha " counter(page); font-size: 8pt; color: #888; } }
 `;
 
-async function _getBrasaoB64() {
-  if (window._BRASAO_CACHE) return window._BRASAO_CACHE;
-  try {
-    const r = await fetch('brasao.png');
-    const blob = await r.blob();
-    const b64 = await new Promise((res, rej) => {
-      const fr = new FileReader();
-      fr.onload = () => res(fr.result.split(',')[1]);
-      fr.onerror = rej;
-      fr.readAsDataURL(blob);
-    });
-    window._BRASAO_CACHE = b64;
-  } catch { window._BRASAO_CACHE = ''; }
-  return window._BRASAO_CACHE;
-}
+
 async function _gerarDocumento(win, html, docNome, processId) {
   // Fix #1: window.open retorna null quando bloqueador de popup está ativo
   if (!win) {
@@ -7134,7 +7120,9 @@ async function _gerarDocumento(win, html, docNome, processId) {
   const custom = localStorage.getItem('sgca-brasao-dataurl');
   const finalHtml = custom
     ? html.replaceAll('data:image/png;base64,__BRASAO_PLACEHOLDER__', custom)
-    : html.replaceAll('__BRASAO_PLACEHOLDER__', await _getBrasaoB64());
+    // Sem brasão configurado: documento sai sem imagem (produto genérico — brasão
+    // é sempre upload em Configurações, nunca um arquivo default embarcado).
+    : html.replace(/<img src="data:image\/png;base64,__BRASAO_PLACEHOLDER__"[^>]*>\s*/g, '');
   win.document.write(finalHtml);
   win.document.close();
 }
