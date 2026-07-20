@@ -5,6 +5,14 @@
 
 ---
 
+## [0.30.2] — 2026-07-20
+
+### Alterado
+- **Legibilidade do modo escuro**: novo token `--brand-text` — textos na cor da marca (números, links, metadados de cards) agora clareiam automaticamente no tema escuro (antes: navy sobre fundo escuro, quase ilegível). Aplicado via troca global `color: var(--brand)` → `var(--brand-text)`.
+- **Componentes canônicos novos no `base.css`** (auditoria de design 2026-07-20): tabela de listagem (`.list-table`, com cabeçalho, zebra e hover) e variantes de badge (`badge-ok/warn/danger/neutral`). `DESIGN.md` atualizado (token, tabela e regra do acento esquerdo nos stat-cards).
+- **Filtros de Contratos e Atas estilizados** — busca e selects usavam controles nativos do navegador; agora seguem o padrão `.filters` (mesmo visual da tela de Fornecedores).
+- Cosmético: rodapé da sidebar mostra **"Administrador"** para admins sem cargo cadastrado; linha do órgão oculta até ser configurado; respiro após "Ignorar SSL" nos blocos SMTP.
+
 ## [0.30.1] — 2026-07-20
 
 ### Alterado
