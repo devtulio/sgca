@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.30.0</title>
+<title>Manual Operacional — SGCA v0.30.1</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.30.0 — Manual Operacional";
+        content: "SGCA v0.30.1 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.30.0</div>
+    <div class="cover-version">Versão v0.30.1</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -199,7 +199,7 @@
 
 <h2 id="sec11">11. Notificações</h2>
 <p>O sistema exibe alertas in-app (ex.: certidões de fornecedores vencendo) e pode enviar notificações por e-mail quando o SMTP estiver configurado — incluindo o resumo diário e o envio manual da Agenda de Vencimentos (Seção 7).</p>
-<p>A configuração de e-mail tem <strong>duas camadas</strong>, ambas guardadas <strong>apenas no servidor</strong> (a senha nunca fica no navegador): o <strong>E-mail do sistema</strong> (só administradores, em Configurações → Comunicação), usado no resumo diário automático e como padrão; e o <strong>Meu E-mail (SMTP)</strong> (todos os usuários, logo abaixo) — cada um informa a própria conta e, ao enviar a Agenda de Vencimentos estando logado, o e-mail sai por ela. Em branco = herda a do sistema; o botão "Copiar do sistema" preenche servidor/porta/segurança. O administrador também pode preencher a config de qualquer usuário ao editá-lo na tela de Usuários.</p>
+<p>A configuração de e-mail tem <strong>duas camadas</strong>, ambas guardadas <strong>apenas no servidor</strong> (a senha nunca fica no navegador): o <strong>E-mail do sistema</strong> (só administradores, em Configurações → Comunicação), usado no resumo diário automático e como padrão; e o <strong>Meu E-mail (SMTP)</strong> (todos os usuários, na aba <strong>Segurança</strong>, ao lado da troca de senha) — cada um informa a própria conta e, ao enviar a Agenda de Vencimentos estando logado, o e-mail sai por ela. Em branco = herda a do sistema; o botão "Copiar do sistema" preenche servidor/porta/segurança.</p>
 
 <h2 id="sec12">12. Backup e Restauração</h2>
 <p>O sistema realiza backup automático (JSON + banco SQLite) ao encerrar, com rotação configurável em Configurações → Backup. É possível também exportar/restaurar manualmente e sincronizar fornecedores entre instalações diferentes (mescla o que é novo, revisa conflitos, sem substituir o banco inteiro).</p>
