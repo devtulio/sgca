@@ -1,4 +1,4 @@
-# SGCA v0.31.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.31.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -33,6 +33,11 @@ from email.mime.multipart import MIMEMultipart
 from urllib.parse import urlparse, parse_qs
 
 import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/README.md
+
+# Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
+# Exposta em /health para o frontend detectar quando o processo em execução está
+# desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
+SERVER_VERSION = '0.31.1'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -435,7 +440,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         qs = parse_qs(parsed.query)
 
         if p == '/health':
-            self._json(200, {'ok': True})
+            self._json(200, {'ok': True, 'version': SERVER_VERSION})
         elif p == '/api/public/org-info':
             try:
                 with get_db() as conn:
