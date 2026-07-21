@@ -898,18 +898,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                 conn.execute('DELETE FROM usuarios WHERE id=?', (uid,))
             self._json(200, {'ok': True})
 
-        elif p == '/api/fornecedores/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
-            with get_db() as conn:
-                conn.execute('DELETE FROM fornecedores')
-            self._json(200, {'ok': True})
-
-        elif p == '/api/audit/all':
-            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
-            with get_db() as conn:
-                conn.execute('DELETE FROM audit_global')
-            self._json(200, {'ok': True})
-
         elif p == '/api/wipe':
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             with get_db() as conn:
