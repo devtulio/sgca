@@ -56,13 +56,13 @@
 
   /* search / filter */
   .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-  .filters input, .filters select {
+  .filters > input, .filters select {
     border: 1px solid var(--gray-200); border-radius: var(--radius);
     padding: 8px 12px; font-size: .875rem; background: #fff;
     color: var(--gray-900); outline: none;
   }
-  .filters input { flex: 1; min-width: 180px; }
-  .filters input:focus, .filters select:focus { border-color: var(--brand-text); outline: 2px solid color-mix(in srgb, var(--brand) 20%, transparent); }
+  .filters > input { flex: 1; min-width: 180px; }
+  .filters > input:focus, .filters select:focus { border-color: var(--brand-text); outline: 2px solid color-mix(in srgb, var(--brand) 20%, transparent); }
   #aud-q:focus, #aud-tipo:focus, #aud-de:focus, #aud-ate:focus { border-color: var(--brand-text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent); }  .process-card {
     background: #fff; border-radius: var(--radius); padding: 0;
     box-shadow: var(--shadow); cursor: pointer; border: 1px solid var(--gray-200);
@@ -134,7 +134,7 @@
   body.dark .stat.done     { background: #0d2e15; border-color: var(--success); }
   body.dark .stat.prog     { background: #2e1e00; border-color: var(--warning); }
   body.dark .stat.blocked  { background: #2e0d0d; border-color: var(--danger); }
-  body.dark .stat.brand    { border-color: var(--brand-text); }body.dark .process-card { background: #2a2a2a; border-color: #383838; }  body.dark .filters input, body.dark .filters select { background: #2a2a2a; }body.dark .badge-todo { background: #323232; }  /* ── Cursor & accessibility ──────────────────────── */
+  body.dark .stat.brand    { border-color: var(--brand-text); }body.dark .process-card { background: #2a2a2a; border-color: #383838; }  body.dark .filters > input, body.dark .filters select { background: #2a2a2a; }body.dark .badge-todo { background: #323232; }  /* ── Cursor & accessibility ──────────────────────── */
   .process-card, .forn-list-item, .step-row, .cert-alert-item,
   .forn-cert-item { cursor: pointer; }/* ── Fornecedor lookup (passo habilitação) ── */
   .forn-lookup { margin-top: 12px; margin-bottom: 14px; padding: 12px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); }
@@ -379,7 +379,7 @@
     <div id="contr-dash-chart"></div>
     <div id="contr-filtro-fornecedor-chip"></div>
     <div class="filters" style="flex-wrap:wrap">
-      <div style="position:relative;flex:1;min-width:220px;max-width:340px"><input type="text" id="contr-busca" placeholder="Buscar por objeto ou número…" style="width:100%;padding-right:28px" oninput="toggleSearchClear(this);_debouncedRenderContratos()"><button onclick="clearSearch('contr-busca', renderContratos)" id="contr-busca-clear" title="Limpar busca" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:0;line-height:1">✕</button></div>
+      <div style="position:relative;flex:1;min-width:220px;max-width:340px"><input type="text" id="contr-busca" class="search-inp" placeholder="Buscar por objeto ou número…" style="width:100%;padding-right:28px" oninput="toggleSearchClear(this);_debouncedRenderContratos()"><button onclick="clearSearch('contr-busca', renderContratos)" id="contr-busca-clear" title="Limpar busca" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:0;line-height:1">✕</button></div>
       <select id="contr-filtro-status" onchange="renderContratos()">
         <option value="">Todos os status</option>
         <option value="vigente">Vigente</option>
@@ -444,7 +444,7 @@
     <div class="stats" id="ata-dash-stats"></div>
     <div id="ata-dash-chart"></div>
     <div class="filters" style="flex-wrap:wrap">
-      <div style="position:relative;flex:1;min-width:220px;max-width:340px"><input type="text" id="ata-busca" placeholder="Buscar por número…" style="width:100%;padding-right:28px" oninput="toggleSearchClear(this);_debouncedRenderAtas()"><button onclick="clearSearch('ata-busca', renderAtas)" id="ata-busca-clear" title="Limpar busca" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:0;line-height:1">✕</button></div>
+      <div style="position:relative;flex:1;min-width:220px;max-width:340px"><input type="text" id="ata-busca" class="search-inp" placeholder="Buscar por número…" style="width:100%;padding-right:28px" oninput="toggleSearchClear(this);_debouncedRenderAtas()"><button onclick="clearSearch('ata-busca', renderAtas)" id="ata-busca-clear" title="Limpar busca" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:0;line-height:1">✕</button></div>
       <select id="ata-filtro-status" onchange="renderAtas()">
         <option value="">Todos os status</option>
         <option value="vigente">Vigente</option>
@@ -491,7 +491,7 @@
     </div>
     <div class="filters" style="flex-wrap:nowrap;align-items:center">
       <div style="position:relative;flex:1;min-width:180px">
-        <input type="text" id="forn-search" placeholder="Buscar por CNPJ, razão social…" oninput="_debouncedRenderForn()" style="width:100%;padding-right:28px">
+        <input type="text" id="forn-search" class="search-inp" placeholder="Buscar por CNPJ, razão social…" oninput="_debouncedRenderForn()" style="width:100%;padding-right:28px">
         <button onclick="limparBuscaForn()" id="forn-search-clear" title="Limpar busca" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:0;line-height:1">✕</button>
       </div>
       <select id="forn-sort" onchange="renderFornecedores()" title="Ordenar fornecedores" style="flex:0 0 auto;width:170px">
@@ -1833,7 +1833,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.31.4';
+const SGCA_VERSION = '0.31.5';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;

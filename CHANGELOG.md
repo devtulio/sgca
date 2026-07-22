@@ -5,6 +5,13 @@
 
 ---
 
+## [0.31.5] — 2026-07-22
+
+### Corrigido
+- Campos de busca (Contratos, Atas e Fornecedores) agora usam um estilo único compartilhado (`.search-inp` no `base.css`), garantindo o mesmo visual arredondado em toda a família e evitando divergência entre telas.
+
+---
+
 ## [0.31.4] — 2026-07-22
 
 ### Modificado
