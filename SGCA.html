@@ -379,7 +379,7 @@
     <div id="contr-dash-chart"></div>
     <div id="contr-filtro-fornecedor-chip"></div>
     <div class="filters" style="flex-wrap:wrap">
-      <input type="text" id="contr-busca" placeholder="Buscar por objeto ou número…" style="flex:1;min-width:220px" oninput="_debouncedRenderContratos()">
+      <div style="position:relative;flex:1;min-width:220px;max-width:340px"><input type="text" id="contr-busca" placeholder="Buscar por objeto ou número…" style="width:100%;padding-right:28px" oninput="toggleSearchClear(this);_debouncedRenderContratos()"><button onclick="clearSearch('contr-busca', renderContratos)" id="contr-busca-clear" title="Limpar busca" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:0;line-height:1">✕</button></div>
       <select id="contr-filtro-status" onchange="renderContratos()">
         <option value="">Todos os status</option>
         <option value="vigente">Vigente</option>
@@ -444,7 +444,7 @@
     <div class="stats" id="ata-dash-stats"></div>
     <div id="ata-dash-chart"></div>
     <div class="filters" style="flex-wrap:wrap">
-      <input type="text" id="ata-busca" placeholder="Buscar por número…" style="flex:1;min-width:220px" oninput="_debouncedRenderAtas()">
+      <div style="position:relative;flex:1;min-width:220px;max-width:340px"><input type="text" id="ata-busca" placeholder="Buscar por número…" style="width:100%;padding-right:28px" oninput="toggleSearchClear(this);_debouncedRenderAtas()"><button onclick="clearSearch('ata-busca', renderAtas)" id="ata-busca-clear" title="Limpar busca" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:0;line-height:1">✕</button></div>
       <select id="ata-filtro-status" onchange="renderAtas()">
         <option value="">Todos os status</option>
         <option value="vigente">Vigente</option>
@@ -1833,7 +1833,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.31.3';
+const SGCA_VERSION = '0.31.4';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;

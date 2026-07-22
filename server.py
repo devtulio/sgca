@@ -1,4 +1,4 @@
-# SGCA v0.31.3 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.31.4 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.31.3'
+SERVER_VERSION = '0.31.4'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))

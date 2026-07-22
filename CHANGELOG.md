@@ -5,6 +5,13 @@
 
 ---
 
+## [0.31.4] — 2026-07-22
+
+### Modificado
+- **Busca com ✕ para limpar** nas listas de **Contratos** e **Atas**: o campo de busca ganhou o mesmo botão ✕ já usado em Fornecedores — aparece ao digitar, limpa a busca ao clicar. Helper compartilhado no `base.js`.
+
+---
+
 ## [0.31.3] — 2026-07-22
 
 ### Corrigido
