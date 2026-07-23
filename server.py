@@ -1,4 +1,4 @@
-# SGCA v0.31.5 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.31.6 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.31.5'
+SERVER_VERSION = '0.31.6'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -925,6 +925,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         s = get_session(self._token())
         if not s:
             self._json(401, {'error': 'Não autenticado'})
+            return s
+        # Sessão deslizante — ver comentário equivalente nos sistemas irmãos:
+        # renovar só no ping deixava a sessão morrer com a aba em segundo plano.
+        renew_session(self._token())
         return s
 
     def _user_dict(self, s):
