@@ -1,4 +1,4 @@
-# SGCA v0.35.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.35.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.35.0'
+SERVER_VERSION = '0.35.1'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -248,6 +248,8 @@ def init_db():
             )
             conn.commit()
             print('Usuário padrão criado: admin / admin123 — troque a senha no primeiro acesso.')
+        if sgx_base.marcar_senha_padrao(conn):
+            print('Atenção: há conta com a senha padrão — o sistema exigirá a troca no próximo acesso.')
 
 def _fts_match_query(text):
     """Converte texto livre em uma query FTS5 (AND de prefixos por palavra)."""
