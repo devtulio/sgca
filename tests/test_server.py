@@ -848,6 +848,72 @@ class TestSenhaPadraoMarcadaNoBoot(SGCATestCase):
                          'exigiu troca de quem já tinha saído da senha padrão')
 
 
+class TestRecusaSenhaPadrao(SGCATestCase):
+    """Não deixa definir a senha de fábrica como NOVA senha (ver sgx_base.eh_senha_padrao)."""
+
+    def test_recusa_admin123_como_nova_senha(self):
+        tok = self.login()
+        with server.get_db() as conn:
+            uid = conn.execute("SELECT id FROM usuarios WHERE username='admin'").fetchone()['id']
+        st, r = self.request('PUT', f'/api/usuarios/{uid}', {'password': 'admin123'}, token=tok)
+        self.assertEqual(st, 400, r)
+        self.assertIn('padrão', (r or {}).get('error', ''))
+
+
+class TestSyncFornecedor(SGCATestCase):
+    """Cadastro de fornecedor compartilhado (2026-07): export + sync peer por CNPJ,
+    last-write-wins com revisão manual (marca d'água syncedAt). Mesmo padrão do SGCD.
+    CNPJs próprios por teste; confere só o que escreveu (banco compartilhado na suíte)."""
+
+    def _set_data(self, cnpj_like, **kv):
+        with server.get_db() as conn:
+            row = conn.execute("SELECT id,data FROM fornecedores WHERE cnpj LIKE ?", (cnpj_like,)).fetchone()
+            d = json.loads(row['data']); d.update(kv)
+            conn.execute("UPDATE fornecedores SET data=? WHERE id=?", (json.dumps(d), row['id'])); conn.commit()
+
+    def test_export_envelope(self):
+        tok = self.login()
+        self.request('POST', '/api/fornecedores', {'cnpj': '90.101.001/0001-00', 'razao_social': 'ExpA', 'updatedAt': 1000}, token=tok)
+        st, d = self.request('GET', '/api/fornecedores/export', token=tok)
+        self.assertEqual(st, 200)
+        self.assertEqual((d['_sgx'], d['tipo']), ('SGCA', 'fornecedores'))
+        self.assertTrue(any((f.get('cnpj') or '').startswith('90.101') for f in d['fornecedores']))
+
+    def test_preview_apply(self):
+        tok = self.login()
+        self.request('POST', '/api/fornecedores', {'cnpj': '90.102.001/0001-00', 'razao_social': 'Base', 'updatedAt': 1000}, token=tok)
+        self._set_data('90.102.001%', syncedAt=1000)
+        arq = {'tipo': 'fornecedores', 'fornecedores': [
+            {'cnpj': '90.102.002/0001-00', 'razao_social': 'Novo', 'updatedAt': 2000},
+            {'cnpj': '90.102.001/0001-00', 'razao_social': 'Base Ltda', 'updatedAt': 5000}]}
+        st, prev = self.request('POST', '/api/fornecedores/sync/preview', arq, token=tok)
+        self.assertEqual((prev['inserir'], prev['atualizar'], len(prev['conflitos'])), (1, 1, 0))
+        st, ap = self.request('POST', '/api/fornecedores/sync/apply', arq, token=tok)
+        self.assertEqual((ap['novos'], ap['atualizados']), (1, 1))
+        st, lst = self.request('GET', '/api/fornecedores?per=2000', token=tok)
+        nomes = {f.get('cnpj'): f.get('razao_social') for f in lst['items']}
+        self.assertEqual(nomes.get('90.102.001/0001-00'), 'Base Ltda')
+        self.assertEqual(nomes.get('90.102.002/0001-00'), 'Novo')
+
+    def test_conflito_resolve_arquivo(self):
+        tok = self.login()
+        self.request('POST', '/api/fornecedores', {'cnpj': '90.103.001/0001-00', 'razao_social': 'Local', 'updatedAt': 5000}, token=tok)
+        self._set_data('90.103.001%', syncedAt=1000)
+        arq = {'tipo': 'fornecedores', 'fornecedores': [{'cnpj': '90.103.001/0001-00', 'razao_social': 'Remoto', 'updatedAt': 3000}]}
+        st, prev = self.request('POST', '/api/fornecedores/sync/preview', arq, token=tok)
+        self.assertEqual(len(prev['conflitos']), 1)
+        st, ap = self.request('POST', '/api/fornecedores/sync/apply',
+                              {**arq, 'resolver': {'90103001000100': 'arquivo'}}, token=tok)
+        self.assertEqual(ap['conflitos_aplicados'], 1)
+        st, lst = self.request('GET', '/api/fornecedores?per=2000', token=tok)
+        alvo = next(f for f in lst['items'] if (f.get('cnpj') or '').startswith('90.103.001'))
+        self.assertEqual(alvo['razao_social'], 'Remoto')
+
+    def test_arquivo_invalido(self):
+        tok = self.login()
+        self.assertEqual(self.request('POST', '/api/fornecedores/sync/preview', {'foo': 1}, token=tok)[0], 400)
+
+
 class TestBackupCofre(SGCATestCase):
     """Padronização do backup (2026-07): Cofre .zip (banco + anexos) via sgx_base,
     com leitura retrocompatível do .db legado. O round-trip de anexos em si é
