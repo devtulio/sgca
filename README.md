@@ -6,7 +6,7 @@
 
 O **SGCA** é uma aplicação web multiusuário para o **Departamento de Gestão e Contratos**, destinada ao controle de **Contratos Administrativos** e **Atas de Registro de Preços** conforme a Lei nº 14.133/2021.
 
-O sistema nasceu como uma adaptação estrutural do SGCD (Sistema de Gestão de Contratação Direta), reaproveitando os módulos administrativos que não são específicos de nenhum tipo de processo — autenticação, usuários, fornecedores, auditoria, notificações e backup — e tendo sua arquitetura posteriormente padronizada com a do SGDP (Sistema de Gestão de Documentos da Procuradoria), o "irmão" mais maduro da mesma família de sistemas.
+O sistema nasceu como uma adaptação estrutural do SGCD (Sistema de Gestão de Contratação Direta), reaproveitando os módulos administrativos que não são específicos de nenhum tipo de processo — autenticação, usuários, fornecedores, auditoria, notificações e backup — e tendo sua arquitetura posteriormente padronizada com a do SGDP (Sistema de Gestão de Documentos da Procuradoria), o "irmão" mais maduro da mesma família — que inclui ainda o **SGEA** (Sistema de Gestão de Estoque do Almoxarifado).
 
 Funciona em rede local: um único computador executa o servidor e todos os usuários acessam pelo navegador via IP ou `localhost`.
 
@@ -93,13 +93,14 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 | Usuário | `admin`     |
 | Senha   | `admin123`  |
 
-### Modo de operação
+### Menu de inicialização
+
+O `Iniciar SGCA.bat` abre um menu no terminal:
 
 | Opção | Descrição |
 |-------|-----------|
-| **[1] Pessoal** | Uso individual — abre o navegador automaticamente e encerra ao sair |
-| **[2] Servidor** | Máquina central em rede — fica rodando continuamente (Ctrl+C para parar) |
-| **[3] Diagnóstico** | Verifica e corrige automaticamente rede, porta e firewall (pede elevação de Administrador quando necessário) |
+| **[1] Diagnóstico** | Verifica e corrige automaticamente rede, porta e firewall (pede elevação de Administrador quando necessário) |
+| **[2] Iniciar Servidor** | Sobe o servidor e mantém rodando continuamente — atende uso individual e em rede. Só encerra com **Ctrl+C** no terminal ou fechando a janela |
 
 ### Acesso em rede local
 
@@ -151,6 +152,25 @@ SGCA/
 ├── CHANGELOG.md
 └── MANUAL.html
 ```
+
+---
+
+## Documentos Gerados pelo Sistema
+
+| Documento | Descrição |
+|-----------|-----------|
+| **Extrato de Contrato** | Extrato para publicação no Diário Oficial e no PNCP |
+| **Termo Aditivo** | Formalização de acréscimo, supressão ou prorrogação contratual |
+| **Termo de Recebimento** | Registro do recebimento do objeto |
+| **Termo de Rescisão** | Formalização da rescisão contratual |
+| **Matriz de Risco** | Quadro de riscos do contrato |
+| **Relatório de Contratos / Atas** | Visão consolidada com os filtros aplicados |
+| **Relatório de Fornecedores** | Cadastro de fornecedores com certidões |
+| **Relatório de Sanções** | Fornecedores sancionados (CEIS/CNEP) |
+| **Relatório de Auditoria** | Trilha de eventos do sistema |
+| **Relatório de Integridade** | Estado do banco, backups e contagens |
+
+Todos os documentos abrem em janela separada com botão "🖨 Imprimir / Salvar PDF".
 
 ---
 
