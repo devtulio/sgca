@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.31.10</title>
+<title>Manual Operacional — SGCA v0.32.0</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.31.10 — Manual Operacional";
+        content: "SGCA v0.32.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.31.10</div>
+    <div class="cover-version">Versão v0.32.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -213,6 +213,12 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.32.0 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>A troca da senha padrão passou a valer no servidor.</strong> A tela de "troque a senha no primeiro acesso" era só do navegador: quem conversasse diretamente com o sistema entrava com a senha padrão — que está no manual e no README — e usava tudo, inclusive as telas de administrador, enquanto ninguém tivesse trocado. Agora, com a troca pendente, o servidor só aceita as chamadas necessárias para exibir e concluir a própria troca; qualquer outra é recusada.</li><li><strong>A chave de API do Portal da Transparência e a conta de e-mail do órgão apareciam para qualquer usuário.</strong> A tela de Configurações é aberta a todos (usa os dados de organização), e junto vinham a chave do Portal, o endereço da conta de e-mail e a pasta de backup. Passaram a ir só para o administrador. A senha do e-mail nunca esteve nessa lista.</li></ul>
+<p><strong>Alterado</strong></p>
+<ul><li>Removidas mensagens de depuração que sobraram no console do servidor e imprimiam, a cada leitura ou gravação de configurações, o nome de quem estava usando o sistema.</li></ul>
+
 <h3>v0.31.10 — Julho/2026</h3>
 <p><strong>Corrigido</strong></p>
 <ul><li><strong>A senha do e-mail do sistema saía dentro do arquivo de backup.</strong> O backup em JSON exportava todas as configurações, e entre elas está a senha do SMTP (guardada em texto puro) e a chave do Portal da Transparência. Como esse é o arquivo que se envia a outra máquina para sincronizar, essas credenciais circulavam junto. Elas passaram a ficar de fora. <strong>Restaurar não as perde:</strong> o que o arquivo não traz é preservado como já está no sistema.</li></ul>
