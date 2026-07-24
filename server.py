@@ -1,4 +1,4 @@
-# SGCA v0.35.1 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.36.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.35.1'
+SERVER_VERSION = '0.36.0'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -693,23 +693,22 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif p == '/api/backup/db':
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             import tempfile as _tf
-            tmp = _tf.NamedTemporaryFile(suffix='.db', delete=False)
-            tmp.close()
+            tmpdir = _tf.mkdtemp()
             try:
-                with sqlite3.connect(DB_PATH, factory=_ConnAutoClose) as src, sqlite3.connect(tmp.name, factory=_ConnAutoClose) as bk:
-                    src.backup(bk)
-                with open(tmp.name, 'rb') as f:
+                name = time.strftime('DB_SGCA_BACKUP_%Y-%m-%d_%H-%M-%S.zip')
+                dst = os.path.join(tmpdir, name)
+                sgx_base.escrever_cofre(DB_PATH, UPLOADS_DIR, dst)   # banco + anexos
+                with open(dst, 'rb') as f:
                     data_bytes = f.read()
-                name = time.strftime('DB_SGCA_BACKUP_%Y-%m-%d_%H-%M-%S.db')
                 self.send_response(200); self._cors()
-                self.send_header('Content-Type', 'application/octet-stream')
+                self.send_header('Content-Type', 'application/zip')
                 self.send_header('Content-Length', str(len(data_bytes)))
                 self.send_header('Content-Disposition', f'attachment; filename="{name}"')
                 self.end_headers()
                 self.wfile.write(data_bytes)
             finally:
-                try: os.remove(tmp.name)
-                except: pass
+                import shutil as _sh
+                _sh.rmtree(tmpdir, ignore_errors=True)
 
         elif p == '/api/backups/cfg':
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
@@ -732,7 +731,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             cfg = _get_backup_cfg()
             bdir = cfg['path']
             files = sorted(
-                (f for f in os.listdir(bdir) if f.startswith('DB_SGCA_BACKUP_') and f.endswith('.db')),
+                (f for f in os.listdir(bdir) if f.startswith('DB_SGCA_BACKUP_') and f.endswith(_COFRE_EXTS)),
                 reverse=True
             ) if os.path.isdir(bdir) else []
             items = [{'name': f, 'size': os.path.getsize(os.path.join(bdir, f)),
@@ -745,7 +744,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         elif p.startswith('/api/backups/db/download'):
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             name = parse_qs(parsed.query).get('name', [None])[0]
-            if not name or not name.startswith('DB_SGCA_BACKUP_') or not name.endswith('.db') or '/' in name or '\\' in name:
+            if not name or not name.startswith('DB_SGCA_BACKUP_') or not name.endswith(_COFRE_EXTS) or '/' in name or '\\' in name:
                 self._json(400, {'error': 'Nome inválido'}); return
             cfg = _get_backup_cfg()
             fp = os.path.join(cfg['path'], name)
@@ -1591,7 +1590,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(payload)
 
     def _restore_backup(self, data, s):
-        if not data.get('_sgca'):
+        if not sgx_base.eh_backup(data, _SGX_SIGLA):
             self._json(400, {'error': 'Arquivo não é um backup SGCA válido'}); return
         _do_db_backup()  # backup do atual antes de substituir tudo — ponto de recuperação
         try:
@@ -1673,36 +1672,40 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
                                       'label': 'Backup do sistema restaurado', 'detail': 'Restauração via arquivo JSON'})
 
     def _restore_db_backup(self, raw_bytes, s):
-        # raw_bytes é o conteúdo bruto do arquivo .db enviado via multipart ou binário
-        if len(raw_bytes) < 16 or raw_bytes[:16] != b'SQLite format 3\x00':
-            self._json(400, {'error': 'Arquivo não é um banco SQLite válido'}); return
-        import tempfile
-        tmp = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
+        # raw_bytes é o conteúdo bruto do Cofre enviado (pacote .zip novo ou .db legado)
+        import tempfile, shutil
+        tmpdir = tempfile.mkdtemp()
         try:
-            tmp.write(raw_bytes); tmp.close()
-            # Valida que o arquivo tem as tabelas esperadas
-            with sqlite3.connect(tmp.name, factory=_ConnAutoClose) as test_conn:
+            try:
+                dbfile, anexos = sgx_base.abrir_cofre(raw_bytes, tmpdir)
+            except ValueError as e:
+                self._json(400, {'error': str(e)}); return
+            with sqlite3.connect(dbfile, factory=_ConnAutoClose) as test_conn:
                 tables = {r[0] for r in test_conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
             required = {'fornecedores', 'contratos', 'atas', 'sys_settings'}
             if not required.issubset(tables):
                 self._json(400, {'error': 'Banco inválido: tabelas obrigatórias ausentes'}); return
-            # Backup do atual antes de restaurar
-            _do_db_backup()
-            # Substitui o banco atual com o backup via API de backup SQLite (seguro)
-            with sqlite3.connect(tmp.name, factory=_ConnAutoClose) as src, get_db() as dst:
+            _do_db_backup()  # ponto de recuperação (banco + anexos atuais) antes de substituir
+            with sqlite3.connect(dbfile, factory=_ConnAutoClose) as src, get_db() as dst:
                 src.backup(dst)
                 # Registrado na conexão já restaurada — o backup() acima substitui todo o
                 # banco, então logar antes seria sobrescrito pelo conteúdo do arquivo restaurado.
                 _insert_audit_raw(dst, {'type': 'RESTAURAR_DB', 'ts': _now(),
                                          'user_id': s['user_id'], 'user_nome': s['nome'],
-                                         'label': 'Banco de dados restaurado', 'detail': 'Restauração via arquivo .db'})
+                                         'label': 'Banco de dados restaurado',
+                                         'detail': 'Restauração via pacote .zip (banco + anexos)' if anexos is not None else 'Restauração via arquivo .db legado'})
+            if anexos is not None:   # só o pacote .zip repõe a pasta de anexos; .db legado não mexe
+                shutil.rmtree(UPLOADS_DIR, ignore_errors=True)
+                os.makedirs(UPLOADS_DIR, exist_ok=True)
+                for base in anexos:
+                    shutil.move(os.path.join(tmpdir, base), os.path.join(UPLOADS_DIR, base))
             self._json(200, {'ok': True})
         except Exception as e:
             _log.error('Erro ao restaurar banco: %s', e)
             self._json(500, {'error': str(e)})
         finally:
-            try: os.remove(tmp.name)
-            except: pass
+            import shutil as _sh
+            _sh.rmtree(tmpdir, ignore_errors=True)
 
     def _relatorio_integridade(self):
         def _dir_size(path):
@@ -1716,7 +1719,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         cfg = _get_backup_cfg()
         bdir = cfg['path']
         backups_db = sorted(
-            (f for f in os.listdir(bdir) if f.startswith('DB_SGCA_BACKUP_') and f.endswith('.db')),
+            (f for f in os.listdir(bdir) if f.startswith('DB_SGCA_BACKUP_') and f.endswith(_COFRE_EXTS)),
             reverse=True
         ) if os.path.isdir(bdir) else []
         backups_json = sorted(
@@ -2121,6 +2124,13 @@ def _com_deleted_at(conn, tabela):
 # perde — a chave ausente no arquivo mantém o valor que já está no banco.
 _CHAVES_SIGILOSAS = ('smtp_pass', 'portal_transparencia_key')
 
+# Padronização do backup da família (2026-07): envelope único e Cofre .zip via
+# sgx_base. Flag de usuários = False (admin único; contas não viajam no JSON).
+_SGX_SIGLA = 'SGCA'
+_BACKUP_SCHEMA = 5
+_BACKUP_INCLUI_USUARIOS = False
+_COFRE_EXTS = ('.zip', '.db')   # casa o .zip novo e o .db legado
+
 def _settings_para(result, s):
     """Recorta o que /api/settings devolve conforme quem pergunta.
 
@@ -2152,7 +2162,7 @@ def _build_backup_payload():
                 with open(p, 'rb') as f:
                     arqs.append({**dict(r), 'data_b64': base64.b64encode(f.read()).decode()})
     return {
-        '_sgca': True, 'version': 5, 'exportedAt': _now(),
+        '_sgx': _SGX_SIGLA, 'schema': _BACKUP_SCHEMA, 'exportedAt': _now(),
         'fornecedores': fornecedores, 'contratos': contratos, 'atas': atas,
         'auditGlobal': audit, 'settings': settings,
         'arquivos': arqs,
@@ -2180,7 +2190,7 @@ def _rotate_backups(cfg=None):
     bdir = cfg['path']
     keep = cfg['keep']
     if not os.path.isdir(bdir): return
-    for prefix, ext in [('DB_SGCA_BACKUP_', '.db'), ('SIS_SGCA_BACKUP_', '.json')]:
+    for prefix, ext in [('DB_SGCA_BACKUP_', _COFRE_EXTS), ('SIS_SGCA_BACKUP_', '.json')]:
         files = sorted(f for f in os.listdir(bdir) if f.startswith(prefix) and f.endswith(ext))
         to_delete = files[:-keep] if keep else files
         for old in to_delete:
@@ -2223,11 +2233,10 @@ def _do_db_backup(cfg=None):
     bdir = cfg['path']
     keep = cfg['keep']
     os.makedirs(bdir, exist_ok=True)
-    name = time.strftime('DB_SGCA_BACKUP_%Y-%m-%d_%H-%M-%S.db')
+    name = time.strftime('DB_SGCA_BACKUP_%Y-%m-%d_%H-%M-%S.zip')
     dst  = os.path.join(bdir, name)
     try:
-        with sqlite3.connect(DB_PATH, factory=_ConnAutoClose) as src, sqlite3.connect(dst, factory=_ConnAutoClose) as bk:
-            src.backup(bk)
+        sgx_base.escrever_cofre(DB_PATH, UPLOADS_DIR, dst)   # banco + anexos
         # Registra timestamp do último backup
         with get_db() as conn:
             conn.execute("INSERT OR REPLACE INTO sys_settings (key,value) VALUES ('auto_backup_last',?)", (_now(),))
@@ -2236,6 +2245,8 @@ def _do_db_backup(cfg=None):
         return name
     except Exception as e:
         _log.error('Falha no backup automático: %s', e)
+        try: os.remove(dst)
+        except OSError: pass
         return None
 
 # ── Inicialização ─────────────────────────────────────────────────────────────
