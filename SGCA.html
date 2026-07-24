@@ -1833,7 +1833,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.33.0';
+const SGCA_VERSION = '0.34.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2591,9 +2591,8 @@ function _toastSom(t) {
 }
 
 function parseValor(v) {
-  if (!v) return 0;
-  const s = String(v).replace(/\./g, '').replace(',', '.');
-  return parseFloat(s.replace(/[^\d\.]/g, '')) || 0;
+  // Regra única da família — ver parseValorBR no base.js.
+  return parseValorBR(v);
 }
 function fmtMoney(v) {
   if (!v) return '';
@@ -3443,10 +3442,17 @@ function renderAditivosList(c) {
     const alerta = c.percentualAcumulado >= 25 ? 'aviso' : (c.percentualAcumulado >= 20 ? 'nota' : null);
     if (alerta) {
       const cor = alerta === 'aviso' ? '--danger' : '--warning';
+      // Acréscimo e supressão têm cada um o seu limite de 25% (Art. 125): quando
+      // os dois existem, mostrar os dois — somá-los esconderia que ambos os
+      // tetos foram usados.
+      const acr = c.percentualAcrescimo, sup = c.percentualSupressao;
+      const detalhe = (acr && sup)
+        ? `acréscimo de <strong>${acr}%</strong> e supressão de <strong>${sup}%</strong>`
+        : `Variação acumulada de valor: <strong>${c.percentualAcumulado}%</strong>`;
       document.getElementById('contrato-aditivos-lista').insertAdjacentHTML('afterbegin',
         `<div style="margin-bottom:8px;padding:6px 10px;border-radius:6px;background:var(${cor}-light);color:var(${cor});font-size:.78rem">⚠
-          Variação acumulada de valor: <strong>${c.percentualAcumulado}%</strong>
-          ${alerta === 'aviso' ? ' — atenção ao limite legal de 25% (Art. 125, Lei 14.133/2021)' : ' — aproximando do limite de 25%'}
+          ${detalhe}
+          ${alerta === 'aviso' ? ' — atenção ao limite legal de 25% para cada um (Art. 125, Lei 14.133/2021)' : ' — aproximando do limite de 25%'}
         </div>`);
     }
   }

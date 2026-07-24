@@ -708,5 +708,63 @@ class TestAuditoriaDeConfiguracao(SGCATestCase):
         self.assertEqual(len(novos), 1)
         self.assertEqual(novos[0]['label'], 'Brasão alterado')
 
+class TestAditivosRecalculo(SGCATestCase):
+    """Eixo documentos/cálculos (auditoria 2026-07-24).
+
+    Dois defeitos no mesmo ponto: remover um aditivo não desfazia a conta (o
+    contrato seguia valendo um aditivo inexistente, com o percentual comparado
+    ao teto legal errado), e acréscimo e supressão se anulavam no percentual —
+    +25% seguido de -25% exibia 0%, escondendo que os dois tetos do art. 125
+    tinham sido usados.
+    """
+
+    def _contrato(self, token, valor='100.000,00'):
+        st, c = self.request('POST', '/api/contratos',
+                             {'objeto': 'Contrato de teste', 'numero': f'{uuid.uuid4().hex[:6]}/2026',
+                              'valorGlobal': valor}, token=token)
+        self.assertEqual(st, 200, c)
+        return c['id']
+
+    def _ler(self, token, cid):
+        st, c = self.request('GET', f'/api/contratos/{cid}', token=token)
+        self.assertEqual(st, 200, c)
+        return c
+
+    def _aditivo(self, token, cid, valor):
+        st, _ = self.request('POST', f'/api/contratos/{cid}/aditivos',
+                             {'tipo': 'valor', 'valorVariacao': valor}, token=token)
+        self.assertEqual(st, 200)
+
+    def test_remover_aditivo_desfaz_valor_e_percentual(self):
+        token = self.login()
+        cid = self._contrato(token)
+        self._aditivo(token, cid, '25.000,00')
+        self._aditivo(token, cid, '10.000,00')
+        c = self._ler(token, cid)
+        self.assertEqual(c['valorGlobal'], 135000.0)
+        self.assertEqual(c['percentualAcumulado'], 35.0)
+
+        aid = c['aditivos'][-1]['id']
+        st, _ = self.request('DELETE', f'/api/contratos/{cid}/aditivos/{aid}', token=token)
+        self.assertEqual(st, 200)
+        c = self._ler(token, cid)
+        self.assertEqual(len(c['aditivos']), 1)
+        self.assertEqual(c['valorGlobal'], 125000.0, 'valor global não voltou ao estado sem o aditivo')
+        self.assertEqual(c['percentualAcumulado'], 25.0, 'percentual não voltou ao estado sem o aditivo')
+
+    def test_acrescimo_e_supressao_nao_se_anulam(self):
+        token = self.login()
+        cid = self._contrato(token)
+        self._aditivo(token, cid, '25.000,00')
+        self._aditivo(token, cid, '-25.000,00')
+        c = self._ler(token, cid)
+        # o valor volta ao original, mas os dois tetos foram usados
+        self.assertEqual(c['valorGlobal'], 100000.0)
+        self.assertEqual(c['percentualAcrescimo'], 25.0)
+        self.assertEqual(c['percentualSupressao'], 25.0)
+        self.assertEqual(c['percentualAcumulado'], 25.0,
+                         'acréscimo e supressão se anularam no percentual')
+
+
 if __name__ == '__main__':
     unittest.main()

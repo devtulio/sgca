@@ -1,4 +1,4 @@
-# SGCA v0.33.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.34.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.33.0'
+SERVER_VERSION = '0.34.0'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -403,6 +403,34 @@ def _check_shutdown():
             _do_db_backup(cfg)
 
 # ── HTTP Handler ──────────────────────────────────────────────────────────────
+
+def _recalcula_aditivos(contrato):
+    """Deriva valor global e percentuais do histórico de aditivos.
+
+    Roda ao ACRESCENTAR e ao REMOVER um aditivo. Antes só rodava ao acrescentar:
+    remover deixava valorGlobal e percentual como estavam, e o contrato seguia
+    valendo um aditivo que não existe mais — com o percentual comparado ao teto
+    legal errado.
+
+    Acréscimos e supressões contam SEPARADAMENTE. O art. 125 da Lei 14.133/2021
+    fixa o limite de 25% para cada um; somá-los algebricamente escondia que os
+    dois tetos tinham sido usados (+25% seguido de -25% aparecia como 0%).
+    `percentualAcumulado` passa a ser o maior dos dois — é o que a tela compara
+    com o limite.
+    """
+    original = _float(contrato.get('valorOriginal'))
+    if original is None:
+        return
+    variacoes = [_float(a.get('valorVariacao')) or 0 for a in contrato.get('aditivos', [])]
+    acrescimos = sum(v for v in variacoes if v > 0)
+    supressoes = -sum(v for v in variacoes if v < 0)
+    contrato['valorGlobal'] = round(original + acrescimos - supressoes, 2)
+    if original:
+        contrato['percentualAcrescimo'] = round(acrescimos / original * 100, 2)
+        contrato['percentualSupressao'] = round(supressoes / original * 100, 2)
+        contrato['percentualAcumulado'] = max(contrato['percentualAcrescimo'],
+                                              contrato['percentualSupressao'])
+
 
 class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -1156,6 +1184,15 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         data.setdefault('createdAt', now)
         data['updatedAt'] = now
         data.setdefault('aditivos', [])
+        # Guarda os dois valores como número desde o cadastro. Antes o contrato
+        # nascia com valorGlobal em texto ("100.000,00") e só virava número no
+        # primeiro aditivo — o mesmo campo tinha dois tipos conforme a idade do
+        # registro, e quem somasse a lista precisava adivinhar qual era qual.
+        for campo in ('valorGlobal', 'valorOriginal'):
+            if campo in data and data[campo] is not None:
+                convertido = _float(data[campo])
+                if convertido is not None:
+                    data[campo] = convertido
         data.setdefault('valorOriginal', data.get('valorGlobal'))
         data['_createdBy'] = s['user_id']
         with get_db() as conn:
@@ -1188,15 +1225,13 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             data['id'] = data.get('id') or str(uuid.uuid4())
             data.setdefault('createdAt', _now())
             contrato.setdefault('aditivos', []).append(data)
-            # Recalcula vigência final e valor global a partir do histórico de aditivos
+            # Vigência vem do aditivo; valor e percentuais são derivados da lista
+            # inteira, nunca somados ao acumulado — assim acrescentar e remover
+            # chegam sempre ao mesmo resultado.
             if data.get('tipo') == 'prazo' and data.get('novaVigenciaFinal'):
                 contrato['vigenciaFinal'] = data['novaVigenciaFinal']
-            if data.get('valorVariacao'):
-                valor_original = _float(contrato.get('valorOriginal')) or _float(contrato.get('valorGlobal'))
-                contrato['valorGlobal'] = (_float(contrato.get('valorGlobal')) or 0) + _float(data['valorVariacao'])
-                if valor_original:
-                    acumulado = sum(_float(a.get('valorVariacao')) or 0 for a in contrato['aditivos'])
-                    contrato['percentualAcumulado'] = round(abs(acumulado) / valor_original * 100, 2)
+            contrato.setdefault('valorOriginal', contrato.get('valorGlobal'))
+            _recalcula_aditivos(contrato)
             contrato['updatedAt'] = _now()
             self._save_contrato_row(conn, contrato)
         self._json(200, contrato)
@@ -1207,6 +1242,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if not row: self._json(404, {'error': 'Contrato não encontrado'}); return
             contrato = json.loads(row['data'])
             contrato['aditivos'] = [a for a in contrato.get('aditivos', []) if a.get('id') != aid]
+            _recalcula_aditivos(contrato)
             contrato['updatedAt'] = _now()
             self._save_contrato_row(conn, contrato)
         self._json(200, {'ok': True})
@@ -1840,24 +1876,9 @@ def _audit_config(conn, s, label, detail):
 
 
 def _float(v):
-    if v is None or v == '':
-        return None
-    if isinstance(v, (int, float)):
-        return float(v)
-    s = str(v).replace('R$', '').strip()
-    if not s:
-        return None
-    # Formato BR: ponto = milhar, vírgula = decimal. Com os dois presentes,
-    # remove os pontos e troca a vírgula por ponto (1.234,56 -> 1234.56).
-    # Só vírgula -> decimal (1234,56 -> 1234.56). Só ponto -> já é decimal.
-    if ',' in s and '.' in s:
-        s = s.replace('.', '').replace(',', '.')
-    elif ',' in s:
-        s = s.replace(',', '.')
-    try:
-        return float(s)
-    except (ValueError, TypeError):
-        return None
+    # Regra única da família — ver sgx_base.parse_valor. Antes, este parser e o
+    # do front discordavam: "1.234" virava 1,234 aqui e 1234 na tela.
+    return sgx_base.parse_valor(v)
 
 def _find_browser():
     for c in [

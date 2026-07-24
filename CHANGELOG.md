@@ -5,6 +5,18 @@
 
 ---
 
+## [0.34.0] — 2026-07-24
+
+### Corrigido
+- **Remover um aditivo não desfazia a conta.** O contrato continuava com o valor global e o percentual de quando o aditivo existia — ou seja, valendo um aditivo que não está mais lá, e com o percentual comparado ao limite legal errado. Agora valor e percentuais são sempre recalculados a partir da lista de aditivos, tanto ao acrescentar quanto ao remover.
+- **Acréscimo e supressão deixam de se anular.** Um aditivo de +25% seguido de outro de −25% exibia "0%", escondendo que os dois limites do art. 125 da Lei 14.133/2021 tinham sido usados. Passam a ser contados separadamente, cada um contra o seu teto de 25%, e a tela mostra os dois quando existem.
+- **Leitura de valores em dinheiro unificada** com a mesma regra do restante da família (ver CHANGELOG do SGCD).
+
+### Alterado
+- O valor global e o valor original do contrato passam a ser gravados como número desde o cadastro. Antes nasciam como texto e só viravam número no primeiro aditivo.
+
+---
+
 ## [0.33.0] — 2026-07-24
 
 ### Adicionado
