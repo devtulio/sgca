@@ -1,4 +1,4 @@
-# SGCA v0.31.9 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.31.10 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.31.9'
+SERVER_VERSION = '0.31.10'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -2016,13 +2016,19 @@ def _com_deleted_at(conn, tabela):
         linhas.append(registro)
     return linhas
 
+# Credenciais que NÃO viajam no backup JSON: o arquivo sai do servidor e o
+# manual orienta enviá-lo a outra máquina para sincronizar. Restaurar não as
+# perde — a chave ausente no arquivo mantém o valor que já está no banco.
+_CHAVES_SIGILOSAS = ('smtp_pass', 'portal_transparencia_key')
+
 def _build_backup_payload():
     with get_db() as conn:
         fornecedores = _com_deleted_at(conn, 'fornecedores')
         contratos    = _com_deleted_at(conn, 'contratos')
         atas         = _com_deleted_at(conn, 'atas')
         audit        = [dict(r) for r in conn.execute('SELECT * FROM audit_global').fetchall()]
-        settings     = {r['key']: r['value'] for r in conn.execute('SELECT key,value FROM sys_settings').fetchall()}
+        settings     = {r['key']: r['value'] for r in conn.execute('SELECT key,value FROM sys_settings').fetchall()
+                        if r['key'] not in _CHAVES_SIGILOSAS}
         arqs = []
         for r in conn.execute('SELECT * FROM arquivos').fetchall():
             p = os.path.join(UPLOADS_DIR, r['nome_disco'])

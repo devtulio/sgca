@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.31.9</title>
+<title>Manual Operacional — SGCA v0.31.10</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.31.9 — Manual Operacional";
+        content: "SGCA v0.31.10 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.31.9</div>
+    <div class="cover-version">Versão v0.31.10</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -213,6 +213,10 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.31.10 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>A senha do e-mail do sistema saía dentro do arquivo de backup.</strong> O backup em JSON exportava todas as configurações, e entre elas está a senha do SMTP (guardada em texto puro) e a chave do Portal da Transparência. Como esse é o arquivo que se envia a outra máquina para sincronizar, essas credenciais circulavam junto. Elas passaram a ficar de fora. <strong>Restaurar não as perde:</strong> o que o arquivo não traz é preservado como já está no sistema.</li></ul>
+
 <h3>v0.31.9 — Julho/2026</h3>
 <p><strong>Corrigido</strong></p>
 <ul><li><strong>Uma restauração que falhava no meio deixava o sistema vazio.</strong> Os registros atuais eram apagados e a confirmação acontecia *antes* de os dados do arquivo serem gravados — se qualquer item do arquivo estivesse malformado, o apagamento já estava consolidado e nada era restaurado. Agora a restauração inteira é uma operação só: qualquer falha desfaz tudo e o banco continua como estava. O sistema também passou a responder com uma mensagem clara em vez de erro genérico.</li><li><strong>Restaurar um backup esvaziava a Lixeira, devolvendo tudo ao cadastro.</strong> A marca de exclusão fica numa coluna do banco, fora do conteúdo do registro, e não ia no arquivo: contratos, atas e fornecedores que estavam na Lixeira voltavam como ativos.</li><li><strong>Cadastrar um fornecedor com o mesmo identificador de um excluído</strong> o tirava da Lixeira silenciosamente.</li></ul>
