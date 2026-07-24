@@ -5,6 +5,20 @@
 
 ---
 
+## [0.31.8] — 2026-07-23
+
+### Corrigido
+- **Som duplicado nas caixas de confirmação.** Confirmar ou cancelar tocava dois sons sobrepostos: o tratamento global de clique já sonoriza qualquer botão, e a cópia local da caixa de confirmação tocava um segundo som por conta própria. Ao unificar a caixa de confirmação com a do esqueleto, a duplicação saiu.
+
+### Alterado
+- **Fonte única para o que os quatro sistemas repetiam.** O aviso de rodapé (`toast`) e a caixa de confirmação (`customConfirm`) existiam em cópia local em cada sistema, quase idênticas: uma correção feita em um não chegava aos outros. Passaram a vir do esqueleto compartilhado — o som continua sendo de cada sistema, através de um gancho (`_toastSom`). Saiu junto uma variável de cache de elementos que ficou sem uso.
+- **Histórico de Versões no manual.** A seção 15 do `MANUAL.html` só remetia ao `CHANGELOG.md` do repositório — que o usuário do sistema não abre. Passou a trazer o histórico completo, no mesmo formato dos manuais dos outros sistemas.
+- **Margem de impressão dos documentos com fonte única.** O bloco `@page` (A4, 20 mm, "Folha N" no rodapé) estava copiado em cinco lugares nos quatro sistemas; agora é uma constante só, no esqueleto. Era exatamente o trecho que a versão anterior teve de corrigir em cinco lugares de uma vez.
+- **O esqueleto compartilhado passou a ter histórico.** Os arquivos comuns (`base.css`, `base.js`, `sgx_base.py`) tinham fonte única, mas fora de qualquer repositório: um erro neles se espalhava para os quatro sistemas sem registro do que mudou nem como voltar atrás. Agora são versionados.
+- **O CI acusa cópia do esqueleto editada por fora.** Alterar `base.js` dentro deste repositório funciona, passa no lint e é apagado sem aviso na próxima distribuição. O CI passou a conferir as cópias contra o manifesto `_esqueleto.sha256` e quebra o build quando divergem. Verificado nos dois sentidos: acusa edição real e ignora diferença de quebra de linha (o repositório guarda LF, o runner Windows faz checkout com CRLF).
+
+---
+
 ## [0.31.7] — 2026-07-22
 
 ### Corrigido

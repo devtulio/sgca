@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.31.7</title>
+<title>Manual Operacional — SGCA v0.31.8</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.31.7 — Manual Operacional";
+        content: "SGCA v0.31.8 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.31.7</div>
+    <div class="cover-version">Versão v0.31.8</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -212,7 +212,407 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
-<p>Consulte o <code>CHANGELOG.md</code> no repositório para o histórico completo de versões e alterações.</p>
+<h3>v0.31.8 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Som duplicado nas caixas de confirmação.</strong> Confirmar ou cancelar tocava dois sons sobrepostos: o tratamento global de clique já sonoriza qualquer botão, e a cópia local da caixa de confirmação tocava um segundo som por conta própria. Ao unificar a caixa de confirmação com a do esqueleto, a duplicação saiu.</li></ul>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Fonte única para o que os quatro sistemas repetiam.</strong> O aviso de rodapé (<code>toast</code>) e a caixa de confirmação (<code>customConfirm</code>) existiam em cópia local em cada sistema, quase idênticas: uma correção feita em um não chegava aos outros. Passaram a vir do esqueleto compartilhado — o som continua sendo de cada sistema, através de um gancho (<code>_toastSom</code>). Saiu junto uma variável de cache de elementos que ficou sem uso.</li><li><strong>Histórico de Versões no manual.</strong> A seção 15 do <code>MANUAL.html</code> só remetia ao <code>CHANGELOG.md</code> do repositório — que o usuário do sistema não abre. Passou a trazer o histórico completo, no mesmo formato dos manuais dos outros sistemas.</li><li><strong>Margem de impressão dos documentos com fonte única.</strong> O bloco <code>@page</code> (A4, 20 mm, "Folha N" no rodapé) estava copiado em cinco lugares nos quatro sistemas; agora é uma constante só, no esqueleto. Era exatamente o trecho que a versão anterior teve de corrigir em cinco lugares de uma vez.</li><li><strong>O esqueleto compartilhado passou a ter histórico.</strong> Os arquivos comuns (<code>base.css</code>, <code>base.js</code>, <code>sgx_base.py</code>) tinham fonte única, mas fora de qualquer repositório: um erro neles se espalhava para os quatro sistemas sem registro do que mudou nem como voltar atrás. Agora são versionados.</li><li><strong>O CI acusa cópia do esqueleto editada por fora.</strong> Alterar <code>base.js</code> dentro deste repositório funciona, passa no lint e é apagado sem aviso na próxima distribuição. O CI passou a conferir as cópias contra o manifesto <code>_esqueleto.sha256</code> e quebra o build quando divergem. Verificado nos dois sentidos: acusa edição real e ignora diferença de quebra de linha (o repositório guarda LF, o runner Windows faz checkout com CRLF).</li></ul>
+
+<h3>v0.31.7 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Envio de e-mail podia prender uma thread do servidor para sempre.</strong> O helper compartilhado <code>send_email_raw</code> abria a conexão SMTP sem <code>timeout</code>, e o padrão do Python é esperar indefinidamente; como o servidor é multithread, cada envio a um SMTP que aceita a conexão e não responde deixava uma thread presa — inclusive no resumo diário automático, que se repete todo dia. Agora o timeout é de 30 s e a falha vira mensagem de erro. Verificado contra um SMTP que nunca responde: falha em 30 s, em vez de travar.</li><li><strong>Tecla Esc deixava a página sem rolagem.</strong> O tratamento genérico de Esc (compartilhado) era registrado antes dos tratamentos de cada tela e apenas escondia a janela; o tratamento da tela, ao rodar depois, via a janela "já fechada" e pulava a rotina de fechamento — que é quem devolve a rolagem da página. Fechar um modal com Esc travava a rolagem até recarregar. O tratamento genérico passou a ser registrado por último, e ainda devolve a rolagem por segurança.</li><li><strong>Margem de impressão dos documentos.</strong> A margem agora é declarada no <code>@page</code> (vale para <strong>todas</strong> as páginas) e padronizada em <strong>20 mm</strong> nos quatro lados, em todos os modelos de documento e relatório. Antes, o recuo era zerado na impressão em vários modelos e o rodapé saía a ~4 mm da borda — dentro da faixa que muitas impressoras não imprimem, com risco de cortar o código de autenticidade. Medido em PDF gerado: 20,1 mm.</li></ul>
+
+<h3>v0.31.6 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Falhas silenciosas na comunicação com o servidor.</strong> Vários pontos checavam <code>r.ok</code> sem antes verificar se a chamada devolveu resposta — e a camada de API devolve <code>null</code> quando a sessão expira (401) ou a rede falha. O resultado era um <code>TypeError</code> engolido: o botão simplesmente não fazia nada, sem mensagem alguma. Todos os pontos passaram a usar a guarda que o próprio código já adotava em outros lugares.</li><li><strong>Sessão deslizante.</strong> A sessão (60s) era renovada <strong>apenas</strong> pelo <code>/api/auth/ping</code>, um <code>setInterval</code> que o navegador estrangula em aba de segundo plano — quem ficasse redigindo com a aba atrás perdia a sessão e a ação seguinte falhava com 401. Agora <strong>qualquer requisição autenticada renova</strong> a sessão. O backup automático não muda: navegador fechado não faz requisições, então a sessão ociosa continua expirando em 60s.</li></ul>
+
+<h3>v0.31.5 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li>Campos de busca (Contratos, Atas e Fornecedores) agora usam um estilo único compartilhado (<code>.search-inp</code> no <code>base.css</code>), garantindo o mesmo visual arredondado em toda a família e evitando divergência entre telas.</li></ul>
+
+<h3>v0.31.4 — Julho/2026</h3>
+<p><strong>Modificado</strong></p>
+<ul><li><strong>Busca com ✕ para limpar</strong> nas listas de <strong>Contratos</strong> e <strong>Atas</strong>: o campo de busca ganhou o mesmo botão ✕ já usado em Fornecedores — aparece ao digitar, limpa a busca ao clicar. Helper compartilhado no <code>base.js</code>.</li></ul>
+
+<h3>v0.31.3 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li>Inputs da aba Dados (pasta de backup, backups mantidos) agora aparecem arredondados: a classe <code>.input</code> que esses campos usavam <strong>nunca havia sido definida</strong> no CSS, então ficavam com o visual cru do navegador. Definida no <code>base.css</code> compartilhado.</li></ul>
+
+<h3>v0.31.2 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Relatório de Backup e Integridade</strong>: a mensagem de erro deixou de cravar "acesso restrito a administradores" para qualquer falha — agora mostra o motivo real devolvido pelo servidor (irmão da correção feita no SGEA v0.22.1, encontrado numa varredura de erro mascarado).</li><li><strong>Acessibilidade (WCAG 1.4.3)</strong>: o contraste do botão "Dispensar" da faixa de aviso de servidor desatualizado subiu de ~3,5:1 para 8,1:1, com <code>aria-label</code> e alvo de toque maior.</li></ul>
+<p><strong>Removido</strong></p>
+<ul><li>Endpoints destrutivos sem uso: <code>DELETE /api/{fornecedores,audit}/all</code> — mecanismo de factory-reset antigo, já substituído pelo <code>/api/wipe</code> único. Remover rota destrutiva sem chamador reduz a superfície de ataque.</li></ul>
+<p><strong>Interno</strong></p>
+<ul><li>Três funções que estavam copiadas idênticas nos 4 sistemas (<code>checarVersaoServidor</code> no <code>base.js</code>; <code>backup_ts</code> e <code>pick_folder_dialog</code> no <code>sgx_base.py</code>) foram consolidadas no esqueleto compartilhado (fonte única via <code>sync.py</code>), sem mudança de comportamento. O <code>Iniciar SGCA.bat</code> passou a encerrar um servidor preso na porta antes de subir o novo.</li></ul>
+
+<h3>v0.31.1 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Aviso de servidor desatualizado.</strong> O <code>/health</code> do servidor passou a informar a versão em execução, e o app compara com a versão do <code>SGCA.html</code> carregado ao entrar. Se o servidor Python em execução for mais antigo que a página (processo iniciado antes de uma atualização, situação em que rotas novas dão "Rota não encontrada" até reiniciar), uma faixa de alerta no topo orienta a reiniciar pelo <code>Iniciar SGCA.bat</code>. <code>SERVER_VERSION</code> no <code>server.py</code> deve acompanhar o <code>SGCA_VERSION</code> a cada release.</li></ul>
+
+<h3>v0.31.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Alimentar do Fiorilli</strong> — novo botão na barra de ferramentas da tela de Atas que preenche automaticamente a <strong>quantidade utilizada</strong> dos itens a partir do sistema contábil oficial (Fiorilli), dispensando a digitação manual. Importa o relatório <strong>"Listagem de Licitações Integradas e Pedidos"</strong> (módulo Compras → 07. Relatórios → 07.05. Licitações → 07.05.02, export <strong>CSV Dados</strong>); um mesmo arquivo pode conter um processo licitatório ou todos, com detecção automática. Casa cada item por <strong>processo licitatório + código Fiorilli/CADPRO</strong> e grava a quantidade líquida pedida (Σ pedidos − Σ cancelamentos) por substituição (idempotente — reimportar não altera). Prévia agrupada por ata (valor atual → novo, com saldo negativo sinalizado) e lista dos itens do relatório ainda sem código cadastrado nas atas. <strong>Somente leitura</strong> em relação ao Fiorilli, que continua sendo o razão oficial.</li><li>Novo campo <strong>código Fiorilli/CADPRO</strong> no cadastro de item da ata (chave de casamento com o relatório oficial).</li></ul>
+
+<h3>v0.30.3 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Lote 4 da auditoria de design</strong>: fim do fallback de brasão nos documentos (buscava um <code>brasao.png</code> local) — sem brasão configurado em Configurações, o documento sai sem imagem, como no SGEA. Instalações com brasão configurado não mudam. Token <code>--violet</code> e regras de fronteira novas no <code>base.css</code>/<code>DESIGN.md</code> compartilhados.</li></ul>
+
+<h3>v0.30.2 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Legibilidade do modo escuro</strong>: novo token <code>--brand-text</code> — textos na cor da marca (números, links, metadados de cards) agora clareiam automaticamente no tema escuro (antes: navy sobre fundo escuro, quase ilegível). Aplicado via troca global <code>color: var(--brand)</code> → <code>var(--brand-text)</code>.</li><li><strong>Componentes canônicos novos no <code>base.css</code></strong> (auditoria de design 2026-07-20): tabela de listagem (<code>.list-table</code>, com cabeçalho, zebra e hover) e variantes de badge (<code>badge-ok/warn/danger/neutral</code>). <code>DESIGN.md</code> atualizado (token, tabela e regra do acento esquerdo nos stat-cards).</li><li><strong>Filtros de Contratos e Atas estilizados</strong> — busca e selects usavam controles nativos do navegador; agora seguem o padrão <code>.filters</code> (mesmo visual da tela de Fornecedores).</li><li>Cosmético: rodapé da sidebar mostra <strong>"Administrador"</strong> para admins sem cargo cadastrado; linha do órgão oculta até ser configurado; respiro após "Ignorar SSL" nos blocos SMTP.</li></ul>
+
+<h3>v0.30.1 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>"Meu E-mail (SMTP)" movido para a aba Segurança</strong> de Configurações (ao lado de "Alterar Minha Senha" — é uma credencial pessoal), separando a config pessoal da config do sistema; mesmo arranjo do SGDP. A aba <strong>Comunicação</strong> (config do sistema) agora aparece só para administradores, com uma nota apontando para a aba Segurança.</li></ul>
+<p><strong>Removido</strong></p>
+<ul><li><strong>Seção de SMTP no modal de edição de usuário</strong> — cada usuário configura a própria conta na aba Segurança; a config inclui a senha do e-mail pessoal, que não cabe ao administrador digitar. (Endpoints do servidor mantidos; <code>GET /api/usuarios/{id}/smtp</code> segue em uso pelo próprio usuário.)</li></ul>
+
+<h3>v0.30.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Config de e-mail (SMTP) por usuário</strong> — 8 colunas <code>smtp_*</code> em <code>usuarios</code> (migração aditiva) + seção <strong>"Meu E-mail (SMTP)"</strong> em Configurações → Comunicação, disponível a todos os usuários. O envio manual do <strong>Resumo da Agenda</strong> estando logado sai pela conta do usuário (<code>get_user_smtp(user_id)</code> com <strong>fallback</strong> para a config do sistema). Botão "Copiar do sistema" (host/porta/segurança, sem a senha). Admin edita a config de qualquer usuário no modal de Usuários. Novo endpoint <code>GET /api/usuarios/{id}/smtp</code> (self ou admin); <code>PUT /api/usuarios/{id}</code> aceita os campos <code>smtp_*</code> (não-admin só no próprio registro). O <strong>resumo diário automático</strong> (e os avisos ao fiscal) continuam usando a config do sistema.</li></ul>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Config SMTP migrada do navegador para o servidor</strong> (mesma mudança do SGCD v2.35.0): fim da cópia por navegador em <code>localStorage</code> com senha cifrada; <code>/send-email</code> resolve a config server-side e <strong>a senha nunca passa pelo navegador</strong> — o modo antigo ficou restrito ao "Testar conexão" (testa valores digitados, sem salvar). <code>GET /api/settings</code> deixou de retornar <code>smtp_pass</code> (expõe só <code>smtp_pass_set</code>). Seção SMTP de Configurações dividida em "E-mail do sistema" (admin) e "Meu E-mail" (por usuário). Removida a cadeia de criptografia client-side; <code>backup.smtp</code> de backups antigos é ignorado na restauração.</li></ul>
+
+<h3>v0.29.3 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Motor de exportação Excel (.xlsx) movido para o <code>base.js</code> compartilhado</strong> da família (<code>_exportarXlsx</code>/<code>_zipStore</code>/<code>_colLetter</code>/<code>_xlsxCellXml</code>/<code>_crc32</code>). Refactor interno — sem qualquer mudança de comportamento no SGCA; o objetivo foi disponibilizar o mesmo gerador de planilhas para SGCD e SGEA sem duplicar código.</li></ul>
+
+<h3>v0.29.2 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Fornecedores pessoa física eram sinalizados com "CNPJ inválido" indevidamente</strong> — o campo <code>cnpj</code> do cadastro guarda tanto CNPJ (14 dígitos) quanto CPF (11 dígitos) de pessoas físicas, mas o Diagnóstico de Integridade e a coloração de cards em Fornecedores sempre validavam com o algoritmo de dígito verificador do CNPJ, que rejeita qualquer número de 11 dígitos. Agora documentos de 11 dígitos são validados com o algoritmo oficial de CPF (nova função <code>validarCpf</code>); um CPF malformado passa a aparecer como "CPF inválido" (em vez de "CNPJ inválido"), e duplicidade de documento entre dois cadastros de 11 dígitos aparece como "CPF duplicado"</li></ul>
+
+<h3>v0.29.1 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Avisos/erros de fornecedor no Diagnóstico de Integridade agora são clicáveis</strong> — clicar num item de "CNPJ duplicado" ou "CNPJ inválido" na lista do diagnóstico (Configurações → Diagnóstico) leva direto ao cadastro daquele fornecedor, já aberto para edição. Limpa busca/filtro da tela de Fornecedores antes de abrir, para garantir que o card apareça mesmo se Ativos/Inativos estivesse selecionado numa visita anterior</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong><code>&lt;title&gt;</code> do MANUAL.html ficou defasado por 3 versões</strong> (<code>v0.27.15</code> enquanto o resto do manual já estava em <code>v0.29.0</code>) — os bumps de versão anteriores não alcançavam essa linha porque o <code>sed</code> só substitui o valor esperado da versão anterior, não "o que estiver desatualizado"</li></ul>
+
+<h3>v0.29.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Marca d'água "MINUTA"</strong> nos documentos de contrato (Extrato, Termos de Aditivo/Apostilamento, Matriz de Risco, Termo de Recebimento, Termo de Rescisão) enquanto o contrato <strong>ainda não tem um PDF assinado anexado</strong> ao registro. Assim que um PDF assinado é anexado, os documentos passam a ser gerados sem a marca. Os relatórios gerenciais (Auditoria, Contratos, Atas, Fornecedores etc.) nunca recebem a marca. Alinha o comportamento ao do SGCD.</li></ul>
+
+<h3>v0.28.1 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Helper de exportação consolidado no <code>base.js</code> compartilhado</strong> (<code>_salvarArquivoComo</code>) e o download do <strong>modelo de importação de fornecedores</strong> passou a usar o diálogo "Salvar como" como os demais exports.</li></ul>
+
+<h3>v0.28.0 — Julho/2026</h3>
+<p><strong>Removido</strong></p>
+<ul><li><strong>Assinatura digital ICP-Brasil.</strong> A assinatura de anexos de Contrato e Ata com certificado A1 (<code>.pfx</code>) foi removida por completo: botão/modal de assinar, a página pública de verificação (<code>/verificar/&lt;código&gt;</code>), o registro de assinaturas, a dependência opcional <code>pyhanko</code> (o SGCA volta a rodar 100% com a biblioteca padrão do Python) e o script <code>Instalar Assinatura ICP-Brasil.bat</code>. A tabela <code>signatures</code> e seus dados são descartados na inicialização; backups antigos que ainda tragam esse bloco são aceitos e o bloco é ignorado. <strong>O bloco de assinatura manuscrita nos documentos gerados permanece.</strong> A reanexação de documentos gerados (Extrato, Termos, etc.) continua funcionando — apenas sem a etapa de assinatura digital.</li></ul>
+
+<h3>v0.27.15 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Nome do arquivo exportado de Fornecedores não diferenciava o filtro ativo</strong> — CSV e Excel de Ativos/Inativos/Pendências saíam todos com o mesmo nome (<code>SGCA_fornecedores_DATA</code>). Agora o nome leva o sufixo do filtro: <code>SGCA_fornecedores_Ativos_DATA</code>, <code>_Inativos_</code>, <code>_Pendencias_</code> (Todos continua sem sufixo)</li></ul>
+
+<h3>v0.27.14 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Exportar CSV/Excel de Fornecedores agora respeita os filtros ativos na tela</strong> (busca + botões Todos/Ativos/Inativos/Pendências) — antes exportava sempre o cadastro inteiro (só a busca por texto era aplicada). Reaproveita a mesma checagem de filtro usada pelos botões</li><li><strong>Todos os botões Exportar CSV/Excel (Contratos, Atas, Fornecedores, Auditoria) abrem o diálogo nativo do navegador para escolher onde salvar</strong> (File System Access API, Chrome/Edge), em vez de sempre cair na pasta Downloads padrão — mesmo mecanismo já usado na Exportação PNCP desde a v0.23.2; navegadores sem suporte continuam com o download tradicional. Cancelar o diálogo não gera evento de auditoria nem toast de sucesso</li></ul>
+
+<h3>v0.27.13 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Botões de filtro em Fornecedores</strong> (Todos/Ativos/Inativos/Pendências), abaixo da busca. Ativos = situação "ATIVA"; Inativos = "BAIXADA"/"INAPTA"/"CANCELADA"; Pendências = CNPJ inválido ou duplicado (mesma checagem que já colore os cards) OU pelo menos uma certidão vencida</li></ul>
+
+<h3>v0.27.12 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Ordenação de Fornecedores simplificada</strong> — removidas as opções "Situação (Ativa primeiro)" e "Certidões vencidas"; adicionada "↑ Mais antigo". Restam: Mais recente, Mais antigo, A → Z, Z → A</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Ordenação "Mais recente" nunca funcionava de verdade</strong> — <code>updatedAt</code>/<code>addedAt</code> do fornecedor vêm ora como epoch numérico (gravado pelo frontend), ora como string ISO (gravado pelo <code>_now()</code> do server.py); a comparação <code>a.updatedAt - b.updatedAt</code> entre duas strings sempre resulta em <code>NaN</code>, então o <code>sort()</code> não reordenava nada — a lista ficava na ordem que a API retornava. Corrigido normalizando os dois formatos para epoch antes de comparar. Bug pré-existente, encontrado ao implementar a opção "Mais antigo" acima (mesma comparação quebrada)</li></ul>
+
+<h3>v0.27.11 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Coloração dos cards de Fornecedores conforme o Diagnóstico de Integridade</strong> — o cadastro de Fornecedores passa a colorir cada card de acordo com as mesmas checagens do Diagnóstico (Configurações → Diagnóstico): card avermelhado com borda esquerda vermelha para CNPJ duplicado (erro crítico), amarelado para CNPJ inválido (aviso), com um selinho indicando o motivo. Reutiliza as mesmas checagens do <code>runDiagnostico()</code>, sem duplicar a lógica de validação</li></ul>
+
+<h3>v0.27.10 — Julho/2026</h3>
+
+<h3>v0.27.9 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Parsing de valores (<code>_float</code>) mais robusto</strong> — aceita moeda no formato brasileiro com separador de milhar (<code>1.234,56</code> deixou de virar nulo) e número puro; entradas inválidas continuam retornando nulo sem quebrar. Mesma correção aplicada em SGCD e SGEA. (O off-by-one de datas corrigido no SGCD não ocorria aqui — o SGCA já usava parsing de data seguro.)</li></ul>
+
+<h3>v0.27.8 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Rótulos de "Cor de destaque" (Institucional/Azul/Verde/Roxo) agora em caixa normal</strong>, alinhados ao SGDP — antes vinham em MAIÚSCULAS/negrito por causa do wrapper <code>.info-field</code>. Removido o wrapper apenas desse seletor. Verificado no navegador.</li></ul>
+
+<h3>v0.27.7 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Bolinhas de cor em "Cor de destaque" apareciam como finos palitos verticais</strong> (o quadradinho de cor era espremido de 14px para ~2px pelo <code>.info-field input{width:100%}</code> no label flex). Adicionado <code>flex-shrink:0</code> às amostras, que voltam a ser círculos de 14px. Mesmo ajuste em SGCD e SGEA.</li></ul>
+
+<h3>v0.27.6 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Itens de menu <code>admin-only</code> (ex.: Auditoria) não apareciam nem para administradores.</strong> Eram revelados com <code>style.display = ''</code>, que caía na regra <code>.admin-only { display:none }</code> do estilo compartilhado e mantinha o item oculto mesmo para admins. Agora, para administradores, a classe <code>.admin-only</code> é removida (o elemento volta ao display natural); para não-admins continua oculto. Mesma correção aplicada em SGCD e SGDP.</li></ul>
+
+<h3>v0.27.5 — Julho/2026</h3>
+<p><strong>Removido</strong></p>
+<ul><li><strong>Banner de alerta de backup morto</strong> — o <code>#backup-alert-banner</code> nunca era exibido (a função <code>checkBackupAlert()</code> era vazia; os backups são automáticos no servidor). Removidos markup, função e chamada.</li><li><strong>Resíduos de skeleton</strong> — keyframes órfãos (<code>skeleton-pulse</code>, <code>shimmer</code>) e constantes JS não usadas, deixados após a remoção do CSS morto na v0.27.4.</li></ul>
+
+<h3>v0.27.4 — Julho/2026</h3>
+<p><strong>Removido</strong></p>
+<ul><li><strong>Limpeza de CSS morto</strong> — removidas 241 regras de estilo (~551 linhas) que definiam classes nunca usadas no HTML/JS (estilos órfãos de componentes que não chegaram a ser construídos ou foram renomeados: timeline de etapas, tabela de processos, painéis de fracionamento, cartões de proposta, upload zone, skeletons, entre muitas outras). Três regras que misturavam classes vivas e mortas foram aparadas para manter só as vivas. Sem qualquer efeito visual. Verificado com lint, testes unitários e E2E.</li></ul>
+
+<h3>v0.27.3 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Ícones da barra lateral agora são emoji</strong> (📊 Dashboard, 📄 Contratos, 📑 Atas de RP, 🏢 Fornecedores, 📅 Agenda, 🗑️ Lixeira, 🕘 Auditoria, ⚙️ Configurações), no mesmo estilo do SGEA — substituindo os ícones SVG de linha.</li><li><strong>Notificações movidas para o bloco de usuário</strong> — o sino (🔔, com o mesmo contador) saiu da lista de menu e passou a ficar no rodapé da barra lateral, ao lado do botão de sair, num layout mais compacto igual ao do SGEA. O painel de notificações e seu comportamento continuam idênticos.</li></ul>
+
+<h3>v0.27.2 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Card "Valor Total Vigente" do Dashboard ainda ficava com o dobro de largura na correção anterior (v0.27.1)</strong> — a tela de Dashboard tem mais cards que Contratos/Atas, então a coluna calculada pelo grid fica mais estreita ali, e a margem que sobrava para o valor caber numa linha só (com a fonte de 1,3rem usada até então) era mínima o bastante para variar por navegador/monitor. Reduzida a fonte do valor de 1,3rem para 1,1rem nos três cards, dando folga real para o caso comum caber na largura padrão; o mecanismo de expansão automática (v0.27.1) continua como reforço para valores realmente grandes</li><li><strong>README.md desatualizado desde a v0.27.0</strong> — a lista de funcionalidades não mencionava Termo de Rescisão, Execução Financeira, Consulta CEIS/CNEP nem Exportação Excel, e ainda trazia uma nota de "fora de escopo" para controle de pagamentos que a Execução Financeira tornou incorreta</li></ul>
+
+<h3>v0.27.1 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Card "Valor Total Vigente/Registrado" sempre com o dobro de largura</strong> (Dashboard, Contratos e Atas), mesmo quando o valor cabia tranquilamente na largura padrão dos outros cards. Agora ele começa com a mesma largura dos demais e só expande para 2 colunas quando o valor formatado realmente não couber numa linha só — medido dinamicamente após cada renderização</li></ul>
+
+<h3>v0.27.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Termo de Rescisão</strong> — novo campo "Motivo/Fundamentação da Rescisão" no Contrato (visível quando o status é "Rescindido") e botão "📄 Termo de Rescisão" no rodapé, que gera o documento formal com fundamento nos arts. 137 a 139 da Lei nº 14.133/2021, no mesmo padrão dos demais documentos gerados</li><li><strong>Consulta CEIS/CNEP automatizada</strong> — botão "🔍 Consultar CEIS/CNEP" no cadastro de Fornecedores, complementando os links manuais já existentes. Consulta a API do Portal da Transparência/CGU via proxy do servidor, usando chave de API própria (gratuita) configurada em Configurações → Organização → Integrações</li><li><strong>Execução Financeira do Contrato e da Ata</strong> — novo registro de pagamentos (data, valor, nº de empenho/NF, observações) com saldo calculado automaticamente contra o valor global do contrato ou o valor total registrado da ata, no mesmo padrão de sub-registro já usado em Fiscalização Mensal/Matriz de Risco/Subcontratação</li><li><strong>Exportação em Excel (.xlsx)</strong> — botão "Exportar Excel" ao lado do "Exportar CSV" em Contratos, Atas, Fornecedores e Auditoria. Gera um arquivo <code>.xlsx</code> real (planilha nativa, valores numéricos, sem necessidade de abrir/converter), usando um writer OOXML mínimo próprio (ZIP sem compressão + XML), sem dependências externas</li></ul>
+<p><strong>Removido</strong></p>
+<ul><li><strong>~180 linhas de código morto</strong> (<code>STEPS</code>, <code>FIELD_LABELS</code>, <code>DATE_FIELDS</code>, <code>MONEY_FIELDS</code>, <code>SELECT_FIELDS</code>) — o checklist de 18 etapas de dispensa de licitação, herdado do fork original do SGCD, nunca chegou a ser referenciado em nenhuma tela do SGCA</li></ul>
+
+<h3>v0.26.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Exclusão de Contratos e Atas</strong> — botão "🗑️ Excluir" no rodapé do modal de edição (contrato/ata existente), seguindo o mesmo rigor de segurança do Factory Reset: (1) aviso geral com alerta informativo se houver fornecedor(es) vinculado(s) — não bloqueia, apenas avisa; (2) confirmação digitando <code>EXCLUIR &lt;número&gt;</code>; (3) contagem regressiva de 5s antes de habilitar o botão final. A exclusão move o registro para a Lixeira (soft-delete já existente no backend), com restauração disponível por 30 dias. Novos eventos de auditoria: <code>CONTRATO_EXCLUIDO</code> e <code>ATA_EXCLUIDA</code></li></ul>
+
+<h3>v0.25.8 — Julho/2026</h3>
+<p><strong>Removido</strong></p>
+<ul><li><strong><code>create_session</code>/<code>delete_session</code>/<code>renew_session</code>/<code>active_sessions</code> reimplementadas localmente</strong>, mecanicamente idênticas ao esqueleto compartilhado (<code>_esqueleto/sgx_base.py</code>) — agora delegam pro <code>sgx_base</code>, mantendo a mesma assinatura local. <code>get_session()</code> permanece local (SELECT de colunas explícito por segurança, colunas divergem por sistema)</li></ul>
+
+<h3>v0.25.7 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Classe <code>.dash-top</code> (cabeçalho de título + ações de cada tela) não estava definida no esqueleto compartilhado (<code>_esqueleto/base.css</code>)</strong> — só a classe morta <code>.view-top</code> (nunca usada em nenhum dos 4 sistemas) existia lá. Sem efeito visível aqui porque SGCD/SGCA/SGDP definiam <code>.dash-top</code> localmente (byte-idêntico entre os 3), mas deixava o SGEA sem nenhum estilo no cabeçalho de cada tela. Corrigido movendo <code>.dash-top</code> para <code>base.css</code> e removendo a cópia local agora redundante</li></ul>
+
+<h3>v0.25.6 — Julho/2026</h3>
+<p><strong>Removido</strong></p>
+<ul><li><strong>Handlers locais de Tab-trap e Enter/Espaço em <code>role="button"</code>, duplicados dos listeners genéricos do esqueleto compartilhado (<code>base.js</code>)</strong> — o handler local de Enter/Espaço era um listener delegado próprio; o de Tab-trap ficava dentro da IIFE de foco automático dos modais (que continua local, pois gerencia o retorno de foco). Mesmo padrão já adotado pelo SGDP ao migrar para o esqueleto</li></ul>
+
+<h3>v0.25.5 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong><code>customConfirm()</code> travava para sempre ao fechar por Esc ou clique fora do overlay</strong> — os dois atalhos de fechamento globais do esqueleto compartilhado (<code>base.js</code>) só escondiam <code>#confirm-overlay</code> sem resolver a Promise nem remover os listeners dos botões OK/Cancelar, deixando qualquer <code>await customConfirm(...)</code> pendurado e vazando listeners a cada abertura. Corrigido para clicar no botão Cancelar (que sempre resolve corretamente e limpa os listeners) em vez de só esconder o overlay. Corrigido na fonte compartilhada (<code>_esqueleto/base.js</code>) e propagado aos 4 sistemas via <code>sync.py</code></li></ul>
+
+<h3>v0.25.4 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Migração para o esqueleto compartilhado da família</strong> (<code>_esqueleto/base.css</code>/<code>base.js</code>/<code>sgx_base.py</code>, vendorizados via <code>sync.py</code>) — remove duplicação de CSS/JS/backend entre SGCD/SGCA/SGDP/SGEA (tokens, tema de cor, sidebar, modal, tela de login, toast, busca global, notificações, <code>get_db</code>, hashing, sessões, watchdog, e-mail). Sem mudança de comportamento visível; funções com divergência genuína (segurança de sessão, e-mail, configurações) continuam locais a cada sistema.</li></ul>
+
+<h3>v0.25.3 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Relatório de Backup e Integridade</strong> — novo botão na aba Dados de Configurações gera um documento imprimível com status do backup automático, tamanhos em disco, contagens gerais do sistema (contratos, atas, fornecedores, arquivos, usuários, etiquetas, assinaturas) e os eventos recentes de backup/restauração/reset, no mesmo padrão do SGDP</li><li><strong>Auditoria de restauração e reset de fábrica</strong> — restaurar um backup (JSON ou .db) e o reset de fábrica agora registram um evento na trilha de auditoria, o que antes não acontecia</li></ul>
+
+<h3>v0.25.2 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Modal de "Novo Usuário"/"Editar Usuário" sincronizado com o padrão do SGDP</strong> — largura ampliada de 420px para 560px, e a opção "Ativo" agora fica escondida ao criar um usuário novo (só aparece ao editar), igual aos demais sistemas da família</li></ul>
+
+<h3>v0.25.1 — Julho/2026</h3>
+
+<h3>v0.25.0 — Julho/2026</h3>
+
+<h3>v0.24.2 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Card "Valor Total Vigente/Registrado" com o dobro de largura</strong> no Dashboard geral, na tela de Contratos e na tela de Atas — evita que valores maiores fiquem espremidos no espaço de uma coluna só de indicador</li></ul>
+
+<h3>v0.24.1 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Modais de Contrato e Ata mais largos</strong> (de 760px/680px para 820px em ambos) — dá mais espaço aos campos de classificação CMMET do item da Ata (Natureza/Classe/Grupo/Subgrupo, Apresentação Comercial) e mantém os dois modais com a mesma largura</li></ul>
+
+<h3>v0.24.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Campos CMMET no item da Ata</strong> — nome padronizado, descrição técnica padronizada, código CMMET, código SCPI, classificação (natureza, classe, grupo, subgrupo), unidade SCPI e apresentação comercial, alinhados à estrutura da Carga Setorial do Catálogo Municipal de Materiais e Especificações Técnicas (CMMET) do órgão. Campos de governança do próprio catálogo (status, versão, responsável pela validação etc.) ficaram de fora por decisão do usuário — pertencem ao ciclo de vida do CMMET, não ao registro do item na ata</li></ul>
+
+<h3>v0.23.2 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Painel de "Histórico do Registro" transparente</strong> — usava <code>background: var(--bg-card)</code>, uma variável CSS nunca definida em nenhum tema; o painel ficava sem cor de fundo, deixando o conteúdo por trás visível através dele. Corrigido definindo <code>--bg-card</code> no tema claro e no escuro (também corrige o mesmo problema, até então despercebido, na lista de itens da Agenda de Vencimentos)</li><li><strong>Campo de Fornecedor espremido no cadastro de item da ARP</strong> — dividia a largura do modal em 4 colunas iguais (Unidade/Qtd./Preço/Fornecedor); nomes de fornecedor reais não cabiam. Fornecedor passa a ocupar a linha inteira, abaixo de Unidade/Qtd./Preço (3 colunas)</li></ul>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>"Salvar como" ao exportar PNCP</strong> — Contrato e Ata agora abrem o diálogo nativo do navegador para escolher onde salvar o arquivo (File System Access API, Chrome/Edge), em vez de sempre cair na pasta Downloads padrão; navegadores sem suporte à API continuam com o download tradicional</li></ul>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Órgão Gerenciador da Ata pré-preenchido</strong> — ao cadastrar uma nova Ata de Registro de Preços, o campo já vem preenchido com o nome do órgão configurado em Configurações → Organização (permanece editável, para os casos de registro de uma ARP de outro órgão gerenciador). Atas já existentes continuam mostrando o valor salvo, não o padrão</li></ul>
+
+<h3>v0.23.0 — Julho/2026</h3>
+
+<h3>v0.22.0 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Servidor podia encerrar sozinho no meio do uso (Modo Pessoal)</strong> — <code>_check_shutdown()</code> chamava <code>os._exit(0)</code> quando a última sessão ativa expirava; uma aba em segundo plano (ex. ao gerar um documento, que abre popup e tira o foco da aba principal) sofria throttling do navegador no <code>setInterval</code> do ping, a sessão expirava sem ninguém ter saído de propósito, e o servidor se autodestruía no meio do uso. Corrigido removendo esse caminho inteiramente — o servidor agora só encerra via Ctrl+C no terminal.</li><li><strong><code>SESSION_TTL</code> aumentado de 15s para 60s</strong> — 15s era propositalmente curto para o antigo modo "Pessoal" detectar rápido que o navegador tinha fechado; sem esse motivo, virou uma margem perigosamente curta para o uso normal (chamadas de API concorrentes no login, aba perdendo foco ao abrir popup de documento).</li><li><strong>Menu inicial simplificado</strong> — em vez de escolher entre "Pessoal" e "Servidor", agora são só 2 opções: Diagnóstico ou Iniciar Servidor. Iniciar sempre abre o navegador automaticamente e o sistema fica sempre disponível. Removido o botão "Fechar Sistema", que prometia um encerramento que não existe mais.</li><li><strong>4 pontos de vazamento de conexão SQLite</strong> nos caminhos de backup/restore — <code>sqlite3.connect()</code> chamado sem a factory que fecha a conexão automaticamente (mesma classe de bug já corrigida em outros pontos do sistema).</li><li><strong>Watchdog podia morrer para sempre com valor não-numérico em <code>auto_backup_keep</code></strong> — <code>_get_backup_cfg()</code> agora ignora o valor inválido em vez de derrubar a thread.</li><li><strong><code>handle_error</code> nunca era chamado de verdade</strong> (é método de <code>socketserver.BaseServer</code>, não do request handler — exceções não tratadas em qualquer <code>do_GET/POST/PUT/DELETE</code> derrubavam a conexão sem log nem resposta ao cliente). Substituído por um <code>_safe_dispatch</code> que envolve os 4 handlers, loga o erro e responde 500 em vez de deixar a conexão cair silenciosamente.</li></ul>
+
+<h3>v0.21.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Suíte de testes E2E (<code>tests/e2e/</code>)</strong>, usando Playwright — sobe o servidor real (<code>SGCA_PORT</code>/<code>SGCA_DATA_DIR</code> isolam porta e banco/uploads/backups dos de produção) e dirige um Chromium de verdade pelo login com troca de senha obrigatória e criação de contrato. Mesma implementação do SGCD</li></ul>
+
+<h3>v0.20.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong><code>Instalar Assinatura ICP-Brasil.bat</code></strong> (opcional) — habilita o pip via <code>get-pip.py</code> (incluído) e instala o <code>pyhanko</code> quando o servidor usa o Python embarcável, que não vem com pip. <code>Iniciar SGCA.bat</code> agora também habilita o módulo <code>site</code> na extração do Python embarcável (pré-requisito para o script funcionar depois). Mesma implementação do SGCD</li></ul>
+
+<h3>v0.19.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Exportar CSV em Fornecedores e Auditoria</strong> — as duas telas ganham o mesmo botão "Exportar CSV" que já existia em Contratos/Atas, respeitando a busca/filtros ativos na tela. Mesma implementação do SGCD</li></ul>
+
+<h3>v0.18.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Troca de senha obrigatória no primeiro acesso</strong> — o admin padrão (criado com <code>admin</code>/<code>admin123</code>) é obrigado a definir uma nova senha antes de acessar o sistema, em vez de depender só do aviso impresso no terminal. Nova coluna <code>usuarios.must_change_password</code> (migração automática, instalações existentes não são afetadas). Mesma implementação do SGCD</li></ul>
+
+<h3>v0.17.2 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Clicar fora de um modal fechava a janela e descartava os dados digitados</strong> — no cadastro de Contrato/Ata em especial, um clique acidental fora da janela apagava tudo o que já tinha sido preenchido. Removido o fechamento por clique fora em todos os overlays (Contrato, Ata, Fornecedor, Usuário, Certidão, Busca Global, CSV, Assinatura); agora só fecham pelo botão Cancelar/✕ ou pela tecla Esc</li></ul>
+
+<h3>v0.17.1 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Aviso de vencimento duplicado quando fiscal e gestor são a mesma pessoa</strong> — o e-mail automático de vencimento e o de fiscalização mensal pendente listavam o mesmo contrato duas vezes quando o e-mail do fiscal e o do gestor eram idênticos</li></ul>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Capa do Manual Operacional</strong> — removido o parágrafo extenso "Sobre esta versão" (conteúdo já coberto em detalhe nas seções do manual); no lugar, uma referência legal curta à Lei Federal nº 14.133/2021, no mesmo padrão limpo já usado na capa do SGCD</li></ul>
+
+<h3>v0.17.0 — Julho/2026</h3>
+<p><strong>Removido</strong></p>
+<ul><li><strong>Fiscal Substituto</strong> — removido do Contrato (campo e lógica de e-mail); o órgão não usa essa figura</li></ul>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>E-mail do Gestor</strong> — o Gestor do Contrato ganha um campo de e-mail e passa a receber os mesmos avisos automáticos que o fiscal (vencimento de contrato e fiscalização mensal pendente), no lugar do papel que era do fiscal substituto</li></ul>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Layout dos campos de Fiscal/Gestor</strong> — "Fiscal do Contrato" e "E-mail do Fiscal" em uma linha, "Gestor do Contrato" e "E-mail do Gestor" na linha seguinte</li></ul>
+
+<h3>v0.16.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>ARP de Adesão externa</strong> — dois novos campos no Contrato, "Nº da ARP de Adesão" e "Órgão Gerenciador de Origem", para contratos que decorrem de adesão a uma Ata de Registro de Preços de outro órgão gerenciador (não cadastrada no nosso módulo de Atas). O campo "Ata de Origem" (dropdown) continua existindo para o caso de vínculo com uma ARP nossa — os dois são vínculos alternativos, um aviso impede salvar com os dois preenchidos ao mesmo tempo. Exportação PNCP e Extrato de Contrato passam a reconhecer também esse vínculo externo (antes só reconheciam Ata de Origem interna)</li></ul>
+
+<h3>v0.15.2 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Modal do Contrato mais largo</strong> (de 640px para 760px) e ajuste na proporção de duas linhas de campos ("Limite de Vigência" e "Recebimento do Objeto") — os rótulos mais longos quebravam em duas linhas nas colunas mais estreitas</li></ul>
+
+<h3>v0.15.1 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Alertas de limite sem estilo na tela</strong> — os avisos de vigência total (Art. 107), subcontratação acima do limite (Art. 122) e variação acumulada de aditivos (Art. 125) usavam classes (<code>.aviso</code>/<code>.nota</code>) que só existem na folha de estilo dos documentos impressos; fora desse contexto apareciam como texto simples, sem nenhuma cor de destaque. Corrigido com o mesmo padrão inline já usado no aviso de fornecedor sancionado</li><li><strong>Cards do Dashboard sem cor de status no modo escuro</strong> — duas regras CSS concorrentes definiam o fundo/borda de <code>.stat</code> no tema escuro; a que sempre vencia não tinha variantes para <code>.blocked</code>/<code>.brand</code>, deixando cards como "Contratos sem Fiscal", "Fiscalização Atrasada" e "Contratos Vigentes" com borda cinza neutra em vez da cor de status</li><li><strong>Botões <code>.btn-outline</code> com fundo branco fixo no modo escuro</strong> — afetava todo botão outline do sistema (Cancelar, Gerar Extrato, Histórico, Exportar PNCP etc.), não só os das funcionalidades novas; cor de texto e borda já se adaptavam ao tema escuro, só o fundo ficou esquecido</li></ul>
+
+<h3>v0.15.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Item do Plano de Contratações Anual (PCA)</strong> — novo campo no Contrato, junto de Nº do Contrato/Processo Administrativo, para rastreabilidade exigida pela IN SEGES nº 81/2022 (Art. 12, Lei 14.133/2021)</li><li><strong>Alerta de vigência total próxima do limite legal</strong> (Art. 107) — campo "Limite de Vigência (anos)" no Contrato; soma a vigência inicial com as prorrogações acumuladas e avisa quando o total se aproxima ou ultrapassa o limite informado</li><li><strong>Aniversário de reajuste</strong> na Agenda de Vencimentos — novo tipo de evento lembrando, 12 meses após o último aditivo de reequilíbrio/repactuação (ou desde a assinatura, se nunca houve um), que o contrato pode ter direito a reajuste</li><li><strong>Lembrete de Fiscalização Mensal por e-mail</strong> — o job diário de alertas (que já avisa vencimentos) passa a notificar também o fiscal titular/substituto quando o contrato ficar 30+ dias sem registro de fiscalização</li><li><strong>Assinatura eletrônica dos documentos gerados</strong> — Extrato de Contrato, Termos Aditivos, Matriz de Risco e Termo de Recebimento ganham um campo para reanexar o PDF (depois de salvo pelo diálogo de impressão do navegador) diretamente na lista de Anexos do Contrato, de onde já é possível assinar com certificado ICP-Brasil pelo fluxo existente — sem exigir conversão de HTML para PDF no servidor</li></ul>
+
+<h3>v0.14.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Busca automática do índice de reajuste</strong> — no aditivo de reequilíbrio/repactuação, botão "🔍 Buscar no Banco Central" consulta a API pública do SGS (Sistema Gerenciador de Séries Temporais) do Banco Central e preenche sozinho a variação % acumulada no período informado (IPCA-E, IGP-M, INPC ou INCC-M), em vez de exigir digitação manual</li><li><strong>Fiscalização Mensal</strong> (Art. 117, Lei 14.133/2021) — nova seção no Contrato para registrar data, fiscal responsável, parecer (conforme/não conforme) e observações de cada fiscalização; novo indicador "Fiscalização Atrasada" no Dashboard, contando contratos vigentes sem registro de fiscalização há mais de 45 dias</li><li><strong>Matriz de Risco</strong> (Art. 22, Lei 14.133/2021) — lista de riscos do Contrato (descrição, probabilidade, impacto, mitigação, responsável), com botão "⚠️ Matriz de Risco" gerando documento A4 no mesmo padrão dos demais</li><li><strong>Recebimento do Objeto</strong> (Art. 140, Lei 14.133/2021) — datas e responsáveis pelo recebimento provisório e definitivo no Contrato, com botão "📥 Termo de Recebimento" gerando o documento correspondente</li><li><strong>Subcontratação</strong> (Art. 122, Lei 14.133/2021) — registro de CNPJ, razão social, percentual e objeto de cada subcontratação no Contrato, com limite configurável por contrato e alerta quando o total subcontratado ultrapassa o limite definido</li></ul>
+
+<h3>v0.13.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Busca global (Ctrl+K)</strong> — botão "Buscar" na sidebar e atalho Ctrl+K abrem um modal de busca unificada por Contratos e Atas (número, objeto, órgão gerenciador, fornecedor), igual ao padrão já existente no SGCD/SGDP. Antes o Ctrl+K só focava o campo de busca local da tela visível</li></ul>
+
+<h3>v0.12.2 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Usuário admin padrão</strong> — removido o cargo pré-preenchido ("Agente de Contratação") na criação do usuário admin de instalações novas; agora fica em branco por padrão, igual ao SGDP/SGCD. Instalações já existentes não são alteradas</li></ul>
+
+<h3>v0.12.1 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Modal de "Editar/Novo Usuário" reescrito</strong> — substitui o overlay construído dinamicamente via JS por um modal estático (<code>.overlay</code>/<code>.modal-header</code>/<code>.info-field</code>/<code>.modal-footer</code>), o mesmo padrão já usado nos modais de Fornecedor, Contrato e Assinatura. Sem mudança de campos ou comportamento — só a estrutura interna, para consistência visual com o resto do sistema</li></ul>
+
+<h3>v0.12.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>CPF e E-mail no cadastro de usuário</strong> — novos campos no modal Editar/Novo Usuário, posicionados junto do Nome (separados de Cargo/Matrícula), para uso futuro (ex. notificações, assinatura). Sincronizado com SGDP (já tinha E-mail) e SGCD</li></ul>
+
+<h3>v0.11.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Assinatura digital ICP-Brasil</strong> — botão "🔏 Assinar" em cada anexo PDF de Contrato/Ata; assina com certificado .pfx A1, gera código de verificação público e página <code>/verificar/&lt;código&gt;</code> (sem login). Registro imutável em <code>signatures</code>, sobrevive mesmo se o anexo for depois substituído. Escopo alinhado ao SGDP (só ICP-Brasil, sem os métodos simples/gov.br do SGCD)</li><li><strong>Tabela <code>arquivos</code> própria para anexos</strong> — pré-requisito da assinatura: anexos de Contrato/Ata deixam de ser base64 embutido no JSON do registro (reescrevia o blob inteiro a cada edição de qualquer campo) e passam a ser armazenados como arquivo em disco + linha em tabela, no mesmo padrão do <code>files</code>/<code>arquivos</code> do SGCD/SGDP. Migração automática e idempotente do formato antigo, roda no início do servidor</li><li><code>SGCA/requirements.txt</code> — documenta <code>pyhanko</code> (dependência opcional, só necessária para assinar; o servidor sobe normalmente sem ela)</li></ul>
+
+<h3>v0.10.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Busca full-text (FTS5)</strong> — busca no campo Objeto de Contratos agora usa índice SQLite FTS5 (com fallback automático para <code>LIKE</code> caso o build do SQLite não tenha FTS5 compilado), em vez de só <code>LIKE</code>; sincronizado do padrão já usado no SGDP. Atas não ganharam FTS5 — seu único campo de texto livre é gerado automaticamente, não há conteúdo de usuário para indexar</li><li><strong>Etiquetas (tags) em Contratos e Atas</strong> — tags livres com autocomplete, filtro dedicado na listagem e marcadores nos cards do Kanban; sincronizado do modelo relacional já usado no SGDP (<code>tags</code> + <code>contrato_tags</code>/<code>ata_tags</code>)</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Contraste no tema escuro</strong> — <code>#notif-panel</code> usava um seletor <code>[data-theme="dark"]</code> que nunca era ativado (a troca de tema usa a classe <code>body.dark</code>, não o atributo <code>data-theme</code>); <code>.table-wrap</code> não tinha nenhuma cobertura no tema escuro. Mesmo bug clonado no SGDP e já corrigido lá; achado ao comparar os 3 sistemas</li></ul>
+
+<h3>v0.9.4 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Manual Operacional</strong> — bloco "Sobre esta versão" na capa usava o estilo de destaque amarelo (<code>.nota</code>), inconsistente com o SGCD/SGDP, que não têm caixas coloridas na capa; convertido para o mesmo estilo itálico discreto (<code>.cover-legal</code>) usado nos blocos legais dos outros dois sistemas</li></ul>
+
+<h3>v0.9.3 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Rate limit de login</strong> — bloqueia com HTTP 429 após 5 tentativas falhas em 5 minutos (janela deslizante, por usuário); login correto limpa o contador. Gap encontrado na auditoria de servidor: nenhum dos 3 sistemas tinha proteção contra força bruta</li></ul>
+<p><strong>Removido</strong></p>
+<ul><li><strong><code>MAX_UPLOAD</code>/<code>ALLOWED_EXTS</code></strong> — constantes declaradas mas nunca usadas, resíduo do clone do SGCD (SGCA não tem feature de anexo de arquivo/assinatura que precisasse desses limites)</li></ul>
+
+<h3>v0.9.2 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Brasão do município podia ser perdido silenciosamente</strong> — o perfil de navegador dedicado do Modo Pessoal (que guarda o brasão e demais preferências salvas só no navegador, quando a sincronização com o servidor falha) era criado em <code>%TEMP%\SGCA-Profile</code>, uma pasta que o Windows e ferramentas de limpeza de disco podem apagar a qualquer momento. Agora o perfil fica em <code>browser-profile/</code>, ao lado de <code>sgca.db</code> e <code>backups/</code>, junto com os demais dados persistentes da aplicação</li></ul>
+
+<h3>v0.9.1 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Vigência automática no Contrato</strong> — ao informar a Vigência Inicial, a Vigência Final é sugerida automaticamente como +12 meses (editável), no mesmo mecanismo já usado na Ata de Registro de Preços (Data de Assinatura → Vigência Final)</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Documentos gerados ainda mencionavam "Sistema de Gestão de Contratação Direta" (SGCD)</strong> — o rodapé compartilhado por praticamente todo documento impresso (<code>_qrFooterReport()</code>: Extrato de Contrato, Termos Aditivos, todos os Relatórios) e o Relatório de Trilha de Auditoria diziam o nome do sistema de origem do clone em vez de "Sistema de Gestão de Contratos e Atas"</li><li><strong>Exportação PNCP de Contrato nunca identificava o vínculo com Ata de Registro de Preços</strong> — o código verificava um campo <code>ataId</code>, que nunca existiu; o campo real é <code>ataOrigemId</code> (introduzido na v0.7.0). Na prática, <code>categoriaProcesso</code> e <code>tipoContratoId</code> sempre assumiam o valor de contratação direta, mesmo para contratos vinculados a uma ata. Corrigido usando o nome de campo certo, e o rótulo genérico "Contratação Direta" foi trocado por "Contrato Administrativo" para não presumir uma modalidade específica de licitação</li></ul>
+
+<h3>v0.9.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Numeração automática sugerida</strong> — ao criar um novo Contrato ou Ata, o número já vem preenchido com o próximo sequencial do ano corrente, editável</li><li><strong>Validação de número duplicado</strong> — não é mais possível salvar um Contrato ou Ata com um número já usado no mesmo cadastro</li><li><strong>Múltiplos anexos por Contrato/Ata</strong> — o que antes era um único PDF agora é uma lista de anexos, cada um com seu próprio link de download e remoção (registros já existentes com o anexo antigo continuam acessíveis)</li><li><strong>Filtro por Fiscal</strong> na tela de Contratos, no mesmo padrão do filtro por fornecedor</li><li><strong>Alerta de "Contratos sem Fiscal"</strong> no Dashboard geral — designação de fiscal é exigência do Art. 117, Lei 14.133/2021</li><li><strong>Histórico do registro</strong> — botão "🕘 Histórico" no Contrato e na Ata mostra a trilha de auditoria (criação, edições, aditivos, anexos, exportações) filtrada só para aquele registro, reaproveitando a auditoria global já existente (novo filtro <code>processId</code> em <code>GET /api/audit</code>)</li></ul>
+
+<h3>v0.8.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Dashboard geral</strong> — nova tela inicial (antes do login recair direto em Contratos), com indicadores consolidados de Contratos e Atas, gráfico de vencimentos dos próximos 6 meses e lista de próximos vencimentos (contratos, atas, garantias e sanções), com atalho na barra lateral antes da seção "Contratações"</li><li><strong>Gráfico de vencimentos também na tela de Atas</strong> — a tela de Contratos já tinha o gráfico dos próximos 6 meses; a de Atas não tinha o mesmo recurso</li><li><strong>Bloqueio de exclusão de fornecedor vinculado</strong> — o botão "Excluir Fornecedor" agora verifica se há contratos ou itens de ata referenciando aquele fornecedor e impede a exclusão (com aviso do total vinculado) até que os vínculos sejam resolvidos</li></ul>
+
+<h3>v0.7.1 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Rotação de backups não era acionada após criar um backup</strong> — <code>_do_db_backup()</code> é chamado em vários pontos (encerrar o sistema, backup manual, antes de restaurar), mas <code>_rotate_backups()</code> só rodava uma vez, no início do servidor. Na prática, a pasta de backups crescia sem limite entre reinícios, ignorando o número configurado em "Backups mantidos". Corrigido chamando <code>_rotate_backups()</code> ao final de <code>_do_db_backup()</code>, cobrindo automaticamente todos os pontos que criam backup</li></ul>
+
+<h3>v0.7.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Anexo de PDF na Ata</strong> (ata assinada digitalizada) — mesmo padrão de upload/download já usado no Contrato</li><li><strong>Fiscal Substituto</strong> no Contrato (nome + e-mail) — Art. 117, §2º da Lei 14.133/2021; recebe o mesmo aviso automático de vencimento que o fiscal titular</li><li><strong>Atalho "Ver Contratos"</strong> no card do fornecedor — abre a tela de Contratos já filtrada pelos contratos daquele fornecedor, com selo removível indicando o filtro ativo (novo parâmetro <code>fornecedor</code> no <code>GET /api/contratos</code>)</li><li><strong>Prorrogação assistida</strong> — ao abrir "+ Novo Aditivo" (tipo Prazo), o campo de nova vigência já vem preenchido com a vigência atual + 12 meses, editável</li><li><strong>Relatório global de Sanções</strong> — botão na tela de Fornecedores gera um relatório consolidado com as sanções de todos os fornecedores, além do relatório já existente por fornecedor individual</li><li><strong>Gráfico de vencimentos dos próximos 6 meses</strong> na tela de Contratos, combinando contratos e atas por mês (SVG simples, sem biblioteca de gráficos)</li></ul>
+
+<h3>v0.6.2 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Indicadores na tela de Atas</strong> — atas vigentes, vencendo em 30 dias, valor total registrado e itens com saldo baixo, no mesmo padrão visual dos indicadores de Contratos</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Indicador "Atas com saldo baixo" (tela de Contratos) sempre mostrava 0</strong> — o cálculo usava os nomes de campo <code>qtdRegistrada</code>/<code>qtdUtilizada</code>, mas os itens de ata são salvos como <code>quantidadeRegistrada</code>/<code>quantidadeUtilizada</code>; o indicador nunca correspondia a dados reais desde que foi introduzido na v0.6.0</li></ul>
+
+<h3>v0.6.1 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Brasão customizado não se mantinha entre reinícios do sistema</strong> — o <code>GET /api/settings</code> geral (consultado a cada login) incluía o <code>brasao_dataurl</code>, um base64 de alguns MB, deixando essa rota lenta o bastante para ocasionalmente sofrer 401 durante a rajada de requisições do login, sob a sessão curta (<code>SESSION_TTL</code>= 15s). Como <code>_onLoginSuccess()</code> tratava essa falha em silêncio, o brasão simplesmente não voltava para o navegador — obrigando o usuário a reenviar e salvar o arquivo a cada início. Corrigido excluindo <code>brasao_dataurl</code> do <code>GET /api/settings</code> geral (já existia um endpoint dedicado, <code>/api/settings/brasao</code>, criado para isso mas nunca consultado pelo frontend) e buscando o brasão nessa rota separada, dissociado do restante da sincronização</li></ul>
+
+<h3>v0.6.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Aviso de sanção vigente ao vincular fornecedor</strong> — ao selecionar um fornecedor em um Contrato ou item de Ata, um aviso aparece se ele tiver suspensão, impedimento de licitar ou declaração de inidoneidade vigente (Art. 156, Lei 14.133/2021)</li><li><strong>Relatório consolidado de Contratos e de Atas</strong> — botão "Relatório" nas telas de listagem, no mesmo padrão A4 já usado no relatório de Fornecedores</li><li><strong>Indicadores na tela de Contratos</strong> — contratos vigentes, vencendo em 30 dias, valor total vigente e atas com saldo baixo, reaproveitando o componente <code>.stat</code> (já existente no CSS mas até então sem uso)</li><li><strong>Fim de sanção na Agenda de Vencimentos</strong> — sanções com prazo final cadastrado (suspensão, impedimento, inidoneidade) agora geram um evento na Agenda, levando direto à aba Sanções do fornecedor</li><li><strong>Vínculo Contrato ↔ Ata de Registro de Preços</strong> — campo "Ata de Origem" no Contrato, para casos de contratação por adesão; aparece também no Extrato de Contrato quando preenchido</li><li><strong>Relatório de Sanções por fornecedor</strong> — botão "📄 Relatório" na aba Sanções, gera um documento formal com o histórico de sanções aplicadas</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Nome do sistema errado nos relatórios impressos</strong> — o relatório de Fornecedores ainda dizia "Sistema de Gestão de Contratação Direta" (herança do clone do SGCD); corrigido para "Sistema de Gestão de Contratos e Atas"</li></ul>
+
+<h3>v0.5.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Exportação de Contratos e Atas em CSV</strong> — botão "Exportar CSV" nas telas de listagem, com dados legíveis (fornecedor, status por extenso, valores em formato pt-BR)</li><li><strong>Aviso automático ao fiscal do contrato</strong> — novo campo "E-mail do Fiscal"; o resumo diário de vencimentos passa a enviar também um aviso individual a cada fiscal com contrato(s) vencendo, mesmo sem e-mail interno configurado</li><li><strong>Garantia Contratual</strong> — modalidade (caução/seguro-garantia/fiança bancária), valor, vencimento e data de devolução, com entrada própria na Agenda de Vencimentos</li><li><strong>Sanções e Penalidades</strong> — nova aba no cadastro de fornecedores para registrar advertências, multas, suspensões, impedimentos de licitar e declarações de inidoneidade, com fundamentação e prazo</li><li><strong>Reajuste por índice</strong> em aditivos de reequilíbrio/repactuação — índice (IPCA-E, IGP-M, INCC-M, INPC ou outro) e percentual de variação, com cálculo automático do valor de reajuste e prévia antes de salvar</li><li><strong>Anexo do contrato assinado (PDF)</strong> — upload/download vinculado ao registro do contrato</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong><code>fmtMoney()</code> inflava por 10x valores monetários com centavos</strong> — a função reaproveitava <code>parseValor()</code> (feito para strings já formatadas em pt-BR) mesmo quando recebia um número puro do banco; <code>String(15000.5)</code> vira <code>"15000.5"</code>, e a lógica de striping de separador de milhar tratava o ponto decimal como separador de milhar, multiplicando o valor por 10 ao reexibir. Afetava toda exibição de Valor Global, variação de aditivos e preço unitário de item de ata sempre que o valor tinha centavos — e, mais grave, corrompia o valor permanentemente se o contrato fosse salvo novamente nesse estado (o campo já formatado incorretamente era reinterpretado por <code>parseValor</code> no submit)</li><li><strong><code>toggleFornCard</code> não reconhecia a aba "sancoes"</strong> — introduzido durante o desenvolvimento desta versão e corrigido antes do release</li></ul>
+
+<h3>v0.5.1 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong><code>openContratoModal</code>/<code>openAtaModal</code> exibiam dados desatualizados quando o registro já estava em cache local</strong> (<code>_contratos</code>/<code>_atas</code>) — o fallback para buscar da API só era acionado quando o item não existia no cache; se existia porém estava desatualizado (ex.: alterado em outra aba, ou reaberto pela Agenda logo após uma edição feita por outro caminho), o modal mostrava os valores antigos. Agora sempre busca da API ao abrir o modal, e mantém o cache local sincronizado com o resultado</li><li><strong>Remover o anexo do contrato assinado não funcionava</strong> — <code>delete contrato.anexoContrato</code> seguido de <code>PUT</code> não removia o campo no servidor, pois <code>_update_contrato</code> faz um merge raso (<code>dict.update()</code>) que só sobrescreve chaves presentes no payload, nunca remove as ausentes. Corrigido enviando <code>anexoContrato: null</code> explicitamente em vez de apagar a chave</li></ul>
+
+<h3>v0.1.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li>Esqueleto inicial do SGCA, criado a partir do SGCD (Sistema de Gestão de Contratação Direta): autenticação multiusuário, gestão de usuários, cadastro de fornecedores (CNPJ, certidões, alertas de vencimento, importação CSV), configurações (organização, brasão, SMTP, tema), trilha de auditoria, notificações in-app e por e-mail, backup automático/manual com sincronização entre máquinas, lixeira e diagnóstico de rede</li><li>Servidor próprio na porta 3002 (SGCD usa 3000, SGDP usa 3001)</li><li>Ícone próprio do sistema (<code>sgca.ico</code>)</li></ul>
+<p><strong>Removido</strong></p>
+<ul><li>Geradores de documentos específicos de Dispensa de Licitação (Autorização de Abertura, Aviso de Dispensa, Termos de Adjudicação/Homologação, Despachos, Mapa de Preços, Extrato de Contrato, Enquadramento Legal, exportação PNCP, análise de fracionamento)</li></ul>
+
+<h3>v0.2.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li>Módulo de <strong>Contratos</strong>: cadastro, Kanban por status (Vigente/Em prorrogação/Encerrado/Rescindido), vínculo com Fornecedores, aditivos/apostilamentos com alerta de limite legal de 25% (Art. 125, Lei 14.133/2021)</li><li>Módulo de <strong>Atas de Registro de Preços</strong>: cadastro, itens registrados com controle de saldo (quantidade utilizada vs. registrada) e alerta visual de esgotamento</li><li>Backend: tabelas <code>contratos</code>/<code>atas</code> e endpoints REST completos (CRUD, lixeira, aditivos, itens)</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Lixeira</strong> agora lista itens excluídos de Fornecedores, Contratos e Atas (antes só enxergava processos, já removidos)</li><li>Painel de Diagnóstico (Configurações) simplificado para checar só fornecedores/dados institucionais, sem mais depender de processos inexistentes</li><li>Backup (exportar/importar/sincronizar) atualizado para o novo formato de dados (<code>contratos</code>/<code>atas</code> em vez de <code>processes</code>/<code>files</code>)</li><li>Diversas referências órfãs deixadas por uma remoção anterior malfeita (funções chamadas mas não mais definidas: <code>_debounce</code>, <code>_closeNotifOutside</code>, <code>_pinCheckCaps</code>, atalhos de teclado para telas removidas)</li></ul>
+
+<h3>v0.2.1 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Atalho Ctrl+K</strong> — foca o campo de busca da seção visível (Contratos ou Atas), no padrão da família SGCD/SGDP</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Badge de versão</strong> — o fallback do badge na sidebar mostrava "1.17.0" (resquício do SGCD); corrigido para acompanhar a versão real</li></ul>
+
+<h3>v0.3.0 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Código morto do clone do SGCD</strong> — <code>loadProcesses()</code>, a variável <code>processes</code> e <code>updateAgendaBadge()</code> nunca funcionaram no SGCA (chamavam <code>/api/processes</code>, inexistente; referenciavam elementos e campos de dados do domínio de dispensa). Diálogos de wipe/exportar backup, que mostravam "0 processos" sempre, agora mostram contagem real de contratos/atas</li><li><strong><code>API_BASE</code> com porta fixa</strong> — o frontend tinha <code>http://localhost:3002</code> fixo no código; quebrava se o servidor rodasse em outra porta. Trocado por caminhos relativos, como o SGDP sempre fez</li><li><strong>Busca de contratos quebrava o servidor</strong> — <code>_list_contratos</code> fazia <code>numero LIKE ?</code> em SQL, mas <code>numero</code> não é coluna da tabela <code>contratos</code> (só existe dentro do JSON); toda vez que <code>q</code> fosse enviado o servidor caía com <code>sqlite3.OperationalError</code>. Bug dormente até esta versão, porque o frontend nunca mandava <code>q</code> para esse endpoint antes. Corrigido com <code>json_extract(data, '$.numero')</code></li><li><strong>Fonte ajustável</strong> — resolvido no SGDP nesta mesma rodada de padronização (era o único dos três que usava <code>zoom</code> no CSS em vez de <code>font-size</code>); SGCA já seguia o padrão correto, sem mudança necessária aqui</li></ul>
+
+<h3>v0.3.1 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>Trilha de Auditoria</strong> — timeline agrupada por dia (buscava até 2000 registros de uma vez, filtro 100% no cliente) substituída por tabela com filtros server-side (busca, tipo, período) e paginação via servidor, igual ao SGDP</li></ul>
+
+<h3>v0.3.2 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Vocabulário de eventos de auditoria era o do SGCD, não o de contratos/atas</strong> — mapa de rótulos (<code>_AUDIT_EVENT_LABELS</code>) tinha só eventos herdados do clone (ETAPA_*, PROCESSO_*, CERTIDAO_* etc.), nenhum deles emitido de fato pelo SGCA; eventos reais (<code>CONTRATO_CRIADO</code>, <code>CONTRATO_EDITADO</code>, <code>CONTRATO_ADITIVO</code>, <code>ATA_CRIADA</code>, <code>ATA_EDITADA</code>, <code>FORNECEDOR_EXCLUIDO</code>, <code>SYNC_BACKUP</code>) apareciam crus na tabela. Corrigido trocando pelo vocabulário correto</li></ul>
+<p><strong>Alterado</strong></p>
+<ul><li>Dropdown "Tipo" trocado de lista fixa no HTML para geração dinâmica a partir do mapa de rótulos, evitando desincronia futura</li><li>Coluna "Tipo" renomeada para "Ação", alinhando com o SGDP</li></ul>
+
+<h3>v0.3.3 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Tipo de evento malformado ao restaurar/excluir da lixeira</strong> — <code>restoreLixeiraItem()</code>/<code>purgeLixeiraItem()</code> geravam o tipo do evento a partir do rótulo de exibição (<code>cfg.label.toUpperCase()</code>); para "Ata de RP" isso produzia <code>"ATA DE RP_RESTAURADO"</code>, com espaço embutido no tipo. Corrigido com um campo <code>codigo</code> estável em <code>_LIXEIRA_TIPOS</code>, independente do texto de exibição</li><li>Completados os 6 rótulos que faltavam: <code>CONTRATO_RESTAURADO</code>/<code>CONTRATO_EXPURGADO</code>, <code>ATA_RESTAURADO</code>/<code>ATA_EXPURGADO</code>, <code>FORNECEDOR_RESTAURADO</code>/<code>FORNECEDOR_EXPURGADO</code></li></ul>
+
+<h3>v0.4.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Agenda de Vencimentos</strong> unificada — lista contratos e atas com vigência vencendo, agrupados por urgência; botão "Enviar por e-mail" (resumo manual) e alerta automático diário por e-mail (<code>_send_daily_alerts()</code>, dedupe via <code>alert_email_last_sent</code>), com badge de contagem no menu</li><li><strong>Documentos gerados</strong>: "Gerar Extrato" (Contrato) e "Gerar Termo" por aditivo/apostilamento (prazo, valor, qualitativo, reequilíbrio, repactuação), no mesmo padrão visual A4 (<code>_DOC_CSS</code>) e rodapé de autenticação (QR) do SGCD</li><li><strong>Exportação PNCP</strong> — botão "Exportar PNCP" em Contratos e Atas, gerando JSON no formato esperado pelo portal, com lista de <code>_pendencias</code> para campos obrigatórios ainda não preenchidos</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li><code>_getBrasaoB64()</code> estava quebrado (tentava extrair base64 de uma função já removida na Fase 2); reescrito para buscar <code>brasao.png</code> de forma assíncrona com cache em memória</li><li>Campo de fornecedor errado (<code>razaoSocial</code>/<code>razao</code>) usado em 3 pontos do código de Contrato/Ata; corrigido para os nomes reais (<code>razao_social</code>/<code>nome_fantasia</code>)</li><li><code>openContratoModal</code>/<code>openAtaModal</code> só encontravam o registro se a tela de lista já tivesse sido visitada antes (cache local); agora buscam da API quando necessário — corrige navegação direta da Agenda de Vencimentos para o modal</li></ul>
+
+<p style="margin-top:14pt;font-size:10pt;color:#666">Histórico gerado a partir do <code>CHANGELOG.md</code> do repositório, que segue sendo a fonte de referência.</p>
 
 </div>
 </body>
