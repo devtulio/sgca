@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.31.8</title>
+<title>Manual Operacional — SGCA v0.31.9</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.31.8 — Manual Operacional";
+        content: "SGCA v0.31.9 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.31.8</div>
+    <div class="cover-version">Versão v0.31.9</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -203,6 +203,7 @@
 <p>A configuração de e-mail tem <strong>duas camadas</strong>, ambas guardadas <strong>apenas no servidor</strong> (a senha nunca fica no navegador): o <strong>E-mail do sistema</strong> (só administradores, em Configurações → Comunicação), usado no resumo diário automático e como padrão; e o <strong>Meu E-mail (SMTP)</strong> (todos os usuários, na aba <strong>Segurança</strong>, ao lado da troca de senha) — cada um informa a própria conta e, ao enviar a Agenda de Vencimentos estando logado, o e-mail sai por ela. Em branco = herda a do sistema; o botão "Copiar do sistema" preenche servidor/porta/segurança.</p>
 
 <h2 id="sec12">12. Backup e Restauração</h2>
+<p><strong>Dois tipos de backup, para usos diferentes.</strong> O arquivo <strong>JSON</strong> guarda os dados de trabalho (contratos, atas, fornecedores e configurações) e é o que se envia a outra máquina para sincronizar — ele <strong>não</strong> contém as contas de usuário nem as senhas. Para recuperação completa depois de perda de disco ou formatação, use o <strong>backup do banco (.db)</strong>, gerado automaticamente e disponível em Configurações → Backup: é uma cópia integral do sistema, contas inclusive. Guarde-o em local seguro, pois contém todos os dados.</p>
 <p>O sistema realiza backup automático (JSON + banco SQLite) ao encerrar, com rotação configurável em Configurações → Backup. É possível também exportar/restaurar manualmente e sincronizar fornecedores entre instalações diferentes (mescla o que é novo, revisa conflitos, sem substituir o banco inteiro).</p>
 
 <h2 id="sec13">13. Painel de Diagnóstico de Rede</h2>
@@ -212,6 +213,10 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.31.9 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Uma restauração que falhava no meio deixava o sistema vazio.</strong> Os registros atuais eram apagados e a confirmação acontecia *antes* de os dados do arquivo serem gravados — se qualquer item do arquivo estivesse malformado, o apagamento já estava consolidado e nada era restaurado. Agora a restauração inteira é uma operação só: qualquer falha desfaz tudo e o banco continua como estava. O sistema também passou a responder com uma mensagem clara em vez de erro genérico.</li><li><strong>Restaurar um backup esvaziava a Lixeira, devolvendo tudo ao cadastro.</strong> A marca de exclusão fica numa coluna do banco, fora do conteúdo do registro, e não ia no arquivo: contratos, atas e fornecedores que estavam na Lixeira voltavam como ativos.</li><li><strong>Cadastrar um fornecedor com o mesmo identificador de um excluído</strong> o tirava da Lixeira silenciosamente.</li></ul>
+
 <h3>v0.31.8 — Julho/2026</h3>
 <p><strong>Corrigido</strong></p>
 <ul><li><strong>Som duplicado nas caixas de confirmação.</strong> Confirmar ou cancelar tocava dois sons sobrepostos: o tratamento global de clique já sonoriza qualquer botão, e a cópia local da caixa de confirmação tocava um segundo som por conta própria. Ao unificar a caixa de confirmação com a do esqueleto, a duplicação saiu.</li></ul>

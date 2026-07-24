@@ -1,4 +1,4 @@
-# SGCA v0.31.8 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.31.9 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.31.8'
+SERVER_VERSION = '0.31.9'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -1015,10 +1015,13 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         data['id'] = fid
         data.setdefault('updatedAt', _now())
         with get_db() as conn:
+            # deleted_at por subconsulta: sem isso o REPLACE zerava a coluna e um
+            # fornecedor que estava na Lixeira voltava sozinho ao cadastro.
             conn.execute(
-                'INSERT OR REPLACE INTO fornecedores (id,data,cnpj,razao_social,updated_at) VALUES (?,?,?,?,?)',
+                '''INSERT OR REPLACE INTO fornecedores (id,data,cnpj,razao_social,updated_at,deleted_at)
+                   VALUES (?,?,?,?,?,(SELECT deleted_at FROM fornecedores WHERE id=?))''',
                 (fid, json.dumps(data, ensure_ascii=False),
-                 data.get('cnpj'), data.get('razao') or data.get('razao_social'), data['updatedAt'])
+                 data.get('cnpj'), data.get('razao') or data.get('razao_social'), data['updatedAt'], fid)
             )
         self._json(200, data)
 
@@ -1107,17 +1110,21 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         item = json.loads(row['data']); item['tags'] = tags
         self._json(200, item)
 
-    def _save_contrato_row(self, conn, data):
+    def _save_contrato_row(self, conn, data, deleted_at=None):
+        # deleted_at explícito só no restore, onde a tabela acabou de ser esvaziada
+        # e a subconsulta não teria de onde ler; no uso normal segue preservando o
+        # valor que já está na linha.
         conn.execute(
             '''INSERT OR REPLACE INTO contratos
                (id,data,objeto,status,fornecedor_id,vigencia_final,valor_global,
                 created_at,updated_at,created_by,deleted_at)
                VALUES (?,?,?,?,?,?,?,?,?,?,
-                       (SELECT deleted_at FROM contratos WHERE id=?))''',
+                       COALESCE(?, (SELECT deleted_at FROM contratos WHERE id=?)))''',
             (data['id'], json.dumps(data, ensure_ascii=False),
              data.get('objeto'), data.get('status', 'vigente'), data.get('fornecedorId'),
              data.get('vigenciaFinal'), _float(data.get('valorGlobal')),
-             data.get('createdAt'), data['updatedAt'], data.get('_createdBy'), data['id'])
+             data.get('createdAt'), data['updatedAt'], data.get('_createdBy'),
+             deleted_at, data['id'])
         )
 
     def _create_contrato(self, data, s):
@@ -1229,15 +1236,17 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         item = json.loads(row['data']); item['tags'] = tags
         self._json(200, item)
 
-    def _save_ata_row(self, conn, data):
+    def _save_ata_row(self, conn, data, deleted_at=None):
+        # Ver _save_contrato_row: deleted_at explícito só no restore.
         conn.execute(
             '''INSERT OR REPLACE INTO atas
                (id,data,numero,status,vigencia_final,created_at,updated_at,created_by,deleted_at)
                VALUES (?,?,?,?,?,?,?,?,
-                       (SELECT deleted_at FROM atas WHERE id=?))''',
+                       COALESCE(?, (SELECT deleted_at FROM atas WHERE id=?)))''',
             (data['id'], json.dumps(data, ensure_ascii=False),
              data.get('numero'), data.get('status', 'vigente'), data.get('vigenciaFinal'),
-             data.get('createdAt'), data['updatedAt'], data.get('_createdBy'), data['id'])
+             data.get('createdAt'), data['updatedAt'], data.get('_createdBy'),
+             deleted_at, data['id'])
         )
 
     def _create_ata(self, data, s):
@@ -1490,14 +1499,27 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
     def _restore_backup(self, data, s):
         if not data.get('_sgca'):
             self._json(400, {'error': 'Arquivo não é um backup SGCA válido'}); return
-        _do_db_backup()  # backup do atual antes de substituir tudo
+        _do_db_backup()  # backup do atual antes de substituir tudo — ponto de recuperação
+        try:
+            self._restore_backup_tx(data, s)
+        except Exception as e:
+            _log.error('Falha ao restaurar backup: %s', e)
+            self._json(500, {'error': f'Falha ao restaurar backup — nenhuma alteração foi aplicada (banco preservado): {e}'})
+            return
+        self._json(200, {'ok': True})
+
+    def _restore_backup_tx(self, data, s):
+        # Sem commit() no meio: tudo isto é UMA transação. Havia um commit logo
+        # depois dos DELETEs abaixo, que confirmava o apagamento antes de qualquer
+        # inserção ser validada — um item malformado no arquivo deixava o sistema
+        # vazio, sem nada restaurado. Agora o `with get_db()` faz ROLLBACK de tudo,
+        # inclusive dos DELETEs. (Mesma correção já feita no SGCD.)
         with get_db() as conn:
             conn.execute('DELETE FROM audit_global')
             conn.execute('DELETE FROM fornecedores')
             conn.execute('DELETE FROM contratos')
             conn.execute('DELETE FROM atas')
             conn.execute('DELETE FROM arquivos')
-            conn.commit()
 
             for fd in data.get('arquivos', []):
                 b64 = fd.get('data_b64') or ''
@@ -1522,21 +1544,26 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             for f in data.get('fornecedores', []):
                 fid = f.get('id') or str(uuid.uuid4())
                 f['id'] = fid
+                sql = f.pop('_sql', {})   # fora do blob: é coluna, não campo do fornecedor
                 conn.execute(
-                    'INSERT OR REPLACE INTO fornecedores (id,data,cnpj,razao_social,updated_at) VALUES (?,?,?,?,?)',
+                    '''INSERT OR REPLACE INTO fornecedores (id,data,cnpj,razao_social,updated_at,deleted_at)
+                       VALUES (?,?,?,?,?,?)''',
                     (fid, json.dumps(f, ensure_ascii=False),
-                     f.get('cnpj'), f.get('razao') or f.get('razao_social'), f.get('updatedAt'))
+                     f.get('cnpj'), f.get('razao') or f.get('razao_social'), f.get('updatedAt'),
+                     sql.get('deleted_at'))
                 )
 
             for c in data.get('contratos', []):
                 c['id'] = c.get('id') or str(uuid.uuid4())
                 c.setdefault('updatedAt', c.get('updatedAt') or _now())
-                self._save_contrato_row(conn, c)
+                sql = c.pop('_sql', {})
+                self._save_contrato_row(conn, c, sql.get('deleted_at'))
 
             for a in data.get('atas', []):
                 a['id'] = a.get('id') or str(uuid.uuid4())
                 a.setdefault('updatedAt', a.get('updatedAt') or _now())
-                self._save_ata_row(conn, a)
+                sql = a.pop('_sql', {})
+                self._save_ata_row(conn, a, sql.get('deleted_at'))
 
             for a in data.get('auditGlobal', []):
                 _insert_audit_raw(conn, a)
@@ -1550,8 +1577,6 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             _insert_audit_raw(conn, {'type': 'RESTAURAR_BACKUP', 'ts': _now(),
                                       'user_id': s['user_id'], 'user_nome': s['nome'],
                                       'label': 'Backup do sistema restaurado', 'detail': 'Restauração via arquivo JSON'})
-
-        self._json(200, {'ok': True})
 
     def _restore_db_backup(self, raw_bytes, s):
         # raw_bytes é o conteúdo bruto do arquivo .db enviado via multipart ou binário
@@ -1980,11 +2005,22 @@ def _watchdog():
 
 # ── Backup automático do banco ─────────────────────────────────────────────────
 
+# deleted_at vive só no SQL, fora do blob JSON: sem levá-lo no backup, restaurar
+# devolvia ao cadastro tudo o que estava na Lixeira. Vai sob '_sql' para não
+# poluir o blob que o front consome — o restore lê e remove a chave ao regravar.
+def _com_deleted_at(conn, tabela):
+    linhas = []
+    for r in conn.execute(f'SELECT data,deleted_at FROM {tabela}').fetchall():
+        registro = json.loads(r['data'])
+        registro['_sql'] = {'deleted_at': r['deleted_at']}
+        linhas.append(registro)
+    return linhas
+
 def _build_backup_payload():
     with get_db() as conn:
-        fornecedores = [json.loads(r['data']) for r in conn.execute('SELECT data FROM fornecedores').fetchall()]
-        contratos    = [json.loads(r['data']) for r in conn.execute('SELECT data FROM contratos').fetchall()]
-        atas         = [json.loads(r['data']) for r in conn.execute('SELECT data FROM atas').fetchall()]
+        fornecedores = _com_deleted_at(conn, 'fornecedores')
+        contratos    = _com_deleted_at(conn, 'contratos')
+        atas         = _com_deleted_at(conn, 'atas')
         audit        = [dict(r) for r in conn.execute('SELECT * FROM audit_global').fetchall()]
         settings     = {r['key']: r['value'] for r in conn.execute('SELECT key,value FROM sys_settings').fetchall()}
         arqs = []

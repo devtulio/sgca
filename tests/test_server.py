@@ -511,5 +511,63 @@ class TestNuncaEncerraSozinho(SGCATestCase):
         self.assertEqual(status, 200, 'sessão expirou com atraso que o TTL antigo (15s) não sobreviveria')
 
 
+class TestRestoreNaoPerdeDados(SGCATestCase):
+    """Regressão do eixo perda de dado (auditoria 2026-07-24).
+
+    Dois defeitos no mesmo caminho: (a) `deleted_at` não ia no backup, então
+    restaurar devolvia ao cadastro tudo o que estava na Lixeira; (b) havia um
+    commit() logo depois dos DELETEs, que confirmava o apagamento antes de
+    qualquer inserção ser validada — um item malformado no arquivo deixava o
+    sistema vazio, sem nada restaurado.
+    """
+
+    def _criar(self, token):
+        status, f = self.request('POST', '/api/fornecedores',
+                                 {'cnpj': '11.222.333/0001-81', 'razao': 'Alfa Ltda'}, token=token)
+        self.assertEqual(status, 200, f)
+        status, c = self.request('POST', '/api/contratos',
+                                 {'objeto': 'Contrato de teste', 'numero': '1/2026',
+                                  'fornecedorId': f['id']}, token=token)
+        self.assertEqual(status, 200, c)
+        return f['id'], c['id']
+
+    def _deleted_at(self, tabela, rid):
+        with server.get_db() as conn:
+            row = conn.execute(f'SELECT deleted_at FROM {tabela} WHERE id=?', (rid,)).fetchone()
+        return row['deleted_at'] if row else None
+
+    def test_restaurar_nao_ressuscita_contrato_da_lixeira(self):
+        token = self.login()
+        _, cid = self._criar(token)
+        self.assertEqual(self.request('DELETE', f'/api/contratos/{cid}', token=token)[0], 200)
+        excluido_em = self._deleted_at('contratos', cid)
+        self.assertIsNotNone(excluido_em, 'exclusão não marcou deleted_at — teste inválido')
+
+        _, backup = self.request('GET', '/api/backup', token=token)
+        self.assertEqual(self.request('POST', '/api/backup/restore', backup, token=token)[0], 200)
+        self.assertEqual(self._deleted_at('contratos', cid), excluido_em,
+                         'restaurar backup tirou o contrato da Lixeira')
+
+    def test_restore_que_falha_nao_apaga_o_banco(self):
+        token = self.login()
+        self._criar(token)
+        _, backup = self.request('GET', '/api/backup', token=token)
+
+        def contar():
+            with server.get_db() as conn:
+                return {t: conn.execute(f'SELECT COUNT(*) c FROM {t}').fetchone()['c']
+                        for t in ('fornecedores', 'contratos', 'atas')}
+
+        antes = contar()
+        self.assertGreater(antes['contratos'], 0, 'sem dados para perder — teste inválido')
+
+        corrompido = dict(backup)
+        corrompido['contratos'] = ['isto-nao-e-um-dicionario']   # explode depois dos DELETEs
+        status, _ = self.request('POST', '/api/backup/restore', corrompido, token=token)
+        self.assertEqual(status, 500)
+        self.assertEqual(contar(), antes,
+                         'restauração que falhou apagou dados em vez de preservar o banco')
+
+
 if __name__ == '__main__':
     unittest.main()

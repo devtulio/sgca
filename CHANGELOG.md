@@ -5,6 +5,15 @@
 
 ---
 
+## [0.31.9] — 2026-07-24
+
+### Corrigido
+- **Uma restauração que falhava no meio deixava o sistema vazio.** Os registros atuais eram apagados e a confirmação acontecia *antes* de os dados do arquivo serem gravados — se qualquer item do arquivo estivesse malformado, o apagamento já estava consolidado e nada era restaurado. Agora a restauração inteira é uma operação só: qualquer falha desfaz tudo e o banco continua como estava. O sistema também passou a responder com uma mensagem clara em vez de erro genérico.
+- **Restaurar um backup esvaziava a Lixeira, devolvendo tudo ao cadastro.** A marca de exclusão fica numa coluna do banco, fora do conteúdo do registro, e não ia no arquivo: contratos, atas e fornecedores que estavam na Lixeira voltavam como ativos.
+- **Cadastrar um fornecedor com o mesmo identificador de um excluído** o tirava da Lixeira silenciosamente.
+
+---
+
 ## [0.31.8] — 2026-07-23
 
 ### Corrigido
