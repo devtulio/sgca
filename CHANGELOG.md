@@ -5,6 +5,13 @@
 
 ---
 
+## [0.35.0] — 2026-07-24
+
+### Corrigido
+- **Duas pessoas editando o mesmo contrato ou ata: a última apagava o trabalho da primeira, em silêncio.** Ambas recebiam confirmação de sucesso. Agora a gravação é recusada quando o registro mudou desde que a tela o carregou, com aviso pedindo para reabrir. O mesmo mecanismo que o SGCD já usava.
+
+---
+
 ## [0.34.0] — 2026-07-24
 
 ### Corrigido

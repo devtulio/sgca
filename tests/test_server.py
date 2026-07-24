@@ -766,5 +766,45 @@ class TestAditivosRecalculo(SGCATestCase):
                          'acréscimo e supressão se anularam no percentual')
 
 
+class TestConflitoDeEdicao(SGCATestCase):
+    """Eixo concorrência (auditoria 2026-07-24).
+
+    Contratos e atas não tinham detecção de conflito: duas pessoas salvando o
+    mesmo registro recebiam 200 e a última apagava o trabalho da primeira.
+    A base da comparação é o `_baseUpdatedAt` explícito ou o próprio
+    `updatedAt` que a tela devolve dentro do objeto.
+    """
+
+    def _criar(self, token, rota):
+        corpo = ({'objeto': 'Original', 'numero': f'{uuid.uuid4().hex[:6]}/2026'} if 'contratos' in rota
+                 else {'numero': f'{uuid.uuid4().hex[:6]}/2026', 'objeto': 'Original'})
+        st, it = self.request('POST', rota, corpo, token=token)
+        self.assertEqual(st, 200, it)
+        return it['id']
+
+    def _checa(self, rota, rotulo):
+        token = self.login()
+        iid = self._criar(token, rota)
+        st, carregado = self.request('GET', f'{rota}/{iid}', token=token)
+        copia_a, copia_b = dict(carregado), dict(carregado)
+        copia_a['objeto'] = 'Versão A'
+        copia_b['objeto'] = 'Versão B'
+        self.assertEqual(self.request('PUT', f'{rota}/{iid}', copia_a, token=token)[0], 200)
+        st, _ = self.request('PUT', f'{rota}/{iid}', copia_b, token=token)
+        self.assertEqual(st, 409, f'{rotulo}: cópia velha sobrescreveu')
+        st, fim = self.request('GET', f'{rota}/{iid}', token=token)
+        self.assertEqual(fim['objeto'], 'Versão A')
+        # recarregar e salvar segue funcionando
+        st, atual = self.request('GET', f'{rota}/{iid}', token=token)
+        atual['objeto'] = 'Versão C'
+        self.assertEqual(self.request('PUT', f'{rota}/{iid}', atual, token=token)[0], 200)
+
+    def test_contrato_detecta_conflito(self):
+        self._checa('/api/contratos', 'contrato')
+
+    def test_ata_detecta_conflito(self):
+        self._checa('/api/atas', 'ata')
+
+
 if __name__ == '__main__':
     unittest.main()

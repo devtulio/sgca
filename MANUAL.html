@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.34.0</title>
+<title>Manual Operacional — SGCA v0.35.0</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.34.0 — Manual Operacional";
+        content: "SGCA v0.35.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.34.0</div>
+    <div class="cover-version">Versão v0.35.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -213,6 +213,10 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.35.0 — Julho/2026</h3>
+<p><strong>Corrigido</strong></p>
+<ul><li><strong>Duas pessoas editando o mesmo contrato ou ata: a última apagava o trabalho da primeira, em silêncio.</strong> Ambas recebiam confirmação de sucesso. Agora a gravação é recusada quando o registro mudou desde que a tela o carregou, com aviso pedindo para reabrir. O mesmo mecanismo que o SGCD já usava.</li></ul>
+
 <h3>v0.34.0 — Julho/2026</h3>
 <p><strong>Corrigido</strong></p>
 <ul><li><strong>Remover um aditivo não desfazia a conta.</strong> O contrato continuava com o valor global e o percentual de quando o aditivo existia — ou seja, valendo um aditivo que não está mais lá, e com o percentual comparado ao limite legal errado. Agora valor e percentuais são sempre recalculados a partir da lista de aditivos, tanto ao acrescentar quanto ao remover.</li><li><strong>Acréscimo e supressão deixam de se anular.</strong> Um aditivo de +25% seguido de outro de −25% exibia "0%", escondendo que os dois limites do art. 125 da Lei 14.133/2021 tinham sido usados. Passam a ser contados separadamente, cada um contra o seu teto de 25%, e a tela mostra os dois quando existem.</li><li><strong>Leitura de valores em dinheiro unificada</strong> com a mesma regra do restante da família (ver CHANGELOG do SGCD).</li></ul>

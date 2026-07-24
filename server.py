@@ -1,4 +1,4 @@
-# SGCA v0.34.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
+# SGCA v0.35.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
 import socketserver
 import os
@@ -37,7 +37,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.34.0'
+SERVER_VERSION = '0.35.0'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -1206,8 +1206,27 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if not row:
                 self._create_contrato({**data, 'id': cid}, s); return
             existing = json.loads(row['data'])
+            # Detecção de conflito: o cliente devolve o updatedAt de quando carregou
+            # o registro. Se não bater com o que está salvo agora, outra pessoa
+            # gravou nesse meio-tempo — recusa em vez de apagar em silêncio o
+            # trabalho dela (mesmo desenho já usado no SGCD).
+            # Base da comparação: o _baseUpdatedAt explícito quando vier, senão o
+            # próprio updatedAt que a tela devolve dentro do objeto. As telas do
+            # SGCA reenviam o contrato/ata inteiro como o carregaram, então o
+            # carimbo antigo já viaja de graça — se não bate com o gravado, essa
+            # cópia está velha. (No SGDP o payload é parcial, por isso lá o
+            # _baseUpdatedAt é obrigatório.)
+            base_updated_at = data.pop('_baseUpdatedAt', None)
+            if base_updated_at is None:
+                base_updated_at = data.get('updatedAt')
+            if base_updated_at is not None and base_updated_at != existing.get('updatedAt'):
+                self._json(409, {
+                    'error': 'Este contrato foi alterado por outro usuário. Recarregue antes de salvar.',
+                    'current': existing,
+                })
+                return
             existing.update(data)
-            existing['updatedAt'] = _now()
+            existing['updatedAt'] = _now_precise()
             self._save_contrato_row(conn, existing)
             if 'tags' in data: _sync_tags(conn, 'contrato_tags', 'contrato_id', cid, data['tags'])
         self._json(200, existing)
@@ -1326,8 +1345,27 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if not row:
                 self._create_ata({**data, 'id': aid}, s); return
             existing = json.loads(row['data'])
+            # Detecção de conflito: o cliente devolve o updatedAt de quando carregou
+            # o registro. Se não bater com o que está salvo agora, outra pessoa
+            # gravou nesse meio-tempo — recusa em vez de apagar em silêncio o
+            # trabalho dela (mesmo desenho já usado no SGCD).
+            # Base da comparação: o _baseUpdatedAt explícito quando vier, senão o
+            # próprio updatedAt que a tela devolve dentro do objeto. As telas do
+            # SGCA reenviam o contrato/ata inteiro como o carregaram, então o
+            # carimbo antigo já viaja de graça — se não bate com o gravado, essa
+            # cópia está velha. (No SGDP o payload é parcial, por isso lá o
+            # _baseUpdatedAt é obrigatório.)
+            base_updated_at = data.pop('_baseUpdatedAt', None)
+            if base_updated_at is None:
+                base_updated_at = data.get('updatedAt')
+            if base_updated_at is not None and base_updated_at != existing.get('updatedAt'):
+                self._json(409, {
+                    'error': 'Este ata foi alterado por outro usuário. Recarregue antes de salvar.',
+                    'current': existing,
+                })
+                return
             existing.update(data)
-            existing['updatedAt'] = _now()
+            existing['updatedAt'] = _now_precise()
             self._save_ata_row(conn, existing)
             if 'tags' in data: _sync_tags(conn, 'ata_tags', 'ata_id', aid, data['tags'])
         self._json(200, existing)
@@ -1844,6 +1882,14 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
 
 def _now():
     return time.strftime('%Y-%m-%dT%H:%M:%S')
+def _now_precise():
+    # Precisão de milissegundo, só para o updatedAt que a checagem de conflito
+    # compara. _now(), com precisão de segundo, colide entre duas edições
+    # rápidas em sequência e faz o servidor NÃO detectar um conflito real.
+    # Continua parseável por new Date() no cliente.
+    t = time.time()
+    return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(t)) + f'.{int((t % 1) * 1000):03d}'
+
 
 def _insert_audit_raw(conn, a):
     """Insere um evento de auditoria preservando autor/id/data originais do payload
