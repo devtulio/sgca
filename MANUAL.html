@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.38.1</title>
+<title>Manual Operacional — SGCA v0.39.0</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.38.1 — Manual Operacional";
+        content: "SGCA v0.39.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.38.1</div>
+    <div class="cover-version">Versão v0.39.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -185,8 +185,9 @@
 <p>O botão <strong>✉ Enviar por e-mail</strong> envia manualmente, a qualquer momento, um resumo de todos os vencimentos listados para o e-mail interno configurado em Configurações → Comunicação. Além disso, com o SMTP configurado, o servidor envia automaticamente um <strong>resumo diário</strong> (contratos e atas vencendo nos próximos 30 dias) para esse mesmo e-mail — mesmo sem ninguém logado no sistema. Contratos que tenham um <strong>e-mail do fiscal</strong> cadastrado também recebem, no mesmo envio diário, um aviso individual sobre o(s) contrato(s) sob sua fiscalização — mesmo que o e-mail interno não esteja configurado.</p>
 
 <h2 id="sec8">8. Cadastro de Fornecedores</h2>
+<p>A lista de fornecedores aparece em <strong>tabela</strong> — colunas Razão Social, CNPJ e Situação, que ordenam ao clicar no cabeçalho, com <strong>seleção em massa</strong> para enviar vários à Lixeira. Clicar numa linha (ou em <strong>Editar</strong>) abre o cadastro completo numa <strong>janela</strong>, com as abas Dados, Certidões e Sanções.</p>
 <p>O módulo de Fornecedores permite consultar CNPJ automaticamente (via ReceitaWS, com fallback para BrasilAPI), preencher endereço por CEP (ViaCEP), e manter o controle de certidões de regularidade fiscal e trabalhista com alertas de vencimento.</p>
-<p>Cada card da lista é colorido automaticamente conforme as mesmas checagens do Painel de Diagnóstico (Seção 13): vermelho com o selo "🔴 CNPJ duplicado" quando dois fornecedores compartilham o mesmo CNPJ, amarelo com o selo "🟡 CNPJ inválido" quando os dígitos verificadores não conferem. Um fornecedor sem esses problemas não recebe destaque.</p>
+<p>Cada linha da lista recebe um <strong>selo de alerta</strong> conforme as mesmas checagens do Painel de Diagnóstico (Seção 13): "🔴 CNPJ duplicado" quando dois fornecedores compartilham o mesmo CNPJ, "🟡 CNPJ inválido" quando os dígitos verificadores não conferem. Um fornecedor sem esses problemas não recebe destaque.</p>
 <p>Abaixo da busca, os botões <strong>Todos</strong>/<strong>Ativos</strong>/<strong>Inativos</strong>/<strong>Pendências</strong> filtram a lista: Ativos mostra só situação cadastral "ATIVA"; Inativos agrupa "BAIXADA", "INAPTA" e "CANCELADA"; Pendências mostra fornecedores com CNPJ inválido/duplicado (mesma checagem da coloração dos cards) ou com pelo menos uma certidão vencida. As exportações <strong>Exportar CSV</strong>/<strong>Exportar Excel</strong> (aqui e em Contratos, Atas e Auditoria) respeitam a busca e os filtros ativos na tela, e abrem o diálogo nativo do navegador para escolher onde salvar o arquivo (Chrome/Edge); em navegadores sem esse recurso, o arquivo cai na pasta de downloads padrão.</p>
 <p>Também é possível importar fornecedores em lote via CSV (botão "Importar CSV") e gerar um relatório consolidado (botão "Relatório"). O botão <strong>Relatório de Sanções</strong> gera um relatório global com as sanções de todos os fornecedores cadastrados, útil para prestação de contas. Os botões <strong>Exportar CSV</strong>/<strong>Exportar Excel</strong> baixam a lista de fornecedores filtrada, no formato escolhido.</p>
 <p>Ao expandir um fornecedor na lista, o botão <strong>📄 Ver Contratos</strong> leva direto para a tela de Contratos já filtrada pelos contratos vinculados àquele fornecedor (um selo indica o filtro ativo, removível a qualquer momento). O botão <strong>Excluir Fornecedor</strong> move o cadastro para a Lixeira — mas fica bloqueado, com aviso explicativo, enquanto o fornecedor tiver contratos ou itens de ata vinculados, para evitar que essas referências fiquem "órfãs". O botão <strong>🔍 Consultar CEIS/CNEP</strong>, ao lado dos links manuais já existentes, consulta automaticamente o Cadastro de Empresas Inidôneas e Suspensas e o Cadastro Nacional de Empresas Punidas pelo CNPJ do fornecedor, via API do Portal da Transparência/CGU — exige uma chave de API própria e gratuita, configurada em Configurações → Organização → Integrações (obtida em api.portaldatransparencia.gov.br).</p>
@@ -213,6 +214,13 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.39.0 — Julho/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li><strong>A tela de Fornecedores virou tabela</strong> (mesmo padrão dos demais cadastros), no lugar dos cards: colunas Razão Social, CNPJ e Situação, com ordenação ao clicar no cabeçalho e seleção em massa (excluir vários para a Lixeira). O detalhe completo do fornecedor — dados, certidões, sanções, consulta de CNPJ e CEIS/CNEP, edição — passou para uma janela (modal).</li>
+<li>A tabela da <strong>Trilha de Auditoria</strong> passa a usar o estilo de tabela canônico das demais listas do sistema.</li></ul>
+<p><strong>Corrigido</strong></p>
+<ul><li>No modo escuro, os selos de situação do fornecedor ganharam cores próprias, em vez das cores claras que destoavam.</li></ul>
+
 <h3>v0.38.1 — Julho/2026</h3>
 <p><strong>Corrigido</strong></p>
 <ul><li>A data no e-mail de resumo diário volta ao formato brasileiro (<code>25/07/2026</code> em vez de <code>2026-07-25</code>).</li></ul>
