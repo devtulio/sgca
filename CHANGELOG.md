@@ -5,6 +5,13 @@
 
 ---
 
+## [Não versionado]
+
+### Corrigido
+- **Campos dos formulários de adição de item (ATA) e de aditivo (contrato) ganharam o visual arredondado** dos demais campos, em vez do estilo "quadradão" cru.
+
+---
+
 ## [0.39.0] — 2026-07-25
 
 ### Alterado

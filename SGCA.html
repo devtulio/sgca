@@ -239,6 +239,15 @@
   #step-dot-tooltip.visible { opacity: 1; }/* ── Tabela de auditoria (padrão SGDP) ── */
   .table-wrap { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
   body.dark .table-wrap { background: #2a2a2a; }
+  /* Forms de adição inline (item da ATA, aditivo de contrato): inputs crus ficavam
+     "quadradões". Estilo canônico igual ao .info-field (dark vem do body.dark input global). */
+  .item-form input, .item-form select, .item-form textarea {
+    width: 100%; border: 1px solid var(--gray-200); border-radius: 6px; padding: 7px 10px;
+    font-size: .85rem; font-family: inherit; color: var(--gray-900); background: #fff; outline: none;
+  }
+  .item-form input:focus, .item-form select:focus, .item-form textarea:focus {
+    border-color: var(--brand-text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent);
+  }
 </style>
 </head>
 <body>
@@ -902,7 +911,7 @@
             <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color: var(--brand-text)">Aditivos e Apostilamentos</p>
             <button class="btn btn-outline btn-sm" onclick="showNovoAditivoForm()">+ Novo Aditivo</button>
           </div>
-          <div id="contrato-aditivo-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
+          <div id="contrato-aditivo-form" class="item-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <select id="ad-tipo" onchange="onAditivoTipoChange()">
                 <option value="prazo">Prazo (prorrogação)</option>
@@ -1017,7 +1026,7 @@
             <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color: var(--brand-text)">Itens Registrados</p>
             <button class="btn btn-outline btn-sm" onclick="showNovoItemForm()">+ Novo Item</button>
           </div>
-          <div id="ata-item-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
+          <div id="ata-item-form" class="item-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
             <input type="text" id="it-descricao" placeholder="Nome padronizado do item" style="width:100%">
             <textarea id="it-descricao-tecnica" placeholder="Descrição técnica padronizada (opcional)" style="width:100%;margin-top:8px;min-height:44px"></textarea>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
