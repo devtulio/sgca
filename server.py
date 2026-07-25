@@ -2069,7 +2069,8 @@ def _send_daily_alerts():
         ).fetchall()}
     if not (cfg.get('smtp_host') and cfg.get('smtp_user') and cfg.get('smtp_pass')):
         return
-    hoje = time.strftime('%Y-%m-%d')
+    hoje = time.strftime('%Y-%m-%d')       # chave de dedup (não exibir)
+    hoje_br = time.strftime('%d/%m/%Y')    # exibição pt-BR
     if cfg.get('alert_email_last_sent') == hoje:
         return
 
@@ -2146,9 +2147,9 @@ def _send_daily_alerts():
     smtp_cfg, frm = _smtp_cfg_build(cfg)
 
     if cfg.get('smtp_to'):
-        corpo = f"<p>Resumo automático do SGCA — {hoje}</p>" + _linhas('Contratos', contratos) + _linhas('Atas de Registro de Preços', atas)
+        corpo = f"<p>Resumo automático do SGCA — {hoje_br}</p>" + _linhas('Contratos', contratos) + _linhas('Atas de Registro de Preços', atas)
         try:
-            _send_email_raw(smtp_cfg, frm, cfg['smtp_to'], f'SGCA — Resumo de vencimentos ({hoje})', corpo)
+            _send_email_raw(smtp_cfg, frm, cfg['smtp_to'], f'SGCA — Resumo de vencimentos ({hoje_br})', corpo)
             print(f'  [ALERTAS] E-mail de resumo enviado ({len(contratos)} contrato(s), {len(atas)} ata(s))', flush=True)
         except Exception as e:
             sgx_base.registrar_operacional(_log, 'email-alertas', f'Falha ao enviar e-mail de alertas: {e}')
@@ -2161,10 +2162,10 @@ def _send_daily_alerts():
         if email_gestor and email_gestor != email:  # fiscal e gestor podem ser a mesma pessoa
             por_fiscal.setdefault(email_gestor, []).append((nome, dias))
     for email, itens in por_fiscal.items():
-        corpo_f = (f"<p>Resumo automático do SGCA — {hoje}</p>"
+        corpo_f = (f"<p>Resumo automático do SGCA — {hoje_br}</p>"
                    f"<p>Contrato(s) sob sua fiscalização com vigência vencendo:</p>" + _linhas('', itens))
         try:
-            _send_email_raw(smtp_cfg, frm, email, f'SGCA — Contrato(s) sob sua fiscalização ({hoje})', corpo_f)
+            _send_email_raw(smtp_cfg, frm, email, f'SGCA — Contrato(s) sob sua fiscalização ({hoje_br})', corpo_f)
             print(f'  [ALERTAS] E-mail enviado ao fiscal {email} ({len(itens)} contrato(s))', flush=True)
         except Exception as e:
             sgx_base.registrar_operacional(_log, 'email-fiscal', f'Falha ao enviar e-mail ao fiscal {email}: {e}')
@@ -2179,10 +2180,10 @@ def _send_daily_alerts():
             por_fiscal_fiscalizacao.setdefault(email_gestor, []).append((nome, dias))
     for email, itens in por_fiscal_fiscalizacao.items():
         linhas = ''.join(f'<li><strong>{html_mod.escape(str(nome))}</strong> — {dias} dia(s) sem fiscalização registrada</li>' for nome, dias in sorted(itens, key=lambda x: -x[1]))
-        corpo_fz = (f"<p>Resumo automático do SGCA — {hoje}</p>"
+        corpo_fz = (f"<p>Resumo automático do SGCA — {hoje_br}</p>"
                     f"<p>Contrato(s) sob sua fiscalização pendentes de registro de fiscalização mensal:</p><ul>{linhas}</ul>")
         try:
-            _send_email_raw(smtp_cfg, frm, email, f'SGCA — Fiscalização mensal pendente ({hoje})', corpo_fz)
+            _send_email_raw(smtp_cfg, frm, email, f'SGCA — Fiscalização mensal pendente ({hoje_br})', corpo_fz)
             print(f'  [ALERTAS] E-mail de fiscalização pendente enviado a {email} ({len(itens)} contrato(s))', flush=True)
         except Exception as e:
             sgx_base.registrar_operacional(_log, 'email-fiscalizacao', f'Falha ao enviar e-mail de fiscalização ao fiscal {email}: {e}')
