@@ -1,6 +1,5 @@
 # SGCA v0.37.0 — Servidor local: SQLite, autenticação, REST API, proxy CNPJ/BCB, e-mail SMTP, backup automático
 import http.server
-import socketserver
 import os
 import json
 import sqlite3
@@ -2420,41 +2419,40 @@ if __name__ == '__main__':
     _rotate_backups(_get_backup_cfg())  # limpa excedentes dos backups da sessão anterior
     threading.Thread(target=_watchdog, daemon=True).start()
 
-    socketserver.ThreadingTCPServer.allow_reuse_address = True
-    with socketserver.ThreadingTCPServer(('', PORT), SGCAHandler) as httpd:
-        print(f'  Servidor: http://localhost:{PORT}')
-        import socket as _socket
-        try:
-            ip_local = _socket.gethostbyname(_socket.gethostname())
-        except Exception:
-            ip_local = 'desconhecido'
-        print(f'  Rede:     http://{ip_local}:{PORT}/SGCA.html')
-        print()
+    print(f'  Servidor: http://localhost:{PORT}')
+    import socket as _socket
+    try:
+        ip_local = _socket.gethostbyname(_socket.gethostname())
+    except Exception:
+        ip_local = 'desconhecido'
+    print(f'  Rede:     http://{ip_local}:{PORT}/SGCA.html')
+    print()
 
-        browser = _find_browser()
-        if browser:
-            profile_dir = PROFILE_DIR
-            subprocess.Popen([
-                browser,
-                f'--app=http://localhost:{PORT}/SGCA.html',
-                '--start-maximized',
-                '--disable-background-mode',
-                f'--user-data-dir={profile_dir}',
-            ])
-            print('  App aberto no navegador.')
-        else:
-            print(f'  Chrome/Edge não encontrado. Abra manualmente: http://localhost:{PORT}/SGCA.html')
+    browser = _find_browser()
+    if browser:
+        profile_dir = PROFILE_DIR
+        subprocess.Popen([
+            browser,
+            f'--app=http://localhost:{PORT}/SGCA.html',
+            '--start-maximized',
+            '--disable-background-mode',
+            f'--user-data-dir={profile_dir}',
+        ])
+        print('  App aberto no navegador.')
+    else:
+        print(f'  Chrome/Edge não encontrado. Abra manualmente: http://localhost:{PORT}/SGCA.html')
 
-        print('  Aguardando conexões... (Ctrl+C para encerrar)')
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print('\n  Encerrando servidor...')
-        except Exception:
-            import traceback as _tb
-            _log.error('Servidor caiu (serve_forever): %s', _tb.format_exc())
-            print('\n  ERRO FATAL no servidor — registrado em SGCA_crash.log.')
-            print('  Pressione Enter para fechar.')
-            try: input()
-            except Exception: pass
-            raise
+    print('  Aguardando conexões... (Ctrl+C para encerrar)')
+    try:
+        # Servidor de produção (waitress, puro-Python vendorizado) — ver sgx_base.servir_wsgi.
+        sgx_base.servir_wsgi(SGCAHandler, '', PORT)
+    except KeyboardInterrupt:
+        print('\n  Encerrando servidor...')
+    except Exception:
+        import traceback as _tb
+        _log.error('Servidor caiu (serve_wsgi): %s', _tb.format_exc())
+        print('\n  ERRO FATAL no servidor — registrado em SGCA_crash.log.')
+        print('  Pressione Enter para fechar.')
+        try: input()
+        except Exception: pass
+        raise
