@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.39.1-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
+![Versão](https://img.shields.io/badge/versão-v0.39.2-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
 
 ## Descrição
 
@@ -19,7 +19,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Atas de Registro de Preços** — cadastro, itens registrados com código e classificação CMMET (Catálogo Municipal de Materiais e Especificações Técnicas), unidade SCPI, apresentação comercial e controle de saldo (quantidade utilizada vs. registrada) com alerta visual de esgotamento; vigência final calculada automaticamente a partir da data de assinatura (+12 meses), editável manualmente
 - **Documentos gerados** — Extrato de Contrato e Termo Aditivo/Apostilamento (um por tipo: prazo, valor, qualitativo, reequilíbrio, repactuação), no mesmo padrão visual A4 do SGCD
 - **Exportação PNCP** — JSON de Contratos e de Atas no formato esperado pelo Portal Nacional de Contratações Públicas, com aviso de campos pendentes
-- **Agenda de Vencimentos** unificada — contratos, atas e garantias contratuais vencendo, agrupados por urgência, com envio manual ou automático (resumo diário) por e-mail, incluindo aviso individual ao fiscal cadastrado no contrato
+- **Agenda de Vencimentos** unificada — contratos, atas, garantias contratuais, fim de sanções e aniversários de reajuste, agrupados por urgência e filtráveis por tipo, com envio manual ou automático (resumo diário) por e-mail, incluindo aviso individual ao fiscal cadastrado no contrato
 - **Exportação de Contratos, Atas, Fornecedores e Trilha de Auditoria em CSV** para planilha, respeitando os filtros ativos na tela
 - **Garantia Contratual** — modalidade, valor, vencimento e devolução, com alerta na Agenda de Vencimentos
 - **Sanções e Penalidades** — registro interno por fornecedor (advertência, multa, suspensão, impedimento, inidoneidade), com aviso ao selecionar um fornecedor sancionado em um Contrato/Ata e entrada do fim do prazo na Agenda de Vencimentos
@@ -45,13 +45,14 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Documentos gerados reanexáveis** — Extrato, Termos Aditivos, Matriz de Risco e Termo de Recebimento podem ser salvos como PDF e reanexados ao contrato, guardados junto dos demais anexos
 - **Autenticação multiusuário** com hashing PBKDF2-HMAC-SHA256 e gestão de usuários pelo admin
 - **Cadastro de fornecedores** com consulta automática de CNPJ via ReceitaWS/BrasilAPI, controle de certidões com alertas de vencimento e exclusão (lixeira) — bloqueada enquanto o fornecedor tiver contratos ou atas vinculados
-- **Coloração dos cards de Fornecedores** conforme o Diagnóstico de Integridade — vermelho para CNPJ duplicado, amarelo para CNPJ inválido, com selo indicando o motivo
+- **Selo de alerta na linha do Fornecedor** conforme o Diagnóstico de Integridade — "🔴 CNPJ duplicado" ou "🟡 CNPJ inválido" na tabela de Fornecedores, indicando o motivo
 - **Importação de fornecedores via CSV** e relatório consolidado
 - **Configurações** — dados do órgão, brasão, tema claro/escuro, SMTP
 - **Notificações in-app** — alertas de certidões de fornecedores vencendo
 - **Trilha de auditoria global** — tabela com filtros por tipo de evento, período e usuário (vocabulário próprio do domínio de contratos/atas)
 - **Backup automático** ao encerrar o sistema (JSON + banco de dados SQLite) com rotação configurável
-- **Sincronização de fornecedores entre agentes/máquinas** — mescla dados de outra instalação sem substituir o banco inteiro
+- **Sincronização por backup JSON entre instalações do SGCA** — mescla os dados de outra máquina com os atuais, sem substituir o banco inteiro, com revisão dos registros alterados dos dois lados
+- **Cadastro de fornecedores compartilhado com SGCD/SGEA** — botões "Exportar cadastro" e "Sincronizar cadastro", casando os fornecedores por CNPJ, com tela de revisão registro a registro quando o mesmo fornecedor mudou nos dois sistemas
 - **Exclusão de Contratos e Atas** — move para a Lixeira após confirmação em três etapas (mesmo rigor do Factory Reset), com alerta informativo se houver fornecedor vinculado
 - **Lixeira** — fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias
 - **Termo de Rescisão** — documento formal gerado quando o status do Contrato é "Rescindido" (Art. 137 a 139, Lei nº 14.133/2021)
@@ -59,6 +60,11 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Alimentar do Fiorilli** — importa o relatório "Listagem de Licitações Integradas e Pedidos" (módulo Compras 07.05.02, CSV) do sistema contábil oficial e preenche a quantidade utilizada de cada item das Atas pela quantidade líquida pedida (Σ pedidos − Σ cancelamentos), casando por processo licitatório + código Fiorilli; somente leitura sobre o Fiorilli e idempotente, com prévia por ata (saldo negativo sinalizado) e lista dos itens ainda sem código cadastrado
 - **Consulta CEIS/CNEP automatizada** — sanções federais por CNPJ via API do Portal da Transparência/CGU, no cadastro de Fornecedores
 - **Exportação em Excel (.xlsx)**, além de CSV, em Contratos, Atas, Fornecedores e Auditoria
+- **Marca d'água "MINUTA"** — todo documento gerado a partir de um contrato sai marcado como minuta enquanto não houver um PDF assinado anexado ao registro; os relatórios gerenciais nunca recebem a marca
+- **Bloqueio de edição concorrente** — ao salvar, o sistema detecta se o registro foi alterado por outro usuário depois que a tela foi carregada e avisa, em vez de sobrescrever silenciosamente o trabalho alheio
+- **Faixa de aviso de servidor desatualizado** — quando o servidor em execução é mais antigo que a página carregada (atualização aplicada sem reiniciar), uma faixa no topo orienta a reiniciar antes que funções novas falhem
+- **Painel "Erros recentes"** (Configurações → Diagnóstico, só admin) — erros registrados no log, agrupados por tipo e contagem, incluindo os ocorridos no navegador dos usuários
+- **Etiquetas (tags)** em Contratos e Atas — marcadores livres com sugestão dos valores já usados, exibidos nos cards e filtráveis por "Todas as etiquetas"
 - **Diagnóstico e correção automática de rede** — verifica IP, porta, perfil de rede e firewall
 
 > Fora de escopo por decisão de projeto: execução orçamentária/financeira completa (empenho, liquidação, pagamento formal) integrada ao sistema contábil do órgão — o SGCA registra apenas um controle simples de pagamentos por contrato/ata, não substitui o sistema financeiro oficial.
@@ -67,10 +73,10 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 
 ## Requisitos
 
-- **Python 3.7+** (apenas biblioteca padrão — zero dependências externas)
+- **Python 3.7+**
 - **Google Chrome** ou **Microsoft Edge** (recomendado)
 - Windows 10/11
-- Nenhuma dependência externa — o SGCA roda 100% com a biblioteca padrão do Python
+- **Nada a instalar** — além da biblioteca padrão do Python, o servidor usa o **waitress** (servidor WSGI puro-Python), que vem **vendorizado** na pasta `waitress/` do próprio repositório. Não há `pip install`, nem download, nem acesso à internet na instalação
 
 > **Servidor sem Python instalado (ex.: Windows Server bloqueado por política de TI):**
 > o `Iniciar SGCA.bat` detecta automaticamente a ausência do Python e extrai uma versão portátil (embarcável, sem instalador) incluída no próprio projeto (`python-3.12.9-embed-amd64.zip`) para `C:\Python312-embed\` — não exige instalação nem privilégio de administrador.
@@ -131,6 +137,12 @@ Se a conexão não funcionar, execute **`Diagnostico SGCA.bat`** (ou a opção *
 SGCA/
 ├── SGCA.html                # Frontend — aplicação web
 ├── server.py                # Servidor Python (API REST + SQLite) — porta 3002
+├── base.css                  # Folha de estilo compartilhada da família (cópia distribuída)
+├── base.js                   # Utilitários JS compartilhados da família (cópia distribuída)
+├── sgx_base.py               # Infraestrutura Python compartilhada da família (cópia distribuída)
+├── _esqueleto.sha256         # Manifesto de conferência das cópias compartilhadas
+├── waitress/                 # Servidor WSGI vendorizado (puro-Python, sem instalação)
+├── scripts/                  # Scripts de apoio (verificação do esqueleto, lint)
 ├── tests/                    # Suíte de testes automatizados do backend
 │   ├── test_server.py
 │   └── e2e/                  # Testes E2E (Playwright) — navegador real de ponta a ponta
@@ -146,8 +158,7 @@ SGCA/
 ├── sgca.db                   # Banco de dados SQLite (criado automaticamente)
 ├── uploads/                  # Anexos armazenados (criado automaticamente)
 ├── backups/                  # Backups automáticos (criado automaticamente)
-├── browser-profile/          # Perfil do Chrome/Edge no Modo Pessoal (criado automaticamente)
-├── requirements.txt          # Sem dependências externas (stdlib do Python)
+├── requirements.txt          # Nada a instalar (stdlib do Python + waitress vendorizado)
 ├── README.md
 ├── CHANGELOG.md
 └── MANUAL.html
@@ -192,6 +203,7 @@ Todos os documentos abrem em janela separada com botão "🖨 Imprimir / Salvar 
 | **HTML5 + CSS3** | Interface da aplicação, temas claro/escuro, layout responsivo |
 | **JavaScript puro (ES6+)** | Toda a lógica de negócio, sem frameworks externos |
 | **Python 3 (stdlib)** | Servidor local: REST API, SQLite, auth, SMTP, proxy CNPJ |
+| **waitress (vendorizado)** | Servidor WSGI que atende as requisições — puro-Python, incluído na pasta `waitress/` do repositório, sem instalação |
 | **SQLite** | Armazenamento persistente dos dados (`sgca.db`) |
 | **ReceitaWS / BrasilAPI** | Consulta de CNPJ (primária + fallback automático) |
 | **ViaCEP** | Preenchimento automático de endereço por CEP |
@@ -200,7 +212,7 @@ Todos os documentos abrem em janela separada com botão "🖨 Imprimir / Salvar 
 
 ## Desenvolvimento
 
-O sistema em si continua zero-dependência (Python stdlib + HTML puro). Para quem for alterar o código, há um lint opcional que verifica variáveis indefinidas no JavaScript de `SGCA.html`:
+O sistema em si não exige instalação de nada: Python stdlib + HTML puro, mais o **waitress** vendorizado em `waitress/` — não é biblioteca padrão, mas viaja junto do repositório, então não há passo de instalação de dependências. Para quem for alterar o código, há um lint opcional que verifica variáveis indefinidas no JavaScript de `SGCA.html`:
 
 ```bash
 npm install   # uma vez, instala apenas o ESLint (ferramenta de dev, não é usada em produção)
