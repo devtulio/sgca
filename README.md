@@ -119,7 +119,7 @@ http://192.168.x.x:3002/SGCA.html
 
 Cada usuário faz login com sua própria conta — o servidor atende acessos simultâneos e todos enxergam os mesmos dados.
 
-Se a conexão não funcionar, execute **`Diagnostico SGCA.bat`** (ou a opção **[3]** do `Iniciar SGCA.bat`) na máquina servidora: ele descobre o IP e verifica/corrige automaticamente firewall e perfil de rede.
+Se a conexão não funcionar, execute **`Diagnostico SGCA.bat`** (ou a opção **[1]** do `Iniciar SGCA.bat`) na máquina servidora: ele descobre o IP e verifica/corrige automaticamente firewall e perfil de rede.
 
 > ⚠️ **Uso restrito à rede interna.** A comunicação é HTTP simples (sem criptografia de transporte) — adequado para uma LAN interna confiável, mas **nunca exponha a porta do sistema à internet** (redirecionamento de porta no roteador, DMZ etc.). Para acesso remoto, use a VPN institucional.
 
