@@ -5,6 +5,17 @@
 
 ---
 
+## [0.39.4] — 2026-07-27
+
+### Alterado
+- **A importação de fornecedores por CSV passou a ser restrita ao administrador** e a gravar tudo de uma vez, em vez de um fornecedor por vez a partir do navegador. Quem não é administrador deixa de ver o botão. Cadastrar fornecedor pela tela continua liberado para todos. O **Alimentar do Fiorilli** não muda: continua disponível a todos, por ser edição de uma ata já aberta.
+
+### Corrigido
+- **Reimportar o mesmo arquivo duplicava o cadastro inteiro.** Cada linha do CSV virava um fornecedor novo, mesmo com CNPJ repetido. Agora casa por **CNPJ**: atualiza o existente (preservando certidões e sanções) e insere só o que falta.
+- Se a importação falhar no meio, nada é gravado.
+
+---
+
 ## [0.39.3] — 2026-07-27
 
 ### Corrigido

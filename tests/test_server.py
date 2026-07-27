@@ -1011,6 +1011,54 @@ class TestBackupCofre(SGCATestCase):
         self.assertEqual(self._raw('POST', '/api/backups/db/restore', b'lixo', token)[0], 400)
 
 
+class TestImportFornecedoresSoAdmin(SGCATestCase):
+    """A importação de CSV de fornecedores passou a usar /api/fornecedores/import
+    (restrita ao administrador), que grava em lote e casa por CNPJ. Antes o
+    navegador gravava um a um pela rota de edição: qualquer usuário importava, e
+    reimportar o mesmo arquivo duplicava o cadastro."""
+
+    def _payload(self, cnpj, razao):
+        return {'fornecedores': [{'cnpj': cnpj, 'razao': razao, 'razao_social': razao}]}
+
+    def test_usuario_comum_nao_importa(self):
+        admin = self.login()
+        st, u = self.request('POST', '/api/usuarios',
+                             {'username': 'u_import_sgca', 'nome': 'Comum', 'password': 'senha123'}, token=admin)
+        self.assertIn(st, (200, 201), u)
+        comum = self.request('POST', '/api/auth/login',
+                             {'username': 'u_import_sgca', 'password': 'senha123'})[1]['token']
+        st, d = self.request('POST', '/api/fornecedores/import',
+                             self._payload('33444555000122', 'Fornecedor CSV LTDA'), token=comum)
+        self.assertEqual(st, 403, d)
+
+    def test_reimportar_nao_duplica(self):
+        admin = self.login()
+        payload = self._payload('66777888000133', 'Fornecedor Repetido SGCA LTDA')
+        st, d1 = self.request('POST', '/api/fornecedores/import', payload, token=admin)
+        self.assertEqual(st, 200, d1)
+        self.assertEqual((d1['novos'], d1['atualizados']), (1, 0))
+        st, d2 = self.request('POST', '/api/fornecedores/import', payload, token=admin)
+        self.assertEqual((d2['novos'], d2['atualizados']), (0, 1))
+        st, lista = self.request('GET', '/api/fornecedores', token=admin)
+        iguais = [f for f in lista['items']
+                  if ''.join(ch for ch in (f.get('cnpj') or '') if ch.isdigit()) == '66777888000133']
+        self.assertEqual(len(iguais), 1, 'reimportar não pode duplicar o fornecedor')
+
+    def test_upsert_preserva_dados_locais(self):
+        """Atualizar pelo import não pode apagar certidões/sanções do cadastro."""
+        admin = self.login()
+        st, f = self.request('POST', '/api/fornecedores',
+                             {'cnpj': '12.345.678/0001-95', 'razao': 'Fornecedor Com Certidao',
+                              'certidoes': [{'tipo': 'FGTS', 'validade': '2026-12-31'}]}, token=admin)
+        self.assertEqual(st, 200, f)
+        st, d = self.request('POST', '/api/fornecedores/import',
+                             self._payload('12345678000195', 'Nome Vindo do CSV'), token=admin)
+        self.assertEqual((d['novos'], d['atualizados']), (0, 1))
+        st, atual = self.request('GET', f"/api/fornecedores/{f['id']}", token=admin)
+        self.assertEqual(st, 200, atual)
+        self.assertEqual(len(atual.get('certidoes') or []), 1, 'o import apagou as certidões locais')
+
+
 class TestGuardasDeExclusao(SGCATestCase):
     """Três buracos que a exclusão deixava passar: ata excluída com contratos
     apontando para ela, anexos órfãos no disco após a purga, e número liberado

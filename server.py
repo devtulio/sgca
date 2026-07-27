@@ -35,7 +35,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.39.3'
+SERVER_VERSION = '0.39.4'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -784,6 +784,10 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
             self._sync_forn_apply(data)
 
+        elif p == '/api/fornecedores/import':
+            if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
+            self._import_fornecedores(data)
+
         elif p == '/api/contratos':
             self._create_contrato(data, s)
 
@@ -1172,6 +1176,37 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         d = {k: v for k, v in local.items() if k != '_id'}
         d['syncedAt'] = ate or d.get('updatedAt')
         conn.execute('UPDATE fornecedores SET data=? WHERE id=?', (json.dumps(d, ensure_ascii=False), fid))
+
+    def _import_fornecedores(self, data):
+        """Importa fornecedores em lote (CSV da tela). Restrita ao administrador,
+        como toda importação em lote da família.
+
+        Reaproveita o mesmo upsert da sincronização entre sistemas: casa por CNPJ,
+        atualiza quem já existe preservando os campos locais (certidões, sanções) e
+        insere o resto — numa transação só. Antes o navegador gravava linha a linha
+        pela rota de edição, então qualquer usuário importava e reimportar o mesmo
+        arquivo duplicava o cadastro inteiro."""
+        incoming = data.get('fornecedores') if isinstance(data, dict) else None
+        if not isinstance(incoming, list):
+            self._json(400, {'error': 'Formato inválido: esperado {"fornecedores": [...]}'}); return
+        novos = atualizados = ignorados = 0
+        with get_db() as conn:
+            locais = self._forn_locais(conn)
+            for f in incoming:
+                if not isinstance(f, dict):
+                    ignorados += 1; continue
+                dig = sgx_base.cnpj_digits(f.get('cnpj'))
+                if len(dig or '') != 14:
+                    ignorados += 1; continue
+                local = locais.get(dig)
+                self._forn_upsert(conn, local, f)
+                if local:
+                    atualizados += 1
+                else:
+                    novos += 1
+                    locais = self._forn_locais(conn)   # recarrega: o novo já conta p/ as linhas seguintes
+            conn.commit()
+        self._json(200, {'ok': True, 'novos': novos, 'atualizados': atualizados, 'ignorados': ignorados})
 
     def _sync_forn_apply(self, data):
         entrada = self._forn_entrada_valida(data)
