@@ -35,7 +35,7 @@ import sgx_base   # esqueleto compartilhado da família — ver _esqueleto/READM
 # Versão do servidor — DEVE acompanhar o SGCA_VERSION do SGCA.html a cada release.
 # Exposta em /health para o frontend detectar quando o processo em execução está
 # desatualizado (HTML novo servido, mas server.py antigo ainda rodando em memória).
-SERVER_VERSION = '0.39.2'
+SERVER_VERSION = '0.39.3'
 
 PORT          = int(os.environ.get('SGCA_PORT', 3002))
 _BASE         = os.path.dirname(os.path.abspath(__file__))
@@ -927,6 +927,7 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if purge:
                 if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
+                    self._apagar_anexos_do_registro(conn, 'contratos', cid)
                     conn.execute('DELETE FROM contratos WHERE id=?', (cid,))
             else:
                 with get_db() as conn:
@@ -942,9 +943,15 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
             if purge:
                 if not s['admin']: self._json(403, {'error': 'Acesso restrito'}); return
                 with get_db() as conn:
+                    self._apagar_anexos_do_registro(conn, 'atas', aid)
                     conn.execute('DELETE FROM atas WHERE id=?', (aid,))
             else:
                 with get_db() as conn:
+                    vinc = self._contratos_da_ata(conn, aid)
+                    if vinc:
+                        self._json(409, {'error': f'Não é possível excluir: {vinc} contrato(s) têm esta ata como origem. '
+                                                  f'Troque a ata de origem desses contratos antes de excluí-la.'})
+                        return
                     conn.execute('UPDATE atas SET deleted_at=? WHERE id=?', (_now(), aid))
             self._json(200, {'ok': True})
 
@@ -1311,6 +1318,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         data.setdefault('valorOriginal', data.get('valorGlobal'))
         data['_createdBy'] = s['user_id']
         with get_db() as conn:
+            dono = self._numero_em_uso(conn, 'contratos', data.get('numero'), cid)
+            if dono:
+                self._json(409, {'error': f'Já existe um contrato com o número {data.get("numero")}'
+                                          + (' (na Lixeira).' if dono == 'lixeira' else '.')})
+                return
             self._save_contrato_row(conn, data)
             if 'tags' in data: _sync_tags(conn, 'contrato_tags', 'contrato_id', cid, data['tags'])
         self._json(200, data)
@@ -1450,6 +1462,11 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         data.setdefault('itens', [])
         data['_createdBy'] = s['user_id']
         with get_db() as conn:
+            dono = self._numero_em_uso(conn, 'atas', data.get('numero'), aid)
+            if dono:
+                self._json(409, {'error': f'Já existe uma ata com o número {data.get("numero")}'
+                                          + (' (na Lixeira).' if dono == 'lixeira' else '.')})
+                return
             self._save_ata_row(conn, data)
             if 'tags' in data: _sync_tags(conn, 'ata_tags', 'ata_id', aid, data['tags'])
         self._json(200, data)
@@ -1537,6 +1554,71 @@ class SGCAHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Disposition', f'inline; filename="{safe_fn}"')
         self.end_headers()
         self.wfile.write(binary)
+
+    def _numero_em_uso(self, conn, tabela, numero, id_atual):
+        """Diz se o número já pertence a outro registro — inclusive um que esteja
+        na Lixeira. A conferência de duplicata era feita só na tela, sobre a lista
+        de registros vivos: excluir um contrato liberava o número para reuso e,
+        ao restaurar, ficavam dois com o mesmo número, sem erro nenhum."""
+        alvo = (numero or '').strip().lower()
+        if not alvo:
+            return None
+        coluna = 'numero' if tabela == 'atas' else "json_extract(data, '$.numero')"
+        row = conn.execute(
+            f'SELECT id, deleted_at FROM {tabela} '
+            f'WHERE lower(trim(COALESCE({coluna}, ""))) = ? AND id <> ? LIMIT 1',
+            (alvo, id_atual or '')).fetchone()
+        if not row:
+            return None
+        return 'lixeira' if row['deleted_at'] else 'ativo'
+
+    def _contratos_da_ata(self, conn, aid):
+        """Contratos vivos que apontam para esta ata (ataOrigemId, dentro do JSON).
+        Sem isso, excluir a ata deixava contratos em vigor apontando para um
+        registro na Lixeira — o extrato parava de citar a origem e o tipo enviado
+        ao PNCP mudava, sem nenhum aviso."""
+        return conn.execute(
+            "SELECT COUNT(*) FROM contratos "
+            "WHERE deleted_at IS NULL AND json_extract(data, '$.ataOrigemId') = ?", (aid,)).fetchone()[0]
+
+    def _apagar_anexos_do_registro(self, conn, tabela, rid):
+        """Apaga do disco e da tabela `arquivos` os anexos citados no JSON do
+        registro. Só na purga definitiva: enquanto o registro está na Lixeira, os
+        arquivos precisam continuar lá para a restauração funcionar.
+
+        `arquivos` não tem coluna apontando para contrato/ata — o vínculo está na
+        lista de anexos dentro do próprio JSON —, então a limpeza tem de ser feita
+        aqui; sem ela, cada purga deixava os PDFs órfãos em uploads/ para sempre."""
+        row = conn.execute(f'SELECT data FROM {tabela} WHERE id=?', (rid,)).fetchone()
+        if not row:
+            return 0
+        try:
+            blob = json.loads(row['data'] or '{}')
+        except ValueError:
+            return 0
+        ids = []
+        for chave in ('anexosContrato', 'anexosAta', 'anexos'):
+            for anexo in (blob.get(chave) or []):
+                if isinstance(anexo, dict) and anexo.get('arquivo_id'):
+                    ids.append(anexo['arquivo_id'])
+        for chave in ('anexoContrato', 'anexoAta'):
+            anexo = blob.get(chave)
+            if isinstance(anexo, dict) and anexo.get('arquivo_id'):
+                ids.append(anexo['arquivo_id'])
+        n = 0
+        for fid in dict.fromkeys(ids):
+            arq = conn.execute('SELECT nome_disco FROM arquivos WHERE id=?', (fid,)).fetchone()
+            if not arq:
+                continue
+            fp = os.path.join(UPLOADS_DIR, arq['nome_disco'])
+            try:
+                if os.path.isfile(fp):
+                    os.remove(fp)
+            except OSError as e:
+                _log.warning('Falha ao remover anexo %s do disco: %s', fp, e)
+            conn.execute('DELETE FROM arquivos WHERE id=?', (fid,))
+            n += 1
+        return n
 
     def _delete_arquivo(self, fid):
         with get_db() as conn:

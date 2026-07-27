@@ -5,6 +5,16 @@
 
 ---
 
+## [0.39.3] — 2026-07-27
+
+### Corrigido
+- **Excluir uma ata deixava contratos vivos apontando para ela.** Contratos guardam a ata de origem, que aparece no extrato e define o tipo enviado ao PNCP — mas nada impedia excluir a ata mesmo assim, e o único sintoma era o extrato deixar de citá-la. Agora a exclusão é recusada enquanto houver contratos ligados, dizendo quantos são.
+- **Anexos ficavam órfãos no disco.** Ao excluir um contrato ou ata **de vez** (Lixeira → Excluir de vez), os PDFs continuavam ocupando espaço em `uploads/` para sempre, sem dono. A purga passa a apagá-los junto. Enquanto o registro está na Lixeira os arquivos continuam guardados, para a restauração seguir funcionando.
+- **O número de um contrato ou ata na Lixeira era liberado para reuso.** A conferência de duplicidade só olhava os registros ativos: dava para criar outro contrato com o mesmo número e, ao restaurar o primeiro, ficavam dois iguais sem erro nenhum. A checagem passou para o servidor e considera também a Lixeira, avisando onde o número está.
+- **Listas dentro das janelas de confirmação voltam a quebrar linha** — correção no componente compartilhado pelos quatro sistemas.
+
+---
+
 ## [0.39.2] — 2026-07-25
 
 ### Documentação

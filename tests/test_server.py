@@ -538,12 +538,14 @@ class TestRestoreNaoPerdeDados(SGCATestCase):
     sistema vazio, sem nada restaurado.
     """
 
-    def _criar(self, token):
+    def _criar(self, token, numero='1/2026'):
+        # numero distinto por teste: o servidor recusa reaproveitar número de
+        # contrato que já existe, inclusive o que está na Lixeira
         status, f = self.request('POST', '/api/fornecedores',
                                  {'cnpj': '11.222.333/0001-81', 'razao': 'Alfa Ltda'}, token=token)
         self.assertEqual(status, 200, f)
         status, c = self.request('POST', '/api/contratos',
-                                 {'objeto': 'Contrato de teste', 'numero': '1/2026',
+                                 {'objeto': 'Contrato de teste', 'numero': numero,
                                   'fornecedorId': f['id']}, token=token)
         self.assertEqual(status, 200, c)
         return f['id'], c['id']
@@ -567,7 +569,7 @@ class TestRestoreNaoPerdeDados(SGCATestCase):
 
     def test_restore_que_falha_nao_apaga_o_banco(self):
         token = self.login()
-        self._criar(token)
+        self._criar(token, numero='2/2026')
         _, backup = self.request('GET', '/api/backup', token=token)
 
         def contar():
@@ -1007,6 +1009,72 @@ class TestBackupCofre(SGCATestCase):
         token = self.login()
         self.assertEqual(self.request('POST', '/api/backup/restore', {'foo': 1}, token=token)[0], 400)
         self.assertEqual(self._raw('POST', '/api/backups/db/restore', b'lixo', token)[0], 400)
+
+
+class TestGuardasDeExclusao(SGCATestCase):
+    """Três buracos que a exclusão deixava passar: ata excluída com contratos
+    apontando para ela, anexos órfãos no disco após a purga, e número liberado
+    para reuso enquanto o registro está na Lixeira."""
+
+    def _ata(self, token, numero, **extra):
+        st, a = self.request('POST', '/api/atas', {'numero': numero, 'objeto': 'Ata de teste', **extra}, token=token)
+        self.assertEqual(st, 200, a)
+        return a['id']
+
+    def _contrato(self, token, numero, **extra):
+        st, c = self.request('POST', '/api/contratos', {'numero': numero, 'objeto': 'Contrato de teste', **extra}, token=token)
+        self.assertEqual(st, 200, c)
+        return c['id']
+
+    def test_ata_com_contrato_vinculado_nao_pode_ser_excluida(self):
+        token = self.login()
+        aid = self._ata(token, '900/2026')
+        cid = self._contrato(token, '901/2026', ataOrigemId=aid)
+
+        st, d = self.request('DELETE', f'/api/atas/{aid}', token=token)
+        self.assertEqual(st, 409, d)
+        self.assertIn('contrato(s) têm esta ata como origem', d['error'])
+
+        # com o contrato fora do caminho, a ata sai
+        self.assertEqual(self.request('DELETE', f'/api/contratos/{cid}', token=token)[0], 200)
+        self.assertEqual(self.request('DELETE', f'/api/atas/{aid}', token=token)[0], 200)
+
+    def test_numero_na_lixeira_nao_e_liberado_para_reuso(self):
+        token = self.login()
+        cid = self._contrato(token, '910/2026')
+        self.assertEqual(self.request('DELETE', f'/api/contratos/{cid}', token=token)[0], 200)  # -> Lixeira
+        st, d = self.request('POST', '/api/contratos',
+                             {'numero': '910/2026', 'objeto': 'Outro contrato'}, token=token)
+        self.assertEqual(st, 409, d)
+        self.assertIn('Lixeira', d['error'])
+
+    def test_numero_de_ata_tambem_e_conferido(self):
+        token = self.login()
+        self._ata(token, '920/2026')
+        st, d = self.request('POST', '/api/atas', {'numero': '920/2026', 'objeto': 'Ata repetida'}, token=token)
+        self.assertEqual(st, 409, d)
+
+    def test_purga_apaga_os_anexos_do_disco(self):
+        token = self.login()
+        # cria um arquivo como o upload faz e pendura no contrato
+        import os as _os
+        nome_disco = 'teste_anexo_purga.pdf'
+        caminho = _os.path.join(server.UPLOADS_DIR, nome_disco)
+        with open(caminho, 'wb') as f:
+            f.write(b'%PDF-1.4 teste')
+        with server.get_db() as conn:
+            conn.execute('INSERT INTO arquivos (id,nome_original,nome_disco,tamanho,mime) VALUES (?,?,?,?,?)',
+                         ('arq-purga-1', 'anexo.pdf', nome_disco, 14, 'application/pdf'))
+        cid = self._contrato(token, '930/2026',
+                             anexosContrato=[{'arquivo_id': 'arq-purga-1', 'nome': 'anexo.pdf'}])
+
+        self.assertEqual(self.request('DELETE', f'/api/contratos/{cid}', token=token)[0], 200)  # -> Lixeira
+        self.assertTrue(_os.path.isfile(caminho), 'na Lixeira o anexo tem de continuar no disco')
+
+        self.assertEqual(self.request('DELETE', f'/api/contratos/{cid}?purge=1', token=token)[0], 200)
+        self.assertFalse(_os.path.isfile(caminho), 'a purga deve apagar o anexo do disco')
+        with server.get_db() as conn:
+            self.assertIsNone(conn.execute("SELECT id FROM arquivos WHERE id='arq-purga-1'").fetchone())
 
 
 if __name__ == '__main__':
