@@ -5,6 +5,13 @@
 
 ---
 
+## [0.39.6] — 2026-07-27
+
+### Adicionado
+- **O campo Código Fiorilli/SCPI (CADPRO) do item da ata passou a ter máscara**, no formato **NNN.NNN.NNN** (9 dígitos): digite só os números e os pontos entram sozinhos; colar um código pontuado ou com texto em volta também funciona. O campo continua opcional, mas se for preenchido tem de estar completo — é a chave usada pelo *Alimentar do Fiorilli*, e um código pela metade não casaria com nada.
+
+---
+
 ## [0.39.5] — 2026-07-27
 
 ### Alterado
