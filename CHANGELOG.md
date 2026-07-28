@@ -5,6 +5,16 @@
 
 ---
 
+## [0.39.5] — 2026-07-27
+
+### Alterado
+- **O item da ata deixa de pedir o "Código SCPI".** SCPI é o próprio sistema contábil da Fiorilli, ou seja, o código SCPI e o código Fiorilli/CADPRO são a mesma informação — o formulário pedia duas vezes o mesmo dado. Fica apenas um campo, agora rotulado **"Código Fiorilli/SCPI (CADPRO)"**, que é a chave usada pelo *Alimentar do Fiorilli*.
+- **O campo "Unidade SCPI" também foi removido**, pelo mesmo motivo e por nunca ter sido usado por nenhuma rotina do sistema. Fica a **Unidade de contratação**.
+
+Nenhum dado foi perdido: os dois campos eram gravados, mas nunca lidos por relatório, exportação ou pelo casamento com o Fiorilli.
+
+---
+
 ## [0.39.4] — 2026-07-27
 
 ### Alterado

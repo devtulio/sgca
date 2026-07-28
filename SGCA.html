@@ -1029,10 +1029,9 @@
           <div id="ata-item-form" class="item-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
             <input type="text" id="it-descricao" placeholder="Nome padronizado do item" style="width:100%">
             <textarea id="it-descricao-tecnica" placeholder="Descrição técnica padronizada (opcional)" style="width:100%;margin-top:8px;min-height:44px"></textarea>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
               <input type="text" id="it-codigo-cmmet" placeholder="Código CMMET (ex: CMMET-MAT-TIC-AIO-0001)">
-              <input type="text" id="it-codigo-scpi" placeholder="Código SCPI">
-              <input type="text" id="it-codigo-fiorilli" placeholder="Código Fiorilli/CADPRO (NNN.NNN.NNN)" title="Chave do Alimentar do Fiorilli — código do item no catálogo de produtos">
+              <input type="text" id="it-codigo-fiorilli" placeholder="Código Fiorilli/SCPI (CADPRO) — NNN.NNN.NNN" title="Chave do Alimentar do Fiorilli — código do item no catálogo de produtos. SCPI é o próprio sistema contábil Fiorilli: é um código só.">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px">
               <select id="it-natureza">
@@ -1047,9 +1046,8 @@
               <input type="text" id="it-grupo" placeholder="Grupo">
               <input type="text" id="it-subgrupo" placeholder="Subgrupo">
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px;margin-top:8px">
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:8px">
               <input type="text" id="it-unidade" placeholder="Unidade de contratação">
-              <input type="text" id="it-unidade-scpi" placeholder="Unidade SCPI">
               <input type="text" id="it-apresentacao" placeholder="Apresentação comercial">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
@@ -1859,7 +1857,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.39.4';
+const SGCA_VERSION = '0.39.5';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -4788,14 +4786,12 @@ function showNovoItemForm() {
   document.getElementById('it-descricao').value = '';
   document.getElementById('it-descricao-tecnica').value = '';
   document.getElementById('it-codigo-cmmet').value = '';
-  document.getElementById('it-codigo-scpi').value = '';
   document.getElementById('it-codigo-fiorilli').value = '';
   document.getElementById('it-natureza').value = '';
   document.getElementById('it-classe').value = '';
   document.getElementById('it-grupo').value = '';
   document.getElementById('it-subgrupo').value = '';
   document.getElementById('it-unidade').value = '';
-  document.getElementById('it-unidade-scpi').value = '';
   document.getElementById('it-apresentacao').value = '';
   document.getElementById('it-qtd').value = '';
   document.getElementById('it-preco').value = '';
@@ -4814,14 +4810,12 @@ async function saveAtaItem() {
     descricao,
     descricaoTecnica: document.getElementById('it-descricao-tecnica').value.trim(),
     codigoCmmet: document.getElementById('it-codigo-cmmet').value.trim(),
-    codigoScpi: document.getElementById('it-codigo-scpi').value.trim(),
     codigoFiorilli: document.getElementById('it-codigo-fiorilli').value.trim(),
     natureza: document.getElementById('it-natureza').value,
     classe: document.getElementById('it-classe').value.trim(),
     grupo: document.getElementById('it-grupo').value.trim(),
     subgrupo: document.getElementById('it-subgrupo').value.trim(),
     unidade: document.getElementById('it-unidade').value.trim(),
-    unidadeScpi: document.getElementById('it-unidade-scpi').value.trim(),
     apresentacaoComercial: document.getElementById('it-apresentacao').value.trim(),
     quantidadeRegistrada: parseFloat(document.getElementById('it-qtd').value) || 0,
     precoUnitario: parseValor(document.getElementById('it-preco').value),
