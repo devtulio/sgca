@@ -1943,7 +1943,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.40.0';
+const SGCA_VERSION = '0.40.1';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -3971,13 +3971,29 @@ function _lerArquivoComoDataUrl(file) {
   });
 }
 
+// Baixa o anexo pelo _salvarArquivoComo (esqueleto) em vez de um <a download>:
+// assim o usuário escolhe onde salvar. Onde a API de gravação não existe
+// (navegador antigo, ou acesso por IP da rede, que não é contexto seguro), o
+// próprio helper cai no download direto — nunca fica pior do que era. De
+// quebra, o token some da href.
+async function baixarAnexo(arquivoId, nome) {
+  try {
+    const r = await fetch(`/api/arquivos/${arquivoId}`, { headers: { Authorization: `Bearer ${_apiToken}` } });
+    if (!r.ok) { toast('Erro ao baixar o arquivo.', 'error'); return; }
+    const blob = await r.blob();
+    await _salvarArquivoComo(blob, nome, blob.type || 'application/octet-stream');
+  } catch (e) {
+    toast('Erro ao baixar o arquivo.', 'error');
+  }
+}
+
 function _renderAnexosContrato(anexos) {
   const el = document.getElementById('c-anexo-atual');
   if (!el) return;
   if (!anexos || !anexos.length) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
   el.innerHTML = anexos.map((anexo, i) => `
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
-      📄 <a href="/api/arquivos/${anexo.arquivo_id}?token=${_apiToken}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+      📄 <a href="#" data-id="${escHtml(anexo.arquivo_id)}" data-nome="${escHtml(anexo.nome)}" onclick="baixarAnexo(this.dataset.id, this.dataset.nome); return false">${escHtml(anexo.nome)}</a>
       <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
       <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoContrato(${i})" title="Remover anexo">✕</button>
     </div>`).join('');
@@ -4058,7 +4074,7 @@ function _renderAnexosAta(anexos) {
   if (!anexos || !anexos.length) { el.innerHTML = 'Nenhum arquivo anexado.'; return; }
   el.innerHTML = anexos.map((anexo, i) => `
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
-      📄 <a href="/api/arquivos/${anexo.arquivo_id}?token=${_apiToken}" download="${escHtml(anexo.nome)}">${escHtml(anexo.nome)}</a>
+      📄 <a href="#" data-id="${escHtml(anexo.arquivo_id)}" data-nome="${escHtml(anexo.nome)}" onclick="baixarAnexo(this.dataset.id, this.dataset.nome); return false">${escHtml(anexo.nome)}</a>
       <span style="color:var(--gray-400)">— enviado em ${fmt(anexo.uploadedAt)}</span>
       <button class="btn btn-ghost btn-icon btn-sm" onclick="removeAnexoAta(${i})" title="Remover anexo">✕</button>
     </div>`).join('');

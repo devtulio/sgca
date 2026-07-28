@@ -5,6 +5,13 @@
 
 ---
 
+## [0.40.1] — 2026-07-28
+
+### Corrigido
+- **Baixar um anexo de contrato ou ata mandava o arquivo direto para a pasta de downloads** (mesma correção feita no SGCD). O download passa a abrir a janela **"Salvar como"** do navegador, e o link do anexo deixa de carregar o token da sessão no endereço. Onde essa janela não está disponível — navegador antigo, ou acesso pelo **endereço de rede** (`http://192.168.x.x:3000`), que o navegador não trata como origem segura —, o comportamento continua o de antes; nessas máquinas, a opção *"Perguntar onde salvar cada arquivo"* do próprio navegador é o que resolve.
+
+---
+
 ## [0.40.0] — 2026-07-28
 
 ### Adicionado

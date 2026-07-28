@@ -86,3 +86,47 @@ test('Alimentar do Fiorilli preenche a quantidade utilizada das atas', async ({ 
   });
   expect(utilizada).toBe(130);
 });
+
+// Anexo baixado tem de passar pelo seletor "Salvar como" do navegador, nao cair
+// direto na pasta de downloads (mesmo relato que originou a correcao no SGCD).
+// Stuba window.showSaveFilePicker porque o dialogo nativo e do sistema
+// operacional e o Playwright nao o enxerga - o que importa provar e que
+// baixarAnexo() consulta a API de gravacao em vez de usar um <a download>.
+test('baixar anexo abre o seletor de destino em vez de baixar direto', async ({ page }) => {
+  await page.goto('/SGCA.html');
+  await page.fill('#pin-username', 'admin');
+  // Senha ja trocada pelo primeiro teste (servidor/banco compartilhados na suite).
+  await page.fill('#pin-input', 'novaSenhaE2E123');
+  await page.click('#overlay-pin button[onclick="verificarSenha()"]');
+  await expect(page.locator('#overlay-pin')).toBeHidden();
+
+  const arquivoId = await page.evaluate(async () => {
+    const r = await API.post('/api/arquivos', {
+      nome: 'contrato assinado.pdf',
+      mime: 'application/pdf',
+      data_b64: btoa('%PDF-1.4 assinado'),
+    });
+    return (await r.json()).id;
+  });
+  expect(arquivoId).toBeTruthy();
+
+  const salvo = await page.evaluate(async (id) => {
+    const chamado = { picker: false, nome: null, bytes: 0 };
+    window.showSaveFilePicker = async (opts) => {
+      chamado.picker = true;
+      chamado.nome = opts.suggestedName;
+      return {
+        createWritable: async () => ({
+          write: async (blob) => { chamado.bytes = blob.size; },
+          close: async () => {},
+        }),
+      };
+    };
+    await baixarAnexo(id, 'contrato assinado.pdf');
+    return chamado;
+  }, arquivoId);
+
+  expect(salvo.picker, 'baixarAnexo nao consultou showSaveFilePicker').toBe(true);
+  expect(salvo.nome).toBe('contrato assinado.pdf');
+  expect(salvo.bytes).toBeGreaterThan(0);
+});
