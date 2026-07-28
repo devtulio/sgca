@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.40.1</title>
+<title>Manual Operacional — SGCA v0.40.2</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.40.1 — Manual Operacional";
+        content: "SGCA v0.40.2 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.40.1</div>
+    <div class="cover-version">Versão v0.40.2</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -150,6 +150,19 @@
 <p>O sistema funciona como uma aplicação local iniciada pelo arquivo <strong>Iniciar SGCA.bat</strong>, sem necessidade de instalação adicional. Os dados são armazenados em um banco de dados SQLite (<code>sgca.db</code>) gerenciado por um servidor Python local, com suporte a múltiplos usuários autenticados simultaneamente pela rede.</p>
 <p><strong>Uso em rede local:</strong> uma única máquina executa o servidor (e guarda o banco de dados) e as demais acessam pelo navegador, sem instalar nada. Na máquina servidora, execute uma única vez o <strong><code>Liberar Porta SGCA.bat</code></strong> como Administrador (botão direito → <em>Executar como administrador</em>) — ele cria a regra no Firewall do Windows liberando a porta <strong>3002</strong> — e inicie o sistema pelo <code>Iniciar SGCA.bat</code>, deixando a máquina ligada. Ao iniciar, o console mostra o endereço de rede pronto para distribuir (ex.: <code>http://192.168.x.x:3002/SGCA.html</code>), que os demais usuários abrem no Chrome ou Edge, cada um com sua própria conta. Se a conexão não funcionar, use o <code>Diagnostico SGCA.bat</code> (ou a opção <strong>[1]</strong> do <code>Iniciar SGCA.bat</code>) na máquina servidora — ele descobre o IP e verifica/corrige firewall e perfil de rede (veja a Seção 13).</p>
 <p><strong>Uso restrito à rede interna:</strong> a comunicação entre as máquinas é HTTP simples (sem criptografia de transporte) — adequado para uma rede interna confiável do órgão, mas <strong>nunca exponha a porta do sistema à internet</strong> (redirecionamento de porta no roteador, DMZ etc.). Para acesso remoto, utilize a VPN institucional.</p>
+
+<div class="dica">
+  <strong>Baixar arquivos escolhendo a pasta, nos postos da rede.</strong> Na máquina que roda o servidor (acesso por <code>localhost</code>), todo download do sistema abre a janela <strong>"Salvar como"</strong>. Nos computadores que acessam <strong>pelo endereço de rede</strong> (<code>http://192.168.x.x:3002</code>), o navegador não oferece essa janela à página — é uma regra de segurança dele: só páginas servidas por HTTPS ou por <code>localhost</code> podem gravar em pasta escolhida. Nesses postos o arquivo vai direto para a pasta de Downloads.<br><br>
+  Para que também perguntem, ligue a opção <strong>do navegador</strong> em cada posto: <strong>Configurações → Downloads → "Perguntar onde salvar cada arquivo antes de fazer o download"</strong>. Para padronizar sem depender de cada usuário, aplique a política do navegador — salve o texto abaixo como <code>perguntar-onde-salvar.reg</code> e execute <strong>como Administrador, uma vez por computador</strong> (havendo domínio/AD, o mesmo ajuste vira uma GPO única e nenhum posto precisa ser visitado):<br><br>
+  <code>Windows Registry Editor Version 5.00</code><br>
+  <code>&nbsp;</code><br>
+  <code>[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome]</code><br>
+  <code>"PromptForDownloadLocation"=dword:00000001</code><br>
+  <code>&nbsp;</code><br>
+  <code>[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge]</code><br>
+  <code>"PromptForDownloadLocation"=dword:00000001</code><br><br>
+  Vale para Chrome e Edge, é <strong>por computador</strong> (não por usuário), sobrevive a reinício e a atualização do navegador, e passa a valer ao fechar e reabrir o navegador. Para conferir se pegou, abra <code>chrome://policy</code> (ou <code>edge://policy</code>) e procure <code>PromptForDownloadLocation</code>. Para desfazer, troque <code>00000001</code> por <code>00000000</code>.
+</div>
 
 <h2 id="sec2">2. Primeiro Acesso — Configuração Inicial</h2>
 <p>No primeiro acesso, use o usuário <code>admin</code> e a senha <code>admin123</code>. Logo após o login, o sistema abre uma tela <strong>bloqueante de troca de senha</strong>: ela não pode ser fechada nem pulada, e nenhuma outra tela fica disponível enquanto a senha de fábrica não for substituída. O servidor <strong>recusa</strong> <code>admin123</code> como nova senha, de modo que não é possível "trocar" a senha padrão por ela mesma. Depois disso, a senha pode ser alterada a qualquer momento em <strong>Configurações → Segurança</strong>.</p>
@@ -244,6 +257,10 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.40.2 — Julho/2026</h3>
+<p><strong>Documentação</strong></p>
+<ul><li>Documentação: a seção de uso em rede local passa a explicar como fazer os postos que acessam pelo endereço de rede perguntarem onde salvar cada download (opção do navegador ou política, com o .reg pronto).</li></ul>
+
 <h3>v0.40.1 — Julho/2026</h3>
 <p><strong>Corrigido</strong></p>
 <ul><li>Baixar um anexo de contrato ou ata mandava o arquivo direto para a pasta de downloads. Agora o navegador pergunta onde salvar. Vale para quem acessa pela máquina do servidor (localhost); pelo endereço de rede o navegador não oferece essa janela e o download segue direto — nesse caso, use a opção "Perguntar onde salvar cada arquivo" do próprio navegador.</li></ul>
