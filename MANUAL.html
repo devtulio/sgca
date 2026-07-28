@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.39.6</title>
+<title>Manual Operacional — SGCA v0.40.0</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.39.6 — Manual Operacional";
+        content: "SGCA v0.40.0 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.39.6</div>
+    <div class="cover-version">Versão v0.40.0</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -129,6 +129,7 @@
     <div class="toc-item h2"><a href="#sec5">5. Contratos</a></div>
     <div class="toc-item h2"><a href="#sec6">6. Atas de Registro de Preços</a></div>
     <div class="toc-item h2"><a href="#sec7">7. Agenda de Vencimentos</a></div>
+    <div class="toc-item h3"><a href="#sec7-1">7.1. Relatórios</a></div>
     <div class="toc-item h2"><a href="#sec8">8. Cadastro de Fornecedores</a></div>
     <div class="toc-item h2"><a href="#sec9">9. Login e Controle de Acesso</a></div>
     <div class="toc-item h2"><a href="#sec10">10. Trilha de Auditoria</a></div>
@@ -193,6 +194,21 @@
 <p>Um selo numérico ao lado do item "Agenda" no menu lateral mostra quantos vencimentos estão a até 3 dias de distância (vencidos ou a vencer).</p>
 <p>O botão <strong>✉ Enviar por e-mail</strong> envia manualmente, a qualquer momento, um resumo de todos os vencimentos listados para o e-mail interno configurado em Configurações → Comunicação. Além disso, com o SMTP configurado, o servidor envia automaticamente um <strong>resumo diário</strong> (contratos e atas vencendo nos próximos 30 dias) para esse mesmo e-mail — mesmo sem ninguém logado no sistema. Contratos que tenham um <strong>e-mail do fiscal</strong> cadastrado também recebem, no mesmo envio diário, um aviso individual sobre o(s) contrato(s) sob sua fiscalização — mesmo que o e-mail interno não esteja configurado.</p>
 
+<h3 id="sec7-1">7.1. Relatórios</h3>
+<p>A tela <strong>Relatórios</strong> (menu Administração) reúne nove documentos gerenciais. Cada um tem um botão <strong>Gerar</strong>, que abre o documento em A4 numa nova janela, pronto para imprimir ou salvar em PDF, com o brasão e a identificação do órgão no cabeçalho.</p>
+<div class="nota">Os relatórios consideram <strong>todos</strong> os registros do sistema — não apenas o que estiver filtrado na tela no momento. Um relatório gerencial que obedecesse ao filtro daria um total que não corresponde à carteira real.</div>
+<ul>
+  <li><strong>Execução Financeira dos Contratos</strong> — valor atual (já com os aditivos), quanto foi pago, saldo e percentual executado de cada contrato, com totais. Percentual em vermelho a partir de 90% do valor pago; contratos rescindidos ficam de fora</li>
+  <li><strong>Saldo das Atas de Registro de Preços</strong> — uma seção por ata e, dentro dela, cada item com quantidade registrada, utilizada, saldo e percentual consumido; destaca o que passou de 80% e o que esgotou</li>
+  <li><strong>Controle de Aditivos (Art. 125)</strong> — os aditivos de cada contrato com tipo, valor e justificativa, e o percentual acumulado comparado ao limite legal de 25%</li>
+  <li><strong>Fiscalização dos Contratos</strong> — última fiscalização de cada contrato em execução, quantos dias se passaram e o parecer; destaca contratos sem fiscal designado, nunca fiscalizados ou parados há mais de 45 dias</li>
+  <li><strong>Vencimentos e Prazos</strong> — contratos, atas e garantias que vencem nos próximos 90 dias, nas faixas de 30, 60 e 90 dias, com os já vencidos em vermelho</li>
+  <li><strong>Garantias Contratuais</strong> — modalidade, valor, vencimento e devolução de cada garantia, separando as que já venceram e ainda não foram devolvidas</li>
+  <li><strong>Recebimento do Objeto</strong> — situação do recebimento provisório e definitivo, destacando contratos já encerrados sem o definitivo</li>
+  <li><strong>Contratos por Fornecedor</strong> — quantos contratos e qual valor total por fornecedor, com a situação das certidões e se há sanção vigente</li>
+  <li><strong>Riscos Consolidados</strong> — riscos de todos os contratos ordenados por grau (probabilidade × impacto), com a mitigação prevista e o responsável</li>
+</ul>
+
 <h2 id="sec8">8. Cadastro de Fornecedores</h2>
 <p>A lista de fornecedores aparece em <strong>tabela</strong> — colunas Razão Social, CNPJ e Situação, que ordenam ao clicar no cabeçalho, com <strong>seleção em massa</strong> para enviar vários à Lixeira. Clicar numa linha (ou em <strong>Editar</strong>) abre o cadastro completo numa <strong>janela</strong>, com as abas Dados, Certidões e Sanções.</p>
 <p>O módulo de Fornecedores permite consultar CNPJ automaticamente (via ReceitaWS, com fallback para BrasilAPI), preencher endereço por CEP (ViaCEP), e manter o controle de certidões de regularidade fiscal e trabalhista com alertas de vencimento.</p>
@@ -228,6 +244,10 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.40.0 — Julho/2026</h3>
+<p><strong>Adicionado</strong></p>
+<ul><li><strong>Tela de Relatórios</strong> com nove documentos gerenciais: execução financeira, saldo das atas, aditivos (Art. 125), fiscalização, vencimentos, garantias, recebimento do objeto, contratos por fornecedor e riscos consolidados.</li><li>Documentos e relatórios saíam com margem dobrada na impressão (o recuo da prévia somava com a margem de página). No papel, agora vale só a margem de página de 20 mm; em documento de várias páginas, o miolo deixa de sair colado na borda.</li></ul>
+
 <h3>v0.39.6 — Julho/2026</h3>
 <p><strong>Alterado</strong></p>
 <ul><li>O Código Fiorilli/SCPI (CADPRO) do item da ata ganhou máscara NNN.NNN.NNN; continua opcional, mas se preenchido tem de estar completo.</li></ul>

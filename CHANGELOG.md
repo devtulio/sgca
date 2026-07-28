@@ -5,6 +5,25 @@
 
 ---
 
+## [0.40.0] — 2026-07-28
+
+### Adicionado
+- **Tela de Relatórios** (menu Administração) com nove documentos gerenciais em A4, prontos para imprimir ou salvar em PDF, com brasão e identificação do órgão. Todos consideram **todos** os registros, não apenas o que está filtrado na tela:
+  - **Execução Financeira dos Contratos** — valor atual (com aditivos), pago, saldo e % executado, com totais da carteira
+  - **Saldo das Atas de Registro de Preços** — por ata e por item: registrado, utilizado, saldo e % consumido, destacando o que passou de 80% e o que esgotou
+  - **Controle de Aditivos (Art. 125)** — aditivos de cada contrato e o percentual acumulado contra o limite legal de 25%
+  - **Fiscalização dos Contratos** — última fiscalização, dias decorridos, e contratos sem fiscal designado ou nunca fiscalizados
+  - **Vencimentos e Prazos** — contratos, atas e garantias vencendo em 30/60/90 dias
+  - **Garantias Contratuais** — modalidade, valor, vencimento e devolução, separando as vencidas e não devolvidas
+  - **Recebimento do Objeto** — recebimentos provisório e definitivo, com destaque para contratos encerrados sem o definitivo
+  - **Contratos por Fornecedor** — carteira por fornecedor, com certidões vencidas e sanção vigente
+  - **Riscos Consolidados** — riscos de todos os contratos por grau (probabilidade × impacto)
+
+### Corrigido
+- **Documentos e relatórios saíam com margem dobrada na impressão.** O recuo usado para a janela de prévia somava com a margem de página do próprio documento, resultando em cerca de 4 cm de branco em cima e embaixo. Pior em documento de várias páginas: esse recuo só valia na primeira e na última folha, e o miolo saía colado na borda. A margem impressa passa a ser **só a de página (20 mm)**, em todos os documentos e relatórios; a prévia na tela continua com o recuo confortável de sempre.
+
+---
+
 ## [0.39.6] — 2026-07-27
 
 ### Adicionado

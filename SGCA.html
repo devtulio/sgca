@@ -174,7 +174,14 @@
   body.dark .forn-input-row input { background: #1e1e1e; color: #e0e0e0; border-color: #444; }
   body.dark .copy-btn { border-color: #555; color: #aaa; }
   /* Ações em massa dos cadastros */
-  .bulk-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 10px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; }
+  .rel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.rel-card { background: var(--card); border: 1px solid var(--gray-200); border-radius: 10px; padding: 14px;
+            display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+.rel-card h3 { font-size: .92rem; margin: 0 0 4px; }
+.rel-card p { font-size: .78rem; color: var(--gray-600); line-height: 1.45; margin: 0; }
+.rel-card button { align-self: flex-start; }
+body.dark .rel-card { border-color: #383838; }
+.bulk-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 10px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; }
   .bulk-count { font-weight: 600; margin-right: 4px; }
   .col-check { width: 1%; text-align: center; white-space: nowrap; }
   .col-check input { cursor: pointer; }
@@ -314,6 +321,10 @@
     </button>
 
     <div class="nav-section">Administração</div>
+    <button class="nav-item" id="nav-relatorios" onclick="showRelatorios()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Relatórios
+    </button>
     <button class="nav-item" id="nav-lixeira" onclick="showLixeira()">
       <span class="nav-ico">🗑️</span>
       Lixeira
@@ -1207,6 +1218,81 @@
   </div>
 
   <!-- ── Lixeira ── -->
+  <div id="view-relatorios" class="view">
+    <div class="dash-top">
+      <h2>Relatórios</h2>
+    </div>
+    <p style="font-size:.82rem;color:var(--gray-600);margin:-4px 0 14px">
+      Documentos gerenciais em A4, prontos para imprimir ou salvar em PDF. Consideram <strong>todos</strong> os
+      registros — não apenas o que estiver filtrado nas telas.
+    </p>
+    <div class="rel-grid">
+        <div class="rel-card">
+          <div>
+            <h3>Execução Financeira dos Contratos</h3>
+            <p>Valor atual, pago, saldo e percentual executado de cada contrato, com totais da carteira.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relExecucaoFinanceira()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Saldo das Atas de Registro de Preços</h3>
+            <p>Por ata e por item: quantidade registrada, utilizada e saldo, destacando o que passou de 80% e o que esgotou.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relSaldoAtas()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Controle de Aditivos (Art. 125)</h3>
+            <p>Aditivos de cada contrato com o percentual acumulado comparado ao limite legal de 25%.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relAditivos()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Fiscalização dos Contratos</h3>
+            <p>Última fiscalização, dias decorridos e contratos sem fiscal designado ou nunca fiscalizados.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relFiscalizacao()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Vencimentos e Prazos</h3>
+            <p>Contratos, atas e garantias vencendo nos próximos 90 dias, por faixa de 30/60/90.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relVencimentos()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Garantias Contratuais</h3>
+            <p>Modalidade, valor, vencimento e devolução, separando as vencidas e ainda não devolvidas.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relGarantias()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Recebimento do Objeto</h3>
+            <p>Recebimentos provisório e definitivo, com destaque para contratos encerrados sem o definitivo.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relRecebimento()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Contratos por Fornecedor</h3>
+            <p>Carteira por fornecedor: nº de contratos, valor total, certidões vencidas e sanção vigente.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relPorFornecedor()">📄 Gerar</button>
+        </div>
+        <div class="rel-card">
+          <div>
+            <h3>Riscos Consolidados</h3>
+            <p>Riscos de todos os contratos ordenados por probabilidade × impacto, com mitigação e responsável.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="relRiscos()">📄 Gerar</button>
+        </div>
+      </div>
+  </div>
+
   <div id="view-lixeira" class="view">
     <div class="dash-top">
       <h2>Lixeira</h2>
@@ -1857,7 +1943,7 @@ const ICONS = {
   calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 
-const SGCA_VERSION = '0.39.6';
+const SGCA_VERSION = '0.40.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -9088,6 +9174,336 @@ const _QR = (function () {
 
 // Gera o bloco HTML de rodapé com QR code para documentos gerados
 // Rodapé com QR para relatórios globais (sem processo específico)
+// ── Relatórios gerenciais ─────────────────────────────────────────────────────
+// Casca única: cabeçalho com brasão, título, meta e rodapé. Cada relatório abaixo
+// só cuida do próprio conteúdo — sem isto, cada um repetiria ~40 linhas de CSS e
+// cabeçalho, como acontecia nos relatórios antigos de Contratos e Atas.
+function _relDoc({ titulo, meta, corpo }) {
+  const u = getUser();
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>${_nomeArquivoDoc(null, titulo.toUpperCase())}</title>
+<style>${_DOC_CSS}
+  body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #000; background: #fff; padding: 2cm 2.5cm; }
+  .header { text-align: center; margin-bottom: 20pt; border-bottom: 2px solid #000; padding-bottom: 12pt; }
+  .header img { height: 90pt; width: auto; margin-bottom: 6pt; }
+  .header h1 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title { text-align: center; margin: 14pt 0 10pt; }
+  .doc-title h3 { font-size: 13pt; font-weight: 700; text-transform: uppercase; }
+  .doc-title .sub { font-size: 10pt; color: #444; margin-top: 4pt; }
+  .meta { font-size: 9pt; color: #555; margin-bottom: 10pt; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8pt; font-size: 9pt; table-layout: fixed; }
+  th { background: #1a1a2e; color: #fff; padding: 5pt 7pt; text-align: left; vertical-align: middle; font-weight: 700; font-size: 9pt; }
+  td { padding: 4pt 7pt; vertical-align: middle; font-size: 8.5pt; border-bottom: 1px solid #e8e8e8; word-wrap: break-word; overflow-wrap: break-word; }
+  td.num, th.num { text-align: right; }
+  tr.total td { font-weight: 700; border-top: 2px solid #000; background: #f2f2f2; }
+  h4.sec { font-size: 11pt; margin: 16pt 0 4pt; text-transform: uppercase; border-bottom: 1px solid #999; padding-bottom: 3pt; }
+  .alerta { color: #a11; font-weight: 700; }
+  .ok { color: #176117; }
+  .vazio { text-align: center; padding: 20pt; color: #888; }
+  .btn-print { display: block; margin: 0 auto 20pt; padding: 8pt 24pt; background: #1a3a6b; color: #fff; border: none; border-radius: 4px; font-size: 11pt; cursor: pointer; }
+</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+<div class="header">
+  <img src="data:image/png;base64,__BRASAO_PLACEHOLDER__" alt="Brasão">
+  <h1>${escHtml(u.orgao || '')}</h1>
+  <h2>${escHtml(u.municipio || '')}</h2>
+</div>
+<div class="doc-title">
+  <h3>${escHtml(titulo)}</h3>
+  <div class="sub">Sistema de Gestão de Contratos e Atas — Lei Federal nº 14.133/2021</div>
+</div>
+<div class="meta">${meta}</div>
+${corpo}
+${_qrFooterReport(titulo)}
+</body></html>`;
+}
+
+function _relAbrir(titulo, meta, corpo) {
+  _gerarDocumento(window.open('', '_blank', 'width=900,height=700'), _relDoc({ titulo, meta, corpo }), titulo);
+}
+
+// Dados completos (não o subconjunto filtrado nas telas): relatório gerencial que
+// obedecesse ao filtro da tela mentiria sobre o total da carteira.
+async function _relDados() {
+  await _loadFornecedoresCache();
+  const [rc, ra] = await Promise.all([API.get('/api/contratos?per=2000'), API.get('/api/atas?per=2000')]);
+  const contratos = (await API.json(rc))?.items || [];
+  const atas = (await API.json(ra))?.items || [];
+  return { contratos, atas, fornecedores: _fornecedoresCache || [] };
+}
+
+const _relData = s => s ? new Date(s + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const _relGeradoEm = () => {
+  const n = new Date();
+  return n.toLocaleDateString('pt-BR') + ' às ' + n.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+};
+const _relForn = id => {
+  const f = (_fornecedoresCache || []).find(x => x.id === id);
+  return f ? (f.razao_social || f.razao || f.nome_fantasia || '—') : '—';
+};
+const _relDias = ate => ate ? Math.ceil((new Date(ate + 'T00:00:00') - new Date().setHours(0, 0, 0, 0)) / 86400000) : null;
+const _relStatus = { vigente: 'Vigente', em_prorrogacao: 'Em prorrogação', encerrado: 'Encerrado', rescindido: 'Rescindido' };
+const _relSoma = (lista, campo) => lista.reduce((t, x) => t + (Number(x[campo]) || 0), 0);
+const _relVazio = cols => `<tr><td colspan="${cols}" class="vazio">Nenhum registro para este relatório.</td></tr>`;
+
+// 1 ─ Execução financeira dos contratos
+async function relExecucaoFinanceira() {
+  const { contratos } = await _relDados();
+  const vivos = contratos.filter(c => c.status !== 'rescindido');
+  const linhas = vivos.map(c => {
+    const pago = _relSoma(c.pagamentos || [], 'valor');
+    const total = Number(c.valorGlobal) || 0;
+    const saldo = total - pago;
+    const pct = total ? (pago / total * 100) : 0;
+    return { c, pago, total, saldo, pct };
+  }).sort((a, b) => b.pct - a.pct);
+  const corpo = `<table>
+    <colgroup><col style="width:11%"><col style="width:27%"><col style="width:18%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:8%"></colgroup>
+    <thead><tr><th>Contrato</th><th>Objeto</th><th>Fornecedor</th><th class="num">Valor atual</th><th class="num">Pago</th><th class="num">Saldo</th><th class="num">% exec.</th></tr></thead>
+    <tbody>${linhas.length ? linhas.map(({ c, pago, total, saldo, pct }) => `<tr>
+        <td>${escHtml(c.numero || '—')}</td><td>${escHtml(c.objeto || '—')}</td><td>${escHtml(_relForn(c.fornecedorId))}</td>
+        <td class="num">${fmtMoney(total)}</td><td class="num">${fmtMoney(pago)}</td>
+        <td class="num">${fmtMoney(saldo)}</td>
+        <td class="num${pct >= 90 ? ' alerta' : ''}">${pct.toFixed(1)}%</td></tr>`).join('') : _relVazio(7)}
+      ${linhas.length ? `<tr class="total"><td colspan="3">TOTAL</td>
+        <td class="num">${fmtMoney(linhas.reduce((t, x) => t + x.total, 0))}</td>
+        <td class="num">${fmtMoney(linhas.reduce((t, x) => t + x.pago, 0))}</td>
+        <td class="num">${fmtMoney(linhas.reduce((t, x) => t + x.saldo, 0))}</td><td></td></tr>` : ''}
+    </tbody></table>
+    <p style="font-size:8.5pt;color:#555;margin-top:8pt">Valor atual já considera os aditivos de valor. Contratos rescindidos ficam fora. Percentual em vermelho: 90% ou mais do valor já pago.</p>`;
+  _relAbrir('Execução Financeira dos Contratos',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${vivos.length} contrato(s)`, corpo);
+}
+
+// 2 ─ Saldo das atas de registro de preços
+async function relSaldoAtas() {
+  const { atas } = await _relDados();
+  const vigentes = atas.filter(a => a.status !== 'cancelada');
+  const secoes = vigentes.map(a => {
+    const itens = a.itens || [];
+    const linhas = itens.map(it => {
+      const reg = Number(it.quantidadeRegistrada) || 0;
+      const usa = Number(it.quantidadeUtilizada) || 0;
+      const saldo = reg - usa;
+      const pct = reg ? (usa / reg * 100) : 0;
+      const cls = pct >= 100 ? ' alerta' : (pct >= 80 ? ' alerta' : '');
+      return `<tr>
+        <td>${escHtml(it.descricao || '—')}</td><td>${escHtml(it.codigoFiorilli || '—')}</td>
+        <td>${escHtml(it.unidade || '—')}</td>
+        <td class="num">${reg.toLocaleString('pt-BR')}</td><td class="num">${usa.toLocaleString('pt-BR')}</td>
+        <td class="num">${saldo.toLocaleString('pt-BR')}</td>
+        <td class="num${cls}">${pct.toFixed(1)}%${pct >= 100 ? ' (esgotado)' : ''}</td>
+        <td class="num">${it.precoUnitario ? fmtMoney(it.precoUnitario) : '—'}</td></tr>`;
+    }).join('');
+    return `<h4 class="sec">Ata ${escHtml(a.numero || '—')} — ${escHtml(a.objeto || 'sem objeto')}</h4>
+      <div style="font-size:8.5pt;color:#555;margin-bottom:4pt">Vigência até ${_relData(a.vigenciaFinal)} · ${itens.length} item(ns)</div>
+      <table>
+        <colgroup><col style="width:26%"><col style="width:12%"><col style="width:8%"><col style="width:12%"><col style="width:12%"><col style="width:11%"><col style="width:11%"><col style="width:8%"></colgroup>
+        <thead><tr><th>Item</th><th>Cód. Fiorilli</th><th>Un.</th><th class="num">Registrado</th><th class="num">Utilizado</th><th class="num">Saldo</th><th class="num">% cons.</th><th class="num">Preço un.</th></tr></thead>
+        <tbody>${linhas || _relVazio(8)}</tbody></table>`;
+  }).join('');
+  _relAbrir('Saldo das Atas de Registro de Preços',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${vigentes.length} ata(s)`,
+    secoes || `<table><tbody>${_relVazio(1)}</tbody></table>`);
+}
+
+// 3 ─ Controle de aditivos (Art. 125)
+async function relAditivos() {
+  const { contratos } = await _relDados();
+  const comAditivo = contratos.filter(c => (c.aditivos || []).length);
+  const secoes = comAditivo.map(c => {
+    const linhas = (c.aditivos || []).map(a => `<tr>
+        <td>${escHtml(a.numeroTermo || '—')}</td><td>${escHtml(a.tipo || '—')}</td>
+        <td>${(a.data || a.createdAt) ? new Date(a.data || a.createdAt).toLocaleDateString('pt-BR') : '—'}</td>
+        <td class="num">${a.valorVariacao ? fmtMoney(a.valorVariacao) : '—'}</td>
+        <td>${a.novaVigenciaFinal ? _relData(a.novaVigenciaFinal) : '—'}</td>
+        <td>${escHtml(a.justificativa || '—')}</td></tr>`).join('');
+    const pct = Number(c.percentualAcumulado) || 0;
+    return `<h4 class="sec">Contrato ${escHtml(c.numero || '—')} — ${escHtml(c.objeto || '')}</h4>
+      <div style="font-size:8.5pt;color:#555;margin-bottom:4pt">
+        Valor original ${c.valorOriginal ? fmtMoney(c.valorOriginal) : '—'} · Valor atual ${c.valorGlobal ? fmtMoney(c.valorGlobal) : '—'} ·
+        <span class="${pct >= 25 ? 'alerta' : (pct >= 20 ? 'alerta' : 'ok')}">Acumulado ${pct.toFixed(2)}% do limite de 25% (Art. 125)</span>
+      </div>
+      <table>
+        <colgroup><col style="width:10%"><col style="width:12%"><col style="width:12%"><col style="width:14%"><col style="width:14%"><col style="width:38%"></colgroup>
+        <thead><tr><th>Nº</th><th>Tipo</th><th>Data</th><th class="num">Valor</th><th>Nova vigência</th><th>Justificativa</th></tr></thead>
+        <tbody>${linhas}</tbody></table>`;
+  }).join('');
+  _relAbrir('Controle de Aditivos — Art. 125 da Lei 14.133/2021',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${comAditivo.length} contrato(s) com aditivo`,
+    secoes || `<table><tbody>${_relVazio(1)}</tbody></table>`);
+}
+
+// 4 ─ Fiscalização dos contratos
+async function relFiscalizacao() {
+  const { contratos } = await _relDados();
+  const ativos = contratos.filter(c => ['vigente', 'em_prorrogacao'].includes(c.status));
+  const linhas = ativos.map(c => {
+    const fs = (c.fiscalizacoes || []).slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+    const ultima = fs[0];
+    const dias = ultima?.data ? Math.floor((Date.now() - new Date(ultima.data + 'T00:00:00')) / 86400000) : null;
+    return { c, ultima, dias, semFiscal: !(c.fiscalNome || '').trim() };
+  }).sort((a, b) => (b.dias ?? 99999) - (a.dias ?? 99999));
+  const corpo = `<table>
+    <colgroup><col style="width:11%"><col style="width:24%"><col style="width:16%"><col style="width:13%"><col style="width:10%"><col style="width:12%"><col style="width:14%"></colgroup>
+    <thead><tr><th>Contrato</th><th>Objeto</th><th>Fiscal designado</th><th>Última fiscalização</th><th class="num">Dias</th><th>Parecer</th><th>Observação</th></tr></thead>
+    <tbody>${linhas.length ? linhas.map(({ c, ultima, dias, semFiscal }) => `<tr>
+        <td>${escHtml(c.numero || '—')}</td><td>${escHtml(c.objeto || '—')}</td>
+        <td class="${semFiscal ? 'alerta' : ''}">${semFiscal ? 'NÃO DESIGNADO' : escHtml(c.fiscalNome)}</td>
+        <td>${ultima ? _relData(ultima.data) : '<span class="alerta">nunca fiscalizado</span>'}</td>
+        <td class="num${dias !== null && dias > 45 ? ' alerta' : ''}">${dias !== null ? dias : '—'}</td>
+        <td>${escHtml(ultima?.parecer || '—')}</td><td>${escHtml(ultima?.obs || '—')}</td></tr>`).join('') : _relVazio(7)}
+    </tbody></table>
+    <p style="font-size:8.5pt;color:#555;margin-top:8pt">Somente contratos vigentes ou em prorrogação. Em vermelho: sem fiscal designado, nunca fiscalizado, ou mais de 45 dias desde a última fiscalização.</p>`;
+  _relAbrir('Fiscalização dos Contratos',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${ativos.length} contrato(s) em execução`, corpo);
+}
+
+// 5 ─ Vencimentos e prazos
+async function relVencimentos() {
+  const { contratos, atas } = await _relDados();
+  const janela = 90;
+  const eventos = [];
+  contratos.filter(c => ['vigente', 'em_prorrogacao'].includes(c.status)).forEach(c => {
+    const d = _relDias(c.vigenciaFinal);
+    if (d !== null && d <= janela) eventos.push({ tipo: 'Contrato', ref: c.numero, desc: c.objeto, data: c.vigenciaFinal, dias: d });
+    const g = _relDias(c.garantiaVencimento);
+    if (g !== null && g <= janela && !c.garantiaDevolucao) eventos.push({ tipo: 'Garantia', ref: c.numero, desc: `${c.garantiaModalidade || 'Garantia'} — ${c.garantiaValor ? fmtMoney(c.garantiaValor) : ''}`, data: c.garantiaVencimento, dias: g });
+  });
+  atas.filter(a => a.status === 'vigente').forEach(a => {
+    const d = _relDias(a.vigenciaFinal);
+    if (d !== null && d <= janela) eventos.push({ tipo: 'Ata', ref: a.numero, desc: a.objeto, data: a.vigenciaFinal, dias: d });
+  });
+  eventos.sort((x, y) => (x.data || '').localeCompare(y.data || ''));
+  const faixa = d => d < 0 ? 'VENCIDO' : (d <= 30 ? '30 dias' : (d <= 60 ? '60 dias' : '90 dias'));
+  const corpo = `<table>
+    <colgroup><col style="width:12%"><col style="width:12%"><col style="width:38%"><col style="width:14%"><col style="width:10%"><col style="width:14%"></colgroup>
+    <thead><tr><th>Tipo</th><th>Referência</th><th>Descrição</th><th>Vencimento</th><th class="num">Dias</th><th>Faixa</th></tr></thead>
+    <tbody>${eventos.length ? eventos.map(e => `<tr>
+        <td>${e.tipo}</td><td>${escHtml(e.ref || '—')}</td><td>${escHtml(e.desc || '—')}</td>
+        <td>${_relData(e.data)}</td>
+        <td class="num${e.dias < 0 ? ' alerta' : ''}">${e.dias}</td>
+        <td class="${e.dias <= 30 ? 'alerta' : ''}">${faixa(e.dias)}</td></tr>`).join('') : _relVazio(6)}
+    </tbody></table>
+    <p style="font-size:8.5pt;color:#555;margin-top:8pt">Janela de 90 dias. Inclui vigência de contratos e atas e garantias ainda não devolvidas.</p>`;
+  _relAbrir('Vencimentos e Prazos',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${eventos.length} evento(s) nos próximos ${janela} dias`, corpo);
+}
+
+// 6 ─ Garantias contratuais
+async function relGarantias() {
+  const { contratos } = await _relDados();
+  const comGarantia = contratos.filter(c => c.garantiaModalidade || c.garantiaValor || c.garantiaVencimento);
+  const linhas = comGarantia.map(c => {
+    const dias = _relDias(c.garantiaVencimento);
+    const devolvida = !!c.garantiaDevolucao;
+    const pendente = !devolvida && dias !== null && dias < 0;
+    return `<tr>
+      <td>${escHtml(c.numero || '—')}</td><td>${escHtml(_relForn(c.fornecedorId))}</td>
+      <td>${escHtml(c.garantiaModalidade || '—')}</td>
+      <td class="num">${c.garantiaValor ? fmtMoney(c.garantiaValor) : '—'}</td>
+      <td>${_relData(c.garantiaVencimento)}</td>
+      <td>${devolvida ? _relData(c.garantiaDevolucao) : '—'}</td>
+      <td class="${pendente ? 'alerta' : (devolvida ? 'ok' : '')}">${devolvida ? 'Devolvida' : (pendente ? 'VENCIDA — não devolvida' : 'Em vigor')}</td></tr>`;
+  }).join('');
+  const corpo = `<table>
+    <colgroup><col style="width:12%"><col style="width:22%"><col style="width:15%"><col style="width:13%"><col style="width:12%"><col style="width:12%"><col style="width:14%"></colgroup>
+    <thead><tr><th>Contrato</th><th>Fornecedor</th><th>Modalidade</th><th class="num">Valor</th><th>Vencimento</th><th>Devolução</th><th>Situação</th></tr></thead>
+    <tbody>${linhas || _relVazio(7)}</tbody></table>`;
+  _relAbrir('Garantias Contratuais',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${comGarantia.length} contrato(s) com garantia registrada`, corpo);
+}
+
+// 7 ─ Recebimento do objeto
+async function relRecebimento() {
+  const { contratos } = await _relDados();
+  const linhas = contratos.map(c => {
+    const prov = c.recebimentoProvisorioData, def = c.recebimentoDefinitivoData;
+    const encerrado = c.status === 'encerrado';
+    const pendencia = !def && (encerrado || prov);
+    return { c, prov, def, encerrado, pendencia };
+  }).filter(x => x.prov || x.def || x.encerrado)
+    .sort((a, b) => Number(b.pendencia) - Number(a.pendencia));
+  const corpo = `<table>
+    <colgroup><col style="width:12%"><col style="width:26%"><col style="width:12%"><col style="width:14%"><col style="width:14%"><col style="width:22%"></colgroup>
+    <thead><tr><th>Contrato</th><th>Objeto</th><th>Status</th><th>Provisório</th><th>Definitivo</th><th>Situação</th></tr></thead>
+    <tbody>${linhas.length ? linhas.map(({ c, prov, def, encerrado, pendencia }) => `<tr>
+        <td>${escHtml(c.numero || '—')}</td><td>${escHtml(c.objeto || '—')}</td>
+        <td>${_relStatus[c.status] || c.status || '—'}</td>
+        <td>${prov ? _relData(prov) : '—'}${prov && c.recebimentoProvisorioResponsavel ? `<br><span style="font-size:7.5pt;color:#666">${escHtml(c.recebimentoProvisorioResponsavel)}</span>` : ''}</td>
+        <td>${def ? _relData(def) : '—'}${def && c.recebimentoDefinitivoResponsavel ? `<br><span style="font-size:7.5pt;color:#666">${escHtml(c.recebimentoDefinitivoResponsavel)}</span>` : ''}</td>
+        <td class="${pendencia ? 'alerta' : 'ok'}">${def ? 'Concluído' : (encerrado ? 'ENCERRADO SEM RECEBIMENTO DEFINITIVO' : 'Aguardando definitivo')}</td></tr>`).join('') : _relVazio(6)}
+    </tbody></table>
+    <p style="font-size:8.5pt;color:#555;margin-top:8pt">Lista apenas contratos com algum recebimento registrado ou já encerrados.</p>`;
+  _relAbrir('Recebimento do Objeto',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${linhas.length} contrato(s)`, corpo);
+}
+
+// 8 ─ Contratos por fornecedor
+async function relPorFornecedor() {
+  const { contratos, fornecedores } = await _relDados();
+  const hoje = new Date().toISOString().slice(0, 10);
+  const porForn = new Map();
+  contratos.forEach(c => {
+    const k = c.fornecedorId || '__sem__';
+    if (!porForn.has(k)) porForn.set(k, []);
+    porForn.get(k).push(c);
+  });
+  const linhas = [...porForn.entries()].map(([id, lista]) => {
+    const f = fornecedores.find(x => x.id === id);
+    const vivos = lista.filter(c => ['vigente', 'em_prorrogacao'].includes(c.status));
+    const certVencidas = (f?.certidoes || []).filter(ce => ce.validade && ce.validade < hoje).length;
+    const sancaoVigente = (f?.sancoes || []).some(s => !s.prazoFim || s.prazoFim >= hoje);
+    return { nome: f ? (f.razao_social || f.razao || '—') : (id === '__sem__' ? '(sem fornecedor vinculado)' : '(fornecedor removido)'),
+             cnpj: f?.cnpj || '—', total: lista.length, vivos: vivos.length,
+             valor: _relSoma(lista, 'valorGlobal'), certVencidas, sancaoVigente };
+  }).sort((a, b) => b.valor - a.valor);
+  const corpo = `<table>
+    <colgroup><col style="width:28%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:16%"><col style="width:11%"><col style="width:11%"></colgroup>
+    <thead><tr><th>Fornecedor</th><th>CNPJ</th><th class="num">Contratos</th><th class="num">Em execução</th><th class="num">Valor total</th><th>Certidões</th><th>Sanção</th></tr></thead>
+    <tbody>${linhas.length ? linhas.map(l => `<tr>
+        <td>${escHtml(l.nome)}</td><td>${escHtml(l.cnpj)}</td>
+        <td class="num">${l.total}</td><td class="num">${l.vivos}</td>
+        <td class="num">${fmtMoney(l.valor)}</td>
+        <td class="${l.certVencidas ? 'alerta' : ''}">${l.certVencidas ? `${l.certVencidas} vencida(s)` : 'em dia'}</td>
+        <td class="${l.sancaoVigente ? 'alerta' : ''}">${l.sancaoVigente ? 'VIGENTE' : 'não'}</td></tr>`).join('') : _relVazio(7)}
+      ${linhas.length ? `<tr class="total"><td colspan="4">TOTAL</td><td class="num">${fmtMoney(linhas.reduce((t, l) => t + l.valor, 0))}</td><td></td><td></td></tr>` : ''}
+    </tbody></table>`;
+  _relAbrir('Contratos por Fornecedor',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${linhas.length} fornecedor(es) com contrato`, corpo);
+}
+
+// 9 ─ Riscos consolidados
+async function relRiscos() {
+  const { contratos } = await _relDados();
+  const linhas = [];
+  contratos.forEach(c => (c.riscos || []).forEach(r => linhas.push({ c, r })));
+  const peso = { alta: 3, alto: 3, media: 2, médio: 2, medio: 2, baixa: 1, baixo: 1 };
+  const grau = r => (peso[(r.probabilidade || '').toLowerCase()] || 0) * (peso[(r.impacto || '').toLowerCase()] || 0);
+  linhas.sort((a, b) => grau(b.r) - grau(a.r));
+  const corpo = `<table>
+    <colgroup><col style="width:11%"><col style="width:22%"><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:22%"><col style="width:14%"></colgroup>
+    <thead><tr><th>Contrato</th><th>Risco</th><th>Probabilidade</th><th>Impacto</th><th class="num">Grau</th><th>Mitigação</th><th>Responsável</th></tr></thead>
+    <tbody>${linhas.length ? linhas.map(({ c, r }) => {
+      const g = grau(r);
+      return `<tr>
+        <td>${escHtml(c.numero || '—')}</td><td>${escHtml(r.descricao || r.risco || '—')}</td>
+        <td>${escHtml(r.probabilidade || '—')}</td><td>${escHtml(r.impacto || '—')}</td>
+        <td class="num${g >= 6 ? ' alerta' : ''}">${g || '—'}</td>
+        <td>${escHtml(r.mitigacao || '—')}</td><td>${escHtml(r.responsavel || '—')}</td></tr>`;
+    }).join('') : _relVazio(7)}
+    </tbody></table>
+    <p style="font-size:8.5pt;color:#555;margin-top:8pt">Grau = probabilidade × impacto (baixa=1, média=2, alta=3). Em vermelho: grau 6 ou mais.</p>`;
+  _relAbrir('Riscos Consolidados dos Contratos',
+    `Gerado em: ${_relGeradoEm()} &nbsp;·&nbsp; ${linhas.length} risco(s) em ${new Set(linhas.map(l => l.c.id)).size} contrato(s)`, corpo);
+}
+
+function showRelatorios() {
+  _hideAllViews();
+  document.getElementById('view-relatorios').classList.add('active');
+  setNavActive('nav-relatorios');
+}
+
 function _qrFooterReport(label) {
   const u = getUser();
   const dtFmt = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
