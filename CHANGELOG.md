@@ -7,6 +7,9 @@
 
 ## [0.40.4] — 2026-07-28
 
+### Adicionado
+- **SINTEGRA — Inscrição Estadual** passa a ser um tipo de certidão do fornecedor, junto dos demais cadastros oficiais (mesma lista do SGCD).
+
 ### Corrigido
 - **Endereços de dois órgãos atualizados na lista de tipos de certidão** (TCU — Inabilitados e Inidôneos, e Certidão Simples Nacional): as páginas antigas saíram do ar. No SGCA a lista é usada só para nomear o tipo da certidão do fornecedor, então nada muda na tela — o acerto mantém a lista igual à do SGCD.
 - **A janela do sistema acumulava vários GB no computador.** O sistema abre o app numa janela dedicada do navegador, com perfil próprio, e o Chrome baixava para dentro desse perfil o modelo de inteligência artificial local dele — cerca de **4 GB** que nada aqui usa. A abertura passa a desligar esse recurso: o perfil fica em algumas dezenas de MB.
