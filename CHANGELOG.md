@@ -5,6 +5,13 @@
 
 ---
 
+## [0.40.5] — 2026-07-28
+
+### Corrigido
+- **Aviso técnico no console do servidor.** Ao reportar um erro de JavaScript, o servidor respondia "sem conteúdo" mas ainda enviava um corpo junto, e o motor do servidor registrava o aviso `application-written content was ignored`. Sem efeito para quem usa; o log fica limpo.
+
+---
+
 ## [0.40.4] — 2026-07-28
 
 ### Adicionado
