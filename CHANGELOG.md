@@ -8,6 +8,7 @@
 ## [0.40.4] — 2026-07-28
 
 ### Corrigido
+- **Endereços de dois órgãos atualizados na lista de tipos de certidão** (TCU — Inabilitados e Inidôneos, e Certidão Simples Nacional): as páginas antigas saíram do ar. No SGCA a lista é usada só para nomear o tipo da certidão do fornecedor, então nada muda na tela — o acerto mantém a lista igual à do SGCD.
 - **A janela do sistema acumulava vários GB no computador.** O sistema abre o app numa janela dedicada do navegador, com perfil próprio, e o Chrome baixava para dentro desse perfil o modelo de inteligência artificial local dele — cerca de **4 GB** que nada aqui usa. A abertura passa a desligar esse recurso: o perfil fica em algumas dezenas de MB.
 - **O perfil do navegador saiu de dentro da pasta do sistema** e passou para a pasta temporária do Windows, como já era nos sistemas irmãos — antes ele inchava a pasta e ia junto em qualquer cópia dela. Na primeira execução da nova versão o sistema **avisa no console** que a pasta `browser-profile` antiga pode ser apagada; ela não é removida automaticamente. A janela do app pede login de novo e as preferências de aparência (tema, largura, fonte) voltam ao padrão nessa máquina — nada disso fica no banco de dados.
 
