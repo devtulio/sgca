@@ -5,6 +5,13 @@
 
 ---
 
+## [0.40.6] — 2026-07-28
+
+### Removido
+- **Código morto herdado do SGCD** (função de situação por etapas, que não existe no SGCA): não era chamada em lugar nenhum. Nada muda no uso.
+
+---
+
 ## [0.40.5] — 2026-07-28
 
 ### Corrigido
