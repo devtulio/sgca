@@ -1930,20 +1930,8 @@ body.dark .rel-card { border-color: #383838; }
 // ══════════════════════════════════════════════════════════════
 // SVG ICON LIBRARY (Lucide — stroke, 2px, round)
 // ══════════════════════════════════════════════════════════════
-const ICONS = {
-  folder:   (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
-  clock:    (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-  check:    (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-  pause:    (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>`,
-  building: (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 0-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>`,
-  settings: (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
-  moon:     (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
-  sun:      (s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`,
-  coin:     (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2m-3-5h4a2 2 0 0 0 0-4h-2a2 2 0 0 1 0-4h4"/></svg>`,
-  calendar: (s=13)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-};
 
-const SGCA_VERSION = '0.40.6';
+const SGCA_VERSION = '0.40.7';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2507,181 +2495,15 @@ const CERTIDOES = [
   { id:'outro',        nome:'Outra',                               url:'',                                                                                                                                                      desc:'Certidão ou documento não listado acima' },
 ];
 
-// Mapa de migração: IDs antigos do CERT_TIPOS → IDs unificados do CERTIDOES
-const _CERT_MIGRA = { cnd_federal:'rfb', cnd_estadual:'pge_sp', crf_fgts:'fgts' };
 
 // ══════════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════════
-let currentId = null;
 let currentProcess = null;
-let fracResultado = new Map();
-let _compactMode = false;
-let _loaded = false;
-
-// ══════════════════════════════════════════════════════════════
-// FRACIONAMENTO ENGINE
-// ══════════════════════════════════════════════════════════════
-const FRAC_STOPWORDS = new Set(['de','do','da','dos','das','para','com','em','na','no','nas','nos',
-  'e','a','o','as','os','um','uma','ao','aos','por','pelo','pela','pelos','pelas',
-  'que','se','ou','ate','mais','menos','entre','sobre','aquisicao','contratacao',
-  'fornecimento','prestacao','servico','servicos','compra','material']);
-
-const FRAC_LIMITES = { 'I':130984.20, 'II':65492.11, 'III':65492.11, 'IV':65492.11 };
 
 // ══════════════════════════════════════════════════════════════
 // CLASSIFICAÇÃO DO OBJETO (Natureza → Categoria → Subcategoria)
 // ══════════════════════════════════════════════════════════════
-const OBJETO_CLASS = {
-  naturezas: [
-    'Bens — Material de Consumo',
-    'Bens — Material Permanente',
-    'Serviços',
-    'Obras e Serviços de Engenharia'
-  ],
-  categorias: {
-    'Bens — Material de Consumo': [
-      'Alimentação e Gêneros Alimentícios',
-      'Higiene, Limpeza e Conservação',
-      'Material de Escritório e Papelaria',
-      'Material Educacional e Didático',
-      'Material Hospitalar e Laboratorial',
-      'Material Farmacológico e Medicamentos',
-      'Material Esportivo e Recreativo',
-      'Vestuário, Uniformes e EPIs',
-      'Combustíveis e Lubrificantes',
-      'Material Elétrico',
-      'Material Hidráulico e Sanitário',
-      'Material de Construção e Manutenção',
-      'Ferramentas e Utensílios',
-      'Sementes, Fertilizantes e Insumos Agrícolas',
-      'Gás e Combustíveis Especiais',
-      'Material Gráfico e de Comunicação',
-      'Outros Materiais de Consumo'
-    ],
-    'Bens — Material Permanente': [
-      'Mobiliário e Decoração',
-      'Equipamentos de Informática e TI',
-      'Equipamentos de Comunicação e Audiovisual',
-      'Equipamentos Médico-Hospitalares',
-      'Equipamentos Laboratoriais e Científicos',
-      'Equipamentos Esportivos e de Lazer',
-      'Equipamentos Educacionais',
-      'Veículos, Máquinas e Equipamentos Pesados',
-      'Equipamentos de Segurança e Vigilância',
-      'Equipamentos de Climatização',
-      'Eletrodomésticos e Eletroeletrônicos',
-      'Instrumentos Musicais',
-      'Outros Equipamentos Permanentes'
-    ],
-    'Serviços': [
-      'Limpeza, Higienização e Conservação',
-      'Manutenção de Bens Imóveis',
-      'Manutenção de Veículos e Máquinas',
-      'Manutenção de Equipamentos de TI',
-      'Manutenção de Equipamentos em Geral',
-      'Vigilância e Segurança Patrimonial',
-      'Serviços de Tecnologia da Informação',
-      'Serviços Gráficos, Editoriais e de Publicidade',
-      'Serviços de Comunicação e Telefonia',
-      'Serviços de Saúde e Medicina do Trabalho',
-      'Serviços de Capacitação e Treinamento',
-      'Serviços Jurídicos e Advocatícios',
-      'Serviços Contábeis, Financeiros e de Auditoria',
-      'Serviços de Transporte e Logística',
-      'Serviços de Alimentação e Nutrição',
-      'Serviços de Jardinagem, Paisagismo e Limpeza Urbana',
-      'Serviços Culturais, Artísticos e Esportivos',
-      'Serviços Ambientais e de Saneamento',
-      'Locação de Veículos, Máquinas e Equipamentos',
-      'Locação de Imóveis',
-      'Serviços de Eventos e Cerimonial',
-      'Serviços Funerários',
-      'Serviços de Topografia, Georreferenciamento e Engenharia',
-      'Outros Serviços'
-    ],
-    'Obras e Serviços de Engenharia': [
-      'Construção de Edificações',
-      'Reforma e Ampliação de Edificações',
-      'Pavimentação e Obras Viárias',
-      'Obras de Saneamento e Drenagem',
-      'Iluminação Pública',
-      'Obras Hidráulicas e de Abastecimento',
-      'Obras de Contenção, Aterro e Terraplanagem',
-      'Instalações Elétricas e de Telecomunicações',
-      'Instalações Hidrossanitárias',
-      'Outros Serviços de Engenharia'
-    ]
-  },
-  subcategorias: {
-    'Alimentação e Gêneros Alimentícios': ['Gêneros alimentícios em geral','Água mineral e bebidas','Laticínios e derivados','Carnes e pescados','Hortifrutigranjeiros','Produtos de panificação','Suplementos e complementos alimentares'],
-    'Higiene, Limpeza e Conservação': ['Material de limpeza em geral','Desinfetantes e saneantes','Papel higiênico e descartáveis de higiene','Produtos de higiene pessoal','Sacos de lixo e embalagens de descarte','Panos, vassouras e utensílios de limpeza'],
-    'Material de Escritório e Papelaria': ['Papéis, cadernos e cartolinas','Canetas, lápis e instrumentos de escrita','Pastas, arquivadores e organizadores','Envelopes e formulários','Toner, cartuchos e suprimentos de impressão','Itens de fixação (clipes, grampos, fitas)','Outros materiais de papelaria'],
-    'Material Educacional e Didático': ['Livros e publicações','Material escolar (cadernos, mochilas etc.)','Jogos pedagógicos e brinquedos educativos','Material artístico e de artesanato','Material de laboratório escolar','Outros materiais didáticos'],
-    'Material Hospitalar e Laboratorial': ['Materiais descartáveis hospitalares','EPIs hospitalares','Reagentes e insumos laboratoriais','Material para curativos e procedimentos','Artigos médico-cirúrgicos'],
-    'Material Farmacológico e Medicamentos': ['Medicamentos em geral','Vacinas e imunobiológicos','Insumos farmacêuticos','Materiais odontológicos','Produtos fitoterápicos e similares'],
-    'Material Esportivo e Recreativo': ['Equipamentos esportivos','Uniformes e artigos esportivos','Brinquedos e artigos recreativos','Artigos para academia e fitness'],
-    'Vestuário, Uniformes e EPIs': ['Uniformes funcionais e escolares','Equipamentos de proteção individual (EPIs)','Calçados e acessórios profissionais','Roupas de cama, mesa e banho institucional'],
-    'Combustíveis e Lubrificantes': ['Gasolina, etanol e diesel','Lubrificantes e óleos automotivos','Aditivos e fluidos especiais'],
-    'Material Elétrico': ['Fios, cabos e condutores elétricos','Lâmpadas, luminárias e reatores','Disjuntores, tomadas e componentes elétricos','Pilhas, baterias e acumuladores','Materiais de proteção elétrica'],
-    'Material Hidráulico e Sanitário': ['Tubos, conexões e registros','Torneiras, válvulas e acessórios sanitários','Caixas d\'água e reservatórios','Bombas e motores hidráulicos'],
-    'Material de Construção e Manutenção': ['Cimento, areia, brita e argamassa','Tintas, solventes e impermeabilizantes','Madeiras e materiais de marcenaria','Azulejos, pisos e revestimentos','Ferro, aço e estruturas metálicas','Vidros e esquadrias'],
-    'Ferramentas e Utensílios': ['Ferramentas manuais e elétricas','Utensílios de copa e cozinha institucional','Outros utensílios'],
-    'Sementes, Fertilizantes e Insumos Agrícolas': ['Sementes e mudas','Fertilizantes e corretivos','Defensivos agrícolas e fitossanitários','Equipamentos e insumos de irrigação'],
-    'Gás e Combustíveis Especiais': ['Gás de cozinha (GLP)','Gás natural','Lenha e biomassa'],
-    'Material Gráfico e de Comunicação': ['Impressos e formulários','Material de sinalização e comunicação visual','Brindes, placas comemorativas e troféus'],
-    'Outros Materiais de Consumo': ['Outros materiais de consumo não classificados'],
-    'Mobiliário e Decoração': ['Mesas, cadeiras e mobiliário de escritório','Mobiliário escolar','Mobiliário hospitalar e clínico','Armários, estantes e arquivos de aço','Cortinas, tapetes e artigos de decoração'],
-    'Equipamentos de Informática e TI': ['Computadores e notebooks','Servidores e infraestrutura de rede','Periféricos e acessórios de informática','Impressoras, scanners e multifuncionais','Softwares e licenças','Outros equipamentos de TI'],
-    'Equipamentos de Comunicação e Audiovisual': ['Aparelhos de telefonia e PABX','Equipamentos de videoconferência','Equipamentos de som, projeção e TV','Equipamentos de radiocomunicação','Câmeras e equipamentos fotográficos'],
-    'Equipamentos Médico-Hospitalares': ['Equipamentos de diagnóstico','Equipamentos cirúrgicos','Equipamentos de UTI e terapia intensiva','Equipamentos odontológicos','Equipamentos de fisioterapia e reabilitação'],
-    'Equipamentos Laboratoriais e Científicos': ['Equipamentos de análise e medição','Equipamentos de microbiologia','Instrumentos de precisão'],
-    'Equipamentos Esportivos e de Lazer': ['Equipamentos de academia e fitness','Equipamentos para quadras e campos','Equipamentos de lazer e recreação infantil','Piscinas e equipamentos aquáticos'],
-    'Equipamentos Educacionais': ['Quadros brancos, interativos e lousas','Mobiliário e estruturas pedagógicas','Equipamentos de artes e música'],
-    'Veículos, Máquinas e Equipamentos Pesados': ['Automóveis e veículos leves','Ônibus, vans e transporte coletivo','Caminhões e veículos de carga','Máquinas agrícolas e de terraplanagem','Tratores e equipamentos de jardinagem','Ambulâncias e veículos de emergência','Embarcações e equipamentos náuticos'],
-    'Equipamentos de Segurança e Vigilância': ['Câmeras de vigilância (CFTV)','Alarmes e sistemas de monitoramento','Equipamentos de controle de acesso','Equipamentos de combate a incêndio'],
-    'Equipamentos de Climatização': ['Aparelhos de ar-condicionado split','Sistemas de ar-condicionado central','Ventiladores, exaustores e climatizadores','Aquecedores e sistemas de aquecimento'],
-    'Eletrodomésticos e Eletroeletrônicos': ['Eletrodomésticos de cozinha','Televisores e monitores','Geladeiras, freezers e câmaras frias','Lavadoras e secadoras institucionais'],
-    'Instrumentos Musicais': ['Instrumentos de sopro','Instrumentos de percussão','Instrumentos de corda','Equipamentos de som para bandas'],
-    'Outros Equipamentos Permanentes': ['Outros equipamentos permanentes não classificados'],
-    'Limpeza, Higienização e Conservação': ['Limpeza predial (contrato)','Higienização de veículos','Controle de pragas e desinsetização','Limpeza de caixas d\'água e reservatórios','Lavanderia e higienização de roupas','Desinfecção e higienização ambiental'],
-    'Manutenção de Bens Imóveis': ['Manutenção civil e de alvenaria','Manutenção elétrica predial','Manutenção hidráulica predial','Manutenção de telhados e coberturas','Manutenção de portões, portas e esquadrias','Pintura e recuperação de fachadas','Manutenção predial geral'],
-    'Manutenção de Veículos e Máquinas': ['Manutenção preventiva de veículos leves','Manutenção corretiva de veículos leves','Manutenção de ônibus e veículos pesados','Manutenção de máquinas e equipamentos pesados','Serviços de borracharia e pneus','Higienização e lavagem de frotas'],
-    'Manutenção de Equipamentos de TI': ['Manutenção de computadores e periféricos','Manutenção de redes e infraestrutura','Manutenção de impressoras e copiadoras','Suporte técnico e helpdesk'],
-    'Manutenção de Equipamentos em Geral': ['Manutenção de equipamentos médico-hospitalares','Manutenção de ar-condicionado e climatização','Manutenção de elevadores','Manutenção de eletrodomésticos e eletroeletrônicos','Calibração e aferição de instrumentos'],
-    'Vigilância e Segurança Patrimonial': ['Vigilância armada','Vigilância desarmada','Monitoramento eletrônico (CFTV)','Portaria e controle de acesso','Segurança escolar'],
-    'Serviços de Tecnologia da Informação': ['Desenvolvimento e manutenção de sistemas','Hospedagem e infraestrutura cloud','Licenciamento de software','Consultoria e assessoria em TI','Suporte e implantação de sistemas'],
-    'Serviços Gráficos, Editoriais e de Publicidade': ['Impressão de materiais institucionais','Criação e design gráfico','Publicidade e propaganda','Publicações legais (diário oficial, jornais)','Serviços editoriais e de redação'],
-    'Serviços de Comunicação e Telefonia': ['Telefonia fixa e móvel','Internet banda larga e links dedicados','Radiocomunicação','Serviços postais e de malote','TV a cabo e streaming institucional'],
-    'Serviços de Saúde e Medicina do Trabalho': ['Exames médicos periódicos','Vacinação e imunização','Assistência médica e planos de saúde','Serviços odontológicos','Saúde mental e psicológica','Ambulância e serviços de emergência'],
-    'Serviços de Capacitação e Treinamento': ['Cursos e treinamentos presenciais','Cursos e treinamentos online (EAD)','Palestras e seminários','Congressos, feiras e eventos técnicos','Certificações e habilitações profissionais'],
-    'Serviços Jurídicos e Advocatícios': ['Assessoria jurídica geral','Representação em processos judiciais','Elaboração de pareceres e contratos','Serviços notariais e cartorários'],
-    'Serviços Contábeis, Financeiros e de Auditoria': ['Serviços contábeis','Auditoria interna e externa','Avaliação patrimonial e perícia','Serviços atuariais'],
-    'Serviços de Transporte e Logística': ['Transporte escolar','Transporte de pacientes','Frete e logística de materiais','Translado e transfer institucional','Locação de veículos com motorista'],
-    'Serviços de Alimentação e Nutrição': ['Fornecimento de refeições (refeitório)','Fornecimento de marmitas e quentinhas','Merenda escolar','Coffee break e catering para eventos','Nutrição enteral e dietas especiais'],
-    'Serviços de Jardinagem, Paisagismo e Limpeza Urbana': ['Poda, roçagem e capina','Jardinagem e paisagismo','Coleta e destinação de resíduos sólidos','Varrição de vias públicas','Arborização urbana'],
-    'Serviços Culturais, Artísticos e Esportivos': ['Apresentações musicais e artísticas','Eventos esportivos e competições','Serviços de biblioteca e acervo','Programas culturais e recreativos'],
-    'Serviços Ambientais e de Saneamento': ['Coleta de resíduos especiais e perigosos','Saneamento ambiental','Licenciamento e consultoria ambiental','Análise de água e efluentes'],
-    'Locação de Veículos, Máquinas e Equipamentos': ['Locação de veículos leves','Locação de ônibus e transporte coletivo','Locação de máquinas e equipamentos pesados','Locação de equipamentos de eventos','Locação de equipamentos de TI'],
-    'Locação de Imóveis': ['Locação de imóvel para uso administrativo','Locação de imóvel para unidade de saúde','Locação de imóvel para uso educacional','Locação de imóvel para uso assistencial','Locação de galpão ou armazém'],
-    'Serviços de Eventos e Cerimonial': ['Organização e produção de eventos','Decoração e ambientação','Locação de tendas, palcos e estruturas','Sonorização e iluminação para eventos','Serviços de recepção e cerimonial'],
-    'Serviços Funerários': ['Fornecimento de urnas funerárias','Serviços de velório e sepultamento','Cremação','Translado funerário'],
-    'Serviços de Topografia, Georreferenciamento e Engenharia': ['Levantamento topográfico','Georreferenciamento e cadastro imobiliário','Projetos arquitetônicos e de engenharia','Supervisão e fiscalização de obras','Laudos técnicos e perícias de engenharia'],
-    'Outros Serviços': ['Outros serviços não classificados'],
-    'Construção de Edificações': ['Construção de prédio administrativo/prefeitura','Construção de unidade de saúde','Construção de escola ou creche','Construção de equipamento esportivo/quadra','Construção de equipamento cultural','Construção de unidade assistencial'],
-    'Reforma e Ampliação de Edificações': ['Reforma de prédio administrativo','Reforma de unidade de saúde','Reforma de escola ou creche','Reforma de equipamento esportivo','Reforma de equipamento cultural','Ampliação de edificação existente'],
-    'Pavimentação e Obras Viárias': ['Pavimentação asfáltica','Pavimentação em paralelepípedo e calçamento','Recapeamento e fresagem','Construção e reforma de calçadas','Sinalização viária','Construção de pontes e viadutos'],
-    'Obras de Saneamento e Drenagem': ['Implantação de rede de drenagem pluvial','Construção de galerias e bueiros','Obras de contenção de enchentes','Implantação de rede de esgoto','Melhorias sanitárias domiciliares'],
-    'Iluminação Pública': ['Implantação de iluminação pública','Substituição por LED','Manutenção do sistema de iluminação pública'],
-    'Obras Hidráulicas e de Abastecimento': ['Implantação de rede de abastecimento d\'água','Construção de poços artesianos','Reservatórios e caixas d\'água','Obras de captação e tratamento de água'],
-    'Obras de Contenção, Aterro e Terraplanagem': ['Contenção de encostas','Aterro e terraplanagem','Muros de arrimo e contenção','Recuperação de áreas degradadas'],
-    'Instalações Elétricas e de Telecomunicações': ['Instalações elétricas prediais','Instalação de cabos e redes estruturadas','CFTV e sistemas de segurança eletrônica','Instalação de painéis solares'],
-    'Instalações Hidrossanitárias': ['Instalações hidráulicas prediais','Instalações sanitárias e esgoto predial','Sistemas de combate a incêndio'],
-    'Outros Serviços de Engenharia': ['Outros serviços de engenharia não classificados']
-  }
-};
-
-let expandedSteps = new Set();
 
 // ══════════════════════════════════════════════════════════════
 // UTILS
@@ -2730,7 +2552,6 @@ function maskMoney(el) {
 // ══════════════════════════════════════════════════════════════
 // LOAD / SAVE
 // ══════════════════════════════════════════════════════════════
-let _saveIndicatorTimer = null;
 
 // ══════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -2775,7 +2596,6 @@ function validarCpf(s) {
 
 // Rate limiting: impede múltiplas consultas CNPJ simultâneas
 let _cnpjQueryInProgress = false;
-let _cnpjLastDigits = '';
 
 function formatCnpj(s) {
   const d = cleanCnpj(s);
@@ -5398,16 +5218,6 @@ function limparBuscaForn() {
 
 // ── Ordenação genérica de tabelas (chave 'forn') ──
 const _tblSort = {};  // chave -> { idx, dir }
-function _tblTh(key, cols) {
-  const s = _tblSort[key] || { idx: null, dir: 1 };
-  return '<tr>' + cols.map((c, idx) => {
-    if (c.noSort) return `<th class="${c.cls || ''}">${escHtml(c.h)}</th>`;
-    const active = s.idx === idx;
-    const arrow = active ? (s.dir === 1 ? ' ▲' : ' ▼') : '';
-    const aria = active ? (s.dir === 1 ? 'ascending' : 'descending') : 'none';
-    return `<th onclick="_tblDoSort('${key}',${idx})" role="button" tabindex="0" aria-sort="${aria}" title="Ordenar por ${escHtml(c.h)}" style="cursor:pointer;user-select:none;white-space:nowrap">${escHtml(c.h)}<span style="opacity:.65">${arrow}</span></th>`;
-  }).join('') + '</tr>';
-}
 function _tblApply(key, cols, items) {
   const s = _tblSort[key];
   if (!s || s.idx == null || !cols[s.idx] || cols[s.idx].noSort) return items;
@@ -5973,7 +5783,6 @@ const _debouncedRenderForn = _debounce(renderFornecedores, 150);
 // uma requisição por tecla digitada
 const _debouncedRenderContratos = _debounce(renderContratos, 300);
 const _debouncedRenderAtas = _debounce(renderAtas, 300);
-let _lastFiltered = null;
 
 // ══════════════════════════════════════════════════════════════
 // GLOBAL SEARCH
@@ -6043,7 +5852,6 @@ function renderGlobalSearch(q) {
 }
 const _debouncedGlobalSearch = _debounce(renderGlobalSearch, 100);
 
-let _lastDashFilters = '';
 
 function escHtml(s) {
   if (!s) return '';
@@ -7529,7 +7337,6 @@ ${_qrFooterReport('Relatório de Atas')}
 // ══════════════════════════════════════════════════════════════
 // FORNECEDOR PICK PARA PROPOSTAS
 // ══════════════════════════════════════════════════════════════
-let _pickFornTarget = null;
 
 // ══════════════════════════════════════════════════════════════
 // CONFORMIDADE
@@ -7538,9 +7345,7 @@ let _pickFornTarget = null;
 // ══════════════════════════════════════════════════════════════
 // DASH TABLE VIEW
 // ══════════════════════════════════════════════════════════════
-let _dashView = localStorage.getItem('sgca-dash-view') || 'cards';
 
-let _kanbanScrollX = 0;
 
 // ══════════════════════════════════════════════════════════════
 // EXPORTAR CSV
@@ -7759,9 +7564,6 @@ document.getElementById('confirm-overlay').addEventListener('click', e => {
 // ══════════════════════════════════════════════════════════════
 function applyTheme(dark) {
   document.body.classList.toggle('dark', dark);
-  const btn = document.getElementById('theme-btn');
-  const lbl = document.getElementById('theme-lbl');
-  if (lbl) lbl.innerHTML = dark ? ICONS.sun(20) : ICONS.moon(20);
 }
 
 // ══════════════════════════════════════════════════════════════

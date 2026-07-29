@@ -5,6 +5,13 @@
 
 ---
 
+## [0.40.7] — 2026-07-29
+
+### Removido
+- **Código morto herdado do clone do SGCD** (198 linhas): o motor de classificação de objeto e de fracionamento, a tabela de ícones, o mapa de migração de certidões e treze variáveis de estado de telas que o SGCA não tem (etapas de processo, kanban, seleção de proposta). Nada muda no uso.
+
+---
+
 ## [0.40.6] — 2026-07-28
 
 ### Removido
