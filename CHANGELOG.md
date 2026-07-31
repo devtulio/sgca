@@ -7,6 +7,10 @@
 
 ## [Não versionado]
 
+---
+
+## [0.40.11] — 2026-07-31
+
 ### Corrigido
 - **Ata assinada em 1º de janeiro era registrada com o ano anterior.** O ano da ata — usado na numeração e na exportação para o PNCP — vinha de uma leitura de data que o navegador interpreta como UTC; no nosso fuso, 1º de janeiro virava 31 de dezembro do ano anterior. Só se manifestava na virada do ano, e agora está corrigido.
 
