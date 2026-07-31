@@ -134,7 +134,12 @@ test('baixar anexo abre o seletor de destino em vez de baixar direto', async ({ 
 // Ata assinada em 1o de janeiro caia no ANO ANTERIOR: new Date('2026-01-01')
 // e lido como UTC e, no nosso fuso, vira 31/12/2025 — e o ano da ata alimenta
 // numeracao e exportacao para o PNCP.
-test('ano da ata nao volta na virada do ano', async ({ page }) => {
+// timezoneId fixo: em UTC o defeito e invisivel, entao sem isto o teste
+// passaria no CI mesmo com o bug de volta.
+test.describe('datas em fuso brasileiro', () => {
+  test.use({ timezoneId: 'America/Sao_Paulo' });
+
+  test('ano da ata nao volta na virada do ano', async ({ page }) => {
   await page.goto('/SGCA.html');
   await page.fill('#pin-username', 'admin');
   await page.fill('#pin-input', 'novaSenhaE2E123');
@@ -142,11 +147,11 @@ test('ano da ata nao volta na virada do ano', async ({ page }) => {
   await expect(page.locator('#overlay-pin')).toBeHidden();
 
   const r = await page.evaluate(() => ({
-    ano:     new Date('2026-01-01T00:00:00').getFullYear(),
-    errado:  new Date('2026-01-01').getFullYear(),
-    fmt:     fmtDate('2026-01-01'),
+    ano: new Date('2026-01-01T00:00:00').getFullYear(),
+    fmt: fmtDate('2026-01-01'),
   }));
+  // independente de fuso: vale aqui (UTC-3) e no runner do CI (UTC)
   expect(r.ano, 'ano da ata voltou um ano').toBe(2026);
   expect(r.fmt).toBe('01/01/2026');
-  expect(r.errado, 'new Date(so-data) deixou de ser UTC?').toBe(2025);
+  });
 });
