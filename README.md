@@ -1,6 +1,6 @@
 # SGCA — Sistema de Gestão de Contratos e Atas
 
-![Versão](https://img.shields.io/badge/versão-v0.40.11-blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
+![Versão](https://img.shields.io/github/v/release/devtulio/sgca?label=vers%C3%A3o&color=blue) ![Lei](https://img.shields.io/badge/Lei-14.133%2F2021-green) ![Tecnologia](https://img.shields.io/badge/tecnologia-Python%20%2B%20SQLite-orange) ![Domínio](https://img.shields.io/badge/domínio-contratos%20e%20atas-informational) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-lightgrey) ![Licença](https://img.shields.io/badge/licença-MIT-green) ![Multiusuário](https://img.shields.io/badge/acesso-multiusuário-blueviolet) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21314676.svg)](https://doi.org/10.5281/zenodo.21314676) [![CI](https://github.com/devtulio/sgca/actions/workflows/ci.yml/badge.svg)](https://github.com/devtulio/sgca/actions/workflows/ci.yml)
 
 ## Descrição
 
@@ -187,6 +187,22 @@ Todos os documentos abrem em janela separada com botão "🖨 Imprimir / Salvar 
 
 ---
 
+## Base Legal
+
+Dispositivos da **Lei Federal nº 14.133/2021** que o sistema acompanha:
+
+| Dispositivo | Onde aparece no sistema |
+|---|---|
+| **Art. 94 c/c Art. 91, §4º** | Extrato para divulgação no PNCP |
+| **Art. 107** | Duração máxima do contrato, incluindo prorrogações |
+| **Art. 117** | Designação e controle do fiscal do contrato |
+| **Art. 122** | Subcontratação |
+| **Art. 125** | Limites de acréscimo e supressão em aditivos |
+| **Art. 140** | Recebimento do objeto |
+| **Art. 156, III** | Sanções — impedimento de licitar |
+
+---
+
 ## Segurança
 
 - Senhas armazenadas com **PBKDF2-HMAC-SHA256** e salt aleatório por usuário
@@ -248,6 +264,32 @@ Roda contra um banco/uploads/backups temporários (nunca o `sgca.db` real), cria
 ## Versionamento
 
 Consulte o [CHANGELOG.md](CHANGELOG.md) para o histórico completo de versões e alterações.
+
+---
+
+## Sistemas irmãos
+
+Cinco sistemas livres para a administração pública municipal. Os quatro
+primeiros compartilham a mesma arquitetura (servidor Python + SQLite +
+frontend single-file, multiusuário em rede local); o Licitarium é um
+programa de desktop e apenas lê dados públicos.
+
+| Sistema | Cuida de | |
+|---|---|---|
+| **SGCD** — Contratação Direta | dispensas de licitação, do pedido ao contrato | [repositório](https://github.com/devtulio/sgcd) |
+| **SGCA** — Contratos e Atas | contratos administrativos e atas de registro de preços | **(este)** |
+| **SGDP** — Documentos da Procuradoria | leis, decretos, portarias, pareceres e ofícios | [repositório](https://github.com/devtulio/sgdp) |
+| **SGEA** — Estoque do Almoxarifado | entradas, saídas, lote e validade com FEFO | [repositório](https://github.com/devtulio/sgea) |
+| **Licitarium** — Repositório do PNCP | espelho local das contratações do município | [repositório](https://github.com/devtulio/licitarium) |
+
+---
+
+## Como citar
+
+Cada versão publicada recebe um DOI próprio no Zenodo; o DOI abaixo é o do
+projeto e resolve sempre para a versão mais recente.
+
+> SILVA, T. R. M. **SGCA: sistema de gestão de contratos e atas**. Zenodo. https://doi.org/10.5281/zenodo.21314676
 
 ---
 
