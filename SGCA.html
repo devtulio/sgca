@@ -4990,7 +4990,8 @@ async function exportarPNCPAta() {
     ...(nullFields.length ? { _pendencias: nullFields } : {}),
 
     numeroAtaRegistroPreco: a.numero || null,
-    anoAta: a.dataAssinatura ? new Date(a.dataAssinatura).getFullYear() : new Date().getFullYear(),
+    // + 'T00:00:00': sem isso, ata assinada em 1o de janeiro caia no ano anterior
+    anoAta: a.dataAssinatura ? new Date(a.dataAssinatura + 'T00:00:00').getFullYear() : new Date().getFullYear(),
     processo: a.processoOrigem || null,
     objetoAta: `Registro de preços — ${(a.itens || []).length} item(ns)`,
     dataAssinatura: a.dataAssinatura || null,

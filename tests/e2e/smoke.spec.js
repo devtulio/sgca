@@ -130,3 +130,23 @@ test('baixar anexo abre o seletor de destino em vez de baixar direto', async ({ 
   expect(salvo.nome).toBe('contrato assinado.pdf');
   expect(salvo.bytes).toBeGreaterThan(0);
 });
+
+// Ata assinada em 1o de janeiro caia no ANO ANTERIOR: new Date('2026-01-01')
+// e lido como UTC e, no nosso fuso, vira 31/12/2025 — e o ano da ata alimenta
+// numeracao e exportacao para o PNCP.
+test('ano da ata nao volta na virada do ano', async ({ page }) => {
+  await page.goto('/SGCA.html');
+  await page.fill('#pin-username', 'admin');
+  await page.fill('#pin-input', 'novaSenhaE2E123');
+  await page.click('#overlay-pin button[onclick="verificarSenha()"]');
+  await expect(page.locator('#overlay-pin')).toBeHidden();
+
+  const r = await page.evaluate(() => ({
+    ano:     new Date('2026-01-01T00:00:00').getFullYear(),
+    errado:  new Date('2026-01-01').getFullYear(),
+    fmt:     fmtDate('2026-01-01'),
+  }));
+  expect(r.ano, 'ano da ata voltou um ano').toBe(2026);
+  expect(r.fmt).toBe('01/01/2026');
+  expect(r.errado, 'new Date(so-data) deixou de ser UTC?').toBe(2025);
+});
