@@ -10,12 +10,14 @@ O sistema nasceu como uma adaptação estrutural do SGCD (Sistema de Gestão de 
 
 Funciona em rede local: um único computador executa o servidor e todos os usuários acessam pelo navegador via IP ou `localhost`.
 
-![SGCA — contratos em Kanban](docs/screenshots/contratos.png)
+![Contratos em Kanban](docs/screenshots/contratos.png)
+<sup>Contratos por situação, com alerta de vencimento e gráfico dos próximos seis meses.</sup>
 
-<p align="center">
-  <img src="docs/screenshots/ata-saldo.png" width="49%" alt="Ata de registro de preços com saldo por item">
-  <img src="docs/screenshots/agenda.png" width="49%" alt="Agenda de vencimentos">
-</p>
+![Ata de registro de preços com saldo](docs/screenshots/ata-saldo.png)
+<sup>Ata de registro de preços: saldo item a item, em vermelho quando o consumo passa de 80% do registrado.</sup>
+
+![Agenda de vencimentos](docs/screenshots/agenda.png)
+<sup>Agenda unificada: contratos, atas, garantias, sanções e aniversários de reajuste.</sup>
 
 > As telas acima usam dados fictícios, gerados por `docs/screenshots.spec.js` contra um banco temporário.
 
