@@ -877,7 +877,7 @@ body.dark .rel-card { border-color: #383838; }
           </div>
           <div id="contrato-subcontratacao-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:10px;margin-bottom:10px">
             <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px">
-              <input type="text" id="sc-cnpj" placeholder="CNPJ" maxlength="18" oninput="maskCnpj(this)">
+              <input type="text" id="sc-cnpj" placeholder="CNPJ" maxlength="18" oninput="maskCnpj(this)" onchange="_scPuxarFornecedor(this.value)">
               <input type="text" id="sc-razao" placeholder="Razão social">
               <input type="text" id="sc-percentual" placeholder="% do objeto">
             </div>
@@ -1931,7 +1931,7 @@ body.dark .rel-card { border-color: #383838; }
 // SVG ICON LIBRARY (Lucide — stroke, 2px, round)
 // ══════════════════════════════════════════════════════════════
 
-const SGCA_VERSION = '0.40.12';
+const SGCA_VERSION = '0.41.0';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2111,7 +2111,7 @@ async function factoryReset() {
       const blob = await rb.blob();
       const url  = URL.createObjectURL(blob);
       const a    = Object.assign(document.createElement('a'), {
-        href: url, download: `SGCA_wipe_backup_${new Date().toISOString().slice(0,10)}.json`
+        href: url, download: `SGCA_wipe_backup_${_isoLocal()}.json`
       });
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
@@ -2244,7 +2244,7 @@ async function exportBackup() {
     const url  = URL.createObjectURL(blob);
     const a    = Object.assign(document.createElement('a'), {
       href: url,
-      download: `SIS_SGCA_BACKUP_${new Date().toISOString().slice(0,10)}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.json`
+      download: `SIS_SGCA_BACKUP_${_isoLocal()}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.json`
     });
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
@@ -2800,6 +2800,44 @@ async function consultarCeisCnep(fornId, cnpjDigits) {
     (d.cnep || []).map(s => linha('CNEP', s)).join('');
 }
 
+// CNPJ digitado fora do cadastro (hoje: subcontratação) resolve sozinho —
+// procura primeiro no cadastro compartilhado com SGCD/SGEA e, só se não achar,
+// consulta a Receita e cadastra. Evita digitar razão social à mão e evita o
+// mesmo fornecedor virar dois registros com grafias diferentes.
+async function resolverFornecedorPorCnpj(valor, vinculoId = null) {
+  const digits = cleanCnpj(valor);
+  if (digits.length !== 14) return { erro: 'incompleto' };
+  if (!validarCnpj(digits)) return { erro: 'invalido' };
+
+  const jaCadastrado = (await listarFornecedores())
+    .find(f => cleanCnpj(f.cnpj_digits || f.cnpj) === digits);
+  if (jaCadastrado) return { forn: jaCadastrado, origem: 'cadastro' };
+
+  const { data, fonte } = await fetchCnpjData(digits);   // pode lancar
+  const forn = { id: digits, cnpj: formatCnpj(digits), cnpj_digits: digits, ...data, consultadoEm: Date.now() };
+  await saveFornecedor(forn, vinculoId);
+  return { forn, origem: 'receita', fonte };
+}
+
+// Consulta indisponivel nao trava o preenchimento: o CNPJ fica como foi
+// digitado e o usuario segue preenchendo a razao social a mao.
+async function _puxarFornecedorPara(valorCnpj, aplicar) {
+  const digits = cleanCnpj(valorCnpj);
+  if (digits.length !== 14) return;            // ainda digitando: silencio
+  if (!validarCnpj(digits)) { toast('CNPJ inválido — verifique os dígitos.', 'error'); return; }
+  try {
+    toast('Consultando o cadastro…', '');
+    const r = await resolverFornecedorPorCnpj(valorCnpj, _contratoAtualId);
+    if (r.erro || !r.forn) return;
+    await aplicar(r.forn);
+    toast(r.origem === 'cadastro'
+      ? `Fornecedor do cadastro: ${r.forn.razao_social}.`
+      : `Fornecedor cadastrado agora (${r.fonte}): ${r.forn.razao_social}.`, 'success');
+  } catch (e) {
+    toast(`Não consegui consultar este CNPJ (${e.message || 'falha na consulta'}). O número foi mantido.`, 'error');
+  }
+}
+
 async function saveFornecedor(forn, processId) {
   const existing = await API.get(`/api/fornecedores/${forn.id}`).then(r => r?.ok ? API.json(r) : null);
   const prevProcessos = existing?.processos || [];
@@ -3142,7 +3180,7 @@ function _autoVigenciaContrato(vigenciaInicial) {
   if (!vigenciaInicial) return;
   const d = new Date(vigenciaInicial + 'T00:00:00');
   d.setFullYear(d.getFullYear() + 1);
-  document.getElementById('c-vig-final').value = d.toISOString().slice(0, 10);
+  document.getElementById('c-vig-final').value = _isoLocal(d);
 }
 
 // ── Alerta de vigência total próxima do limite legal (Art. 107) ────────────
@@ -3423,7 +3461,7 @@ function showNovoAditivoForm() {
   if (vigAtual) {
     const d = new Date(vigAtual + 'T00:00:00');
     d.setFullYear(d.getFullYear() + 1);
-    document.getElementById('ad-nova-vigencia').value = d.toISOString().slice(0, 10);
+    document.getElementById('ad-nova-vigencia').value = _isoLocal(d);
   } else {
     document.getElementById('ad-nova-vigencia').value = '';
   }
@@ -3443,7 +3481,7 @@ function onAditivoTipoChange() {
   if (!ehIndice) document.getElementById('ad-indice-percentual').value = '';
   if (ehIndice) {
     document.getElementById('ad-indice-de').value  = document.getElementById('c-vig-inicial').value || '';
-    document.getElementById('ad-indice-ate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('ad-indice-ate').value = _isoLocal();
     _adToggleBuscarIndice();
   } else {
     document.getElementById('ad-indice-busca-wrap').style.display = 'none';
@@ -3571,7 +3609,7 @@ function renderFiscalizacoesList(c) {
 }
 function showNovaFiscalizacaoForm() {
   document.getElementById('contrato-fiscalizacao-form').style.display = '';
-  document.getElementById('fz-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('fz-data').value = _isoLocal();
   document.getElementById('fz-fiscal').value = document.getElementById('c-fiscal').value || '';
   document.getElementById('fz-parecer').value = 'conforme';
   document.getElementById('fz-obs').value = '';
@@ -3681,6 +3719,15 @@ function renderSubcontratacoesList(c) {
       `<div style="margin-bottom:8px;padding:6px 10px;border-radius:6px;background:var(--danger-light);color:var(--danger);font-size:.78rem">⚠ Total subcontratado (${total.toFixed(2)}%) ultrapassa o limite de ${limite}% definido para este contrato (Art. 122, Lei 14.133/2021)</div>`);
   }
 }
+// Razao social so e sobrescrita se estiver vazia: quem ja digitou nao perde o
+// que escreveu por causa de uma consulta.
+async function _scPuxarFornecedor(valorCnpj) {
+  await _puxarFornecedorPara(valorCnpj, forn => {
+    const campo = document.getElementById('sc-razao');
+    if (campo && !campo.value.trim()) campo.value = forn.razao_social || forn.nome_fantasia || '';
+  });
+}
+
 function showNovaSubcontratacaoForm() {
   document.getElementById('contrato-subcontratacao-form').style.display = '';
   document.getElementById('sc-cnpj').value = '';
@@ -3740,7 +3787,7 @@ function renderPagamentosContratoList(c) {
 }
 function showNovoPagamentoContratoForm() {
   document.getElementById('contrato-pagamento-form').style.display = '';
-  document.getElementById('pgc-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('pgc-data').value = _isoLocal();
   document.getElementById('pgc-valor').value = '';
   document.getElementById('pgc-empenho').value = '';
   document.getElementById('pgc-obs').value = '';
@@ -4379,7 +4426,7 @@ async function exportarPNCPContrato() {
   };
 
   const json = JSON.stringify(payload, null, 2);
-  const nomeArquivo = `PNCP_Contrato_${(c.numero || c.id).replace(/\//g,'-')}_${new Date().toISOString().slice(0,10)}.json`;
+  const nomeArquivo = `PNCP_Contrato_${(c.numero || c.id).replace(/\//g,'-')}_${_isoLocal()}.json`;
   const salvo = await _salvarArquivoComo(json, nomeArquivo, 'application/json');
   if (!salvo) return;
 
@@ -4479,7 +4526,7 @@ function _autoVigenciaAta(dataAssinatura) {
   if (!dataAssinatura) return;
   const d = new Date(dataAssinatura + 'T00:00:00');
   d.setFullYear(d.getFullYear() + 1);
-  document.getElementById('a-vig-final').value = d.toISOString().slice(0, 10);
+  document.getElementById('a-vig-final').value = _isoLocal(d);
 }
 
 async function openAtaModal(id) {
@@ -4578,7 +4625,7 @@ function renderPagamentosAtaList(a) {
 }
 function showNovoPagamentoAtaForm() {
   document.getElementById('ata-pagamento-form').style.display = '';
-  document.getElementById('pga-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('pga-data').value = _isoLocal();
   document.getElementById('pga-valor').value = '';
   document.getElementById('pga-empenho').value = '';
   document.getElementById('pga-obs').value = '';
@@ -5018,7 +5065,7 @@ async function exportarPNCPAta() {
   };
 
   const json = JSON.stringify(payload, null, 2);
-  const nomeArquivo = `PNCP_Ata_${(a.numero || a.id).replace(/\//g,'-')}_${new Date().toISOString().slice(0,10)}.json`;
+  const nomeArquivo = `PNCP_Ata_${(a.numero || a.id).replace(/\//g,'-')}_${_isoLocal()}.json`;
   const salvo = await _salvarArquivoComo(json, nomeArquivo, 'application/json');
   if (!salvo) return;
 
@@ -5743,7 +5790,7 @@ async function exportarAuditoriaCSV() {
   const linhas = [cabecalho.join(';')].concat(lista.map(e => [
     fmt(e.at), _AUDIT_EVENT_LABELS[e.evento] || e.evento, e.processId || '', e.detalhe, e.usuario
   ].map(_csvCampo).join(';')));
-  if (!(await _downloadCsv(linhas, `SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.csv`))) return;
+  if (!(await _downloadCsv(linhas, `SGCA_auditoria_${_isoLocal()}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${lista.length} registro(s) de auditoria`);
   toast(`${lista.length} registro(s) exportado(s).`, 'success');
 }
@@ -5771,7 +5818,7 @@ async function exportarAuditoriaXlsx() {
   const linhas = lista.map(e => [
     fmt(e.at), _AUDIT_EVENT_LABELS[e.evento] || e.evento, e.processId || '', e.detalhe, e.usuario
   ]);
-  if (!(await _exportarXlsx(`SGCA_auditoria_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
+  if (!(await _exportarXlsx(`SGCA_auditoria_${_isoLocal()}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${lista.length} registro(s) de auditoria`);
   toast(`${lista.length} registro(s) exportado(s).`, 'success');
 }
@@ -6803,7 +6850,7 @@ function _ceAutoFillValidade() {
   if (!tipo?.diasPadrao) return;
   const d = new Date(emissao + 'T00:00:00');
   d.setDate(d.getDate() + tipo.diasPadrao);
-  document.getElementById('ce-validade').value = d.toISOString().slice(0,10);
+  document.getElementById('ce-validade').value = _isoLocal(d);
 }
 function onCeTipoChange() {
   const val = document.getElementById('ce-tipo').value;
@@ -7075,7 +7122,7 @@ async function exportarFornecedoresCSV() {
       municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
     ].map(_csvCampo).join(';');
   }));
-  if (!(await _downloadCsv(linhas, `SGCA_fornecedores${_fornFiltroSufixo()}_${new Date().toISOString().slice(0, 10)}.csv`))) return;
+  if (!(await _downloadCsv(linhas, `SGCA_fornecedores${_fornFiltroSufixo()}_${_isoLocal()}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${lista.length} fornecedor(es)`);
   toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
@@ -7095,7 +7142,7 @@ async function exportarFornecedoresXlsx() {
       municipioUf, vencidas, atualizado ? new Date(atualizado).toLocaleDateString('pt-BR') : ''
     ];
   });
-  if (!(await _exportarXlsx(`SGCA_fornecedores${_fornFiltroSufixo()}_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
+  if (!(await _exportarXlsx(`SGCA_fornecedores${_fornFiltroSufixo()}_${_isoLocal()}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${lista.length} fornecedor(es)`);
   toast(`${lista.length} fornecedor(es) exportado(s).`, 'success');
 }
@@ -7109,7 +7156,7 @@ async function exportarCadastroForn() {
   if (!r?.ok) { toast('Erro ao exportar cadastro.', 'error'); return; }
   const txt = await r.text();
   let n = 0; try { n = (JSON.parse(txt).fornecedores || []).length; } catch {}
-  const nome = `SGX_FORN_${new Date().toISOString().slice(0,10)}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.json`;
+  const nome = `SGX_FORN_${_isoLocal()}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.json`;
   const salvo = await _salvarArquivoComo(txt, nome, 'application/json');
   if (salvo) toast(`${n} fornecedor(es) exportado(s) para sincronização.`, 'success');
 }
@@ -7373,7 +7420,7 @@ async function exportarContratosCsv() {
     statusLabel[c.status] || c.status, c.valorGlobal != null ? String(c.valorGlobal).replace('.', ',') : '',
     c.vigenciaInicial, c.vigenciaFinal, c.fiscalNome, c.gestorNome, c.dotacaoOrcamentaria
   ].map(_csvCampo).join(';')));
-  if (!(await _downloadCsv(linhas, `contratos_${new Date().toISOString().slice(0, 10)}.csv`))) return;
+  if (!(await _downloadCsv(linhas, `contratos_${_isoLocal()}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${_contratos.length} contrato(s)`);
   toast('CSV exportado com sucesso', 'success');
 }
@@ -7389,7 +7436,7 @@ async function exportarContratosXlsx() {
     statusLabel[c.status] || c.status, c.valorGlobal != null ? c.valorGlobal : '',
     c.vigenciaInicial, c.vigenciaFinal, c.fiscalNome, c.gestorNome, c.dotacaoOrcamentaria
   ]);
-  if (!(await _exportarXlsx(`contratos_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
+  if (!(await _exportarXlsx(`contratos_${_isoLocal()}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${_contratos.length} contrato(s)`);
   toast('Excel exportado com sucesso', 'success');
 }
@@ -7402,7 +7449,7 @@ async function exportarAtasCsv() {
     a.numero, a.processoOrigem, a.orgaoGerenciador,
     statusLabel[a.status] || a.status, a.dataAssinatura, a.vigenciaFinal, (a.itens || []).length
   ].map(_csvCampo).join(';')));
-  if (!(await _downloadCsv(linhas, `atas_${new Date().toISOString().slice(0, 10)}.csv`))) return;
+  if (!(await _downloadCsv(linhas, `atas_${_isoLocal()}.csv`))) return;
   await _auditEvento('EXPORT_CSV', `Exportação CSV de ${_atas.length} ata(s)`);
   toast('CSV exportado com sucesso', 'success');
 }
@@ -7415,7 +7462,7 @@ async function exportarAtasXlsx() {
     a.numero, a.processoOrigem, a.orgaoGerenciador,
     statusLabel[a.status] || a.status, a.dataAssinatura, a.vigenciaFinal, (a.itens || []).length
   ]);
-  if (!(await _exportarXlsx(`atas_${new Date().toISOString().slice(0, 10)}.xlsx`, cabecalho, linhas))) return;
+  if (!(await _exportarXlsx(`atas_${_isoLocal()}.xlsx`, cabecalho, linhas))) return;
   await _auditEvento('EXPORT_CSV', `Exportação Excel de ${_atas.length} ata(s)`);
   toast('Excel exportado com sucesso', 'success');
 }
@@ -9064,7 +9111,7 @@ async function relRecebimento() {
 // 8 ─ Contratos por fornecedor
 async function relPorFornecedor() {
   const { contratos, fornecedores } = await _relDados();
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = _isoLocal();
   const porForn = new Map();
   contratos.forEach(c => {
     const k = c.fornecedorId || '__sem__';
@@ -9267,7 +9314,7 @@ async function exportarBackupDB() {
   const blob = await r.blob();
   const url  = URL.createObjectURL(blob);
   const a    = Object.assign(document.createElement('a'), { href: url,
-    download: `DB_SGCA_BACKUP_${new Date().toISOString().slice(0,10)}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.zip`
+    download: `DB_SGCA_BACKUP_${_isoLocal()}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.zip`
   });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);

@@ -155,3 +155,65 @@ test.describe('datas em fuso brasileiro', () => {
   expect(r.fmt).toBe('01/01/2026');
   });
 });
+
+// Duas correções portadas do SGCD, no mesmo lugar (o formulário de subcontratação
+// e os campos de data que nascem com "hoje").
+test.describe('data local e CNPJ na subcontratacao', () => {
+  test.use({ timezoneId: 'America/Sao_Paulo' });
+
+  // toISOString() devolve a data em UTC: depois das 21h, o campo que nasce com
+  // "hoje" já vinha com a data de amanhã.
+  test('campo de data nasce com o dia local, nao com o de UTC', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-08-01T23:30:00-03:00'));
+    await page.goto('/SGCA.html');
+    await page.fill('#pin-username', 'admin');
+    await page.fill('#pin-input', 'novaSenhaE2E123');
+    await page.click('#overlay-pin button[onclick="verificarSenha()"]');
+    await expect(page.locator('#overlay-pin')).toBeHidden();
+
+    expect(await page.evaluate(() => _isoLocal()), 'data local saiu em UTC').toBe('2026-08-01');
+
+    await page.evaluate(async () => {
+      await renderContratos();
+      await openContratoModal(_contratos[0].id);
+      showNovaFiscalizacaoForm();
+    });
+    await expect(page.locator('#fz-data'), 'campo de data nasceu no dia seguinte')
+      .toHaveValue('2026-08-01');
+  });
+
+  // CNPJ da subcontratação resolve contra o cadastro compartilhado (SGCD/SGEA)
+  // em vez de exigir a razão social digitada à mão. Cadastro pré-existente: não
+  // depende da Receita Federal estar no ar durante o teste.
+  test('CNPJ da subcontratacao puxa do cadastro e recusa numero invalido', async ({ page }) => {
+    await page.goto('/SGCA.html');
+    await page.fill('#pin-username', 'admin');
+    await page.fill('#pin-input', 'novaSenhaE2E123');
+    await page.click('#overlay-pin button[onclick="verificarSenha()"]');
+    await expect(page.locator('#overlay-pin')).toBeHidden();
+
+    const antes = await page.evaluate(async () => {
+      const cnpj = '12.908.073/0001-65';
+      await saveFornecedor({ id: '12908073000165', cnpj, cnpj_digits: '12908073000165',
+                             razao_social: 'SUBCONTRATADA DE TESTE LTDA' }, null);
+      await renderContratos();
+      await openContratoModal(_contratos[0].id);
+      showNovaSubcontratacaoForm();
+      return (await listarFornecedores()).length;
+    });
+
+    // 1) CNPJ ja cadastrado: puxa a razao social sem ir a Receita
+    await page.fill('#sc-cnpj', '12.908.073/0001-65');
+    await page.locator('#sc-percentual').click();          // dispara o onchange
+    await expect(page.locator('#sc-razao')).toHaveValue('SUBCONTRATADA DE TESTE LTDA');
+
+    // 2) invalido: nao cadastra nada e nao apaga o que foi digitado
+    await page.fill('#sc-razao', '');
+    await page.fill('#sc-cnpj', '11.111.111/1111-11');
+    await page.locator('#sc-percentual').click();
+    await expect(page.locator('#sc-razao')).toHaveValue('');
+    await expect(page.locator('#sc-cnpj')).toHaveValue('11.111.111/1111-11');
+    expect(await page.evaluate(() => listarFornecedores().then(l => l.length)),
+           'CNPJ invalido acabou cadastrado').toBe(antes);
+  });
+});

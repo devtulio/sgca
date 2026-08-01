@@ -38,7 +38,7 @@ Funciona em rede local: um único computador executa o servidor e todos os usuá
 - **Fiscalização Mensal** no Contrato — data, fiscal, parecer e observações, com alerta "Fiscalização Atrasada" no Dashboard quando um contrato vigente fica mais de 45 dias sem registro (Art. 117)
 - **Matriz de Risco** do Contrato — riscos com probabilidade, impacto, mitigação e responsável, com documento gerável (Art. 22)
 - **Recebimento do Objeto** — datas e responsáveis pelo recebimento provisório e definitivo, com Termo de Recebimento gerável (Art. 140)
-- **Subcontratação** — CNPJ, razão social e percentual do subcontratado, com alerta se o total ultrapassar o limite definido para o contrato (Art. 122)
+- **Subcontratação** — CNPJ, razão social e percentual do subcontratado, com alerta se o total ultrapassar o limite definido para o contrato (Art. 122); o CNPJ informado é resolvido contra o cadastro de fornecedores e, se ainda não estiver lá, consultado na Receita Federal e cadastrado automaticamente
 - **Item do Plano de Contratações Anual (PCA)** — campo de rastreabilidade no Contrato (Art. 12, Lei 14.133/2021 / IN SEGES nº 81/2022)
 - **Alerta de vigência total próxima do limite legal** — soma da vigência inicial com todas as prorrogações, aviso configurável por contrato (Art. 107)
 - **Aniversário de reajuste** na Agenda de Vencimentos — lembrete 12 meses após o último aditivo de reequilíbrio/repactuação (ou desde a assinatura, se nunca houve um)

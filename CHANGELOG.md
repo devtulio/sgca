@@ -9,6 +9,17 @@
 
 ---
 
+## [0.41.0] — 2026-08-01
+
+### Adicionado
+- **CNPJ da subcontratação resolve sozinho.** Ao informar o CNPJ de um subcontratado, o sistema procura o fornecedor **no cadastro** — o mesmo compartilhado com SGCD e SGEA — e preenche a razão social na hora. Se não estiver lá, consulta a Receita Federal, cadastra e preenche. Evita digitar a razão social à mão e evita o mesmo fornecedor virar dois registros com grafias diferentes.
+  - **CNPJ inválido não cadastra nada** e o número digitado é preservado. A razão social só é preenchida se estiver vazia: quem já digitou não perde o que escreveu.
+
+### Corrigido
+- **Cálculo de "hoje" errava um dia depois das 21h.** O sistema calculava "hoje" convertendo o horário para o fuso de Greenwich. Depois das 21h, "hoje" já era o dia seguinte lá — e tudo que dependia disso errava um dia, mas só à noite. No SGCA isso afetava os campos de data que já nascem preenchidos (fiscalização, pagamento, reajuste), a contagem de certidões vencidas e de sanções vigentes no relatório por fornecedor, e a data no nome dos arquivos exportados.
+
+---
+
 ## [0.40.12] — 2026-07-31
 
 ### Alterado
