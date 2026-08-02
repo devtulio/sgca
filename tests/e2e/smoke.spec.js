@@ -217,3 +217,41 @@ test.describe('data local e CNPJ na subcontratacao', () => {
            'CNPJ invalido acabou cadastrado').toBe(antes);
   });
 });
+
+// fmtExtenso subiu para o esqueleto: o fecho "local, data" de todo documento da
+// familia passa por ele. Este teste garante que o Extrato continua fechando por
+// extenso — e que a funcao esta mesmo vindo do base.js, nao de uma copia local.
+test.describe('data por extenso no fecho dos documentos', () => {
+  test.use({ timezoneId: 'America/Sao_Paulo' });
+
+  test('extrato de contrato fecha por extenso, com a data local', async ({ page, context }) => {
+    page.on('dialog', d => d.accept());
+    await page.clock.setFixedTime(new Date('2026-08-01T23:30:00-03:00'));
+    await page.goto('/SGCA.html');
+    await page.fill('#pin-username', 'admin');
+    await page.fill('#pin-input', 'novaSenhaE2E123');
+    await page.click('#overlay-pin button[onclick="verificarSenha()"]');
+    await expect(page.locator('#overlay-pin')).toBeHidden();
+
+    const r = await page.evaluate(() => ({
+      hoje: fmtExtenso(),
+      comData: fmtExtenso('2026-01-01'),          // virada de ano, string so-data
+      doEsqueleto: !document.documentElement.innerHTML.includes('function fmtExtenso'),
+    }));
+    expect(r.hoje, 'o fecho saiu na data de UTC').toBe('1 de agosto de 2026');
+    expect(r.comData, 'string so-data voltou um dia').toBe('1 de janeiro de 2026');
+    expect(r.doEsqueleto, 'ainda existe uma copia local de fmtExtenso no HTML').toBe(true);
+
+    await page.evaluate(async () => {
+      await renderContratos();
+      await openContratoModal(_contratos[0].id);
+    });
+    const [doc] = await Promise.all([
+      context.waitForEvent('page'),
+      page.click('button[onclick="gerarExtratoContrato()"]'),
+    ]);
+    await doc.waitForLoadState();
+    await expect(doc.locator('.city-date')).toContainText('1 de agosto de 2026');
+    await doc.close();
+  });
+});
