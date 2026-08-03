@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual Operacional — SGCA v0.41.1</title>
+<title>Manual Operacional — SGCA v0.41.2</title>
 <style>
   /* Reset e base */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +74,7 @@
       size: A4;
       margin: 20mm 20mm 25mm;
       @top-center {
-        content: "SGCA v0.41.1 — Manual Operacional";
+        content: "SGCA v0.41.2 — Manual Operacional";
         font-family: 'Times New Roman', serif;
         font-size: 9pt;
         color: #666;
@@ -101,7 +101,7 @@
     <div class="cover-title">Manual Operacional</div>
     <div class="cover-subtitle">SGCA — Sistema de Gestão de Contratos e Atas</div>
     <div class="cover-system">Contratos, Atas de Registro de Preços e módulos administrativos</div>
-    <div class="cover-version">Versão v0.41.1</div>
+    <div class="cover-version">Versão v0.41.2</div>
     <br>
     <div style="font-size:11pt; color:#555; line-height:1.8;">
       Aplicação web multiusuário para o Departamento de Gestão e Contratos<br>
@@ -244,6 +244,7 @@
 
 <h2 id="sec12">12. Backup e Restauração</h2>
 <p><strong>Dois tipos de backup, para usos diferentes.</strong> O arquivo <strong>JSON</strong> guarda os dados de trabalho (contratos, atas, fornecedores e configurações) e é o que se envia a outra máquina para sincronizar — ele <strong>não</strong> contém as contas de usuário nem as senhas. Para recuperação completa depois de perda de disco ou formatação, use o <strong>backup do banco</strong>, gerado automaticamente e disponível em <strong>Configurações → Dados</strong>: desde a v0.36.0 ele é um <strong>pacote .zip</strong> contendo o banco de dados e a pasta de anexos, de modo que restaurá-lo repõe também os PDFs anexados aos contratos e às atas — que ficam guardados fora do banco. Backups antigos, no formato <code>.db</code> avulso, continuam podendo ser restaurados normalmente, apenas sem os anexos. É uma cópia integral do sistema, contas inclusive; guarde-o em local seguro, pois contém todos os dados.</p>
+<div class="nota"><strong>Os dois arquivos, pelo nome:</strong> o Cofre é o <code>DB_SGCA_BACKUP_[data-hora].zip</code> — cópia da instalação, restaura tudo, inclusive as contas; guarde-o fora da máquina. O de sincronização é o <code>SYNC_SGCA_BACKUP_[data-hora].json</code> — leva os dados de trabalho a outra instalação, sem contas. Ele se chamava <code>SIS_</code> até agosto/2026; os arquivos gravados antes continuam na lista e continuam restauráveis, porque o sistema reconhece o backup pelo conteúdo, não pelo nome.</div>
 <p>O sistema realiza backup automático (JSON + pacote do banco) ao encerrar, com rotação configurável em <strong>Configurações → Dados</strong>. É possível também exportar/restaurar manualmente e sincronizar fornecedores entre instalações diferentes (mescla o que é novo, revisa conflitos, sem substituir o banco inteiro).</p>
 <p>Ainda em Configurações → Dados, o botão <strong>📊 Relatório de Backup e Integridade</strong> gera um documento com o estado do banco de dados, dos backups existentes e as contagens de registros — útil para conferir, de tempos em tempos, se a rotina de backup está mesmo funcionando.</p>
 <p><strong>Restrito ao administrador.</strong> Exportar e restaurar backups — tanto o JSON quanto o pacote do banco — são operações privativas de usuários administradores: o servidor recusa a solicitação de quem não tiver esse perfil.</p>
@@ -257,6 +258,10 @@
 <p>Fornecedores, contratos e atas excluídos ficam recuperáveis por 30 dias antes da exclusão definitiva. A exclusão de um contrato ou ata (botões descritos nas Seções 5 e 6) exige uma confirmação em três etapas — aviso geral com alerta informativo de fornecedor vinculado, digitação da frase "EXCLUIR &lt;número&gt;" e contagem regressiva de 5 segundos — no mesmo padrão de segurança do Factory Reset (Seção 12), para reduzir o risco de exclusão acidental.</p>
 
 <h2 id="sec15">15. Histórico de Versões</h2>
+<h3>v0.41.2 — Agosto/2026</h3>
+<p><strong>Alterado</strong></p>
+<ul><li>O backup JSON passou a se chamar <code>SYNC_</code> em vez de <code>SIS_</code> — o nome agora diz o papel: quem restaura tudo é o Cofre <code>.zip</code>; o JSON leva os dados de trabalho a outra instalação. Arquivos gravados antes continuam na lista e continuam restauráveis, porque o backup é reconhecido pelo conteúdo, não pelo nome.</li></ul>
+
 <h3>v0.41.1 — Agosto/2026</h3>
 <p><strong>Alterado</strong></p>
 <ul><li>O fecho "local, data" dos documentos passou a usar uma função única do esqueleto compartilhado (<code>fmtExtenso</code>), no lugar da expressão repetida em cada gerador. Nada muda no que sai impresso; passa a haver um só lugar para corrigir.</li></ul>

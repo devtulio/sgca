@@ -1931,7 +1931,7 @@ body.dark .rel-card { border-color: #383838; }
 // SVG ICON LIBRARY (Lucide — stroke, 2px, round)
 // ══════════════════════════════════════════════════════════════
 
-const SGCA_VERSION = '0.41.1';
+const SGCA_VERSION = '0.41.2';
 document.title = `SGCA v${SGCA_VERSION}`;
 // ── API wrapper (REST) ────────────────────────────────────────
 let _apiToken = localStorage.getItem('sgca-token') || null;
@@ -2244,7 +2244,7 @@ async function exportBackup() {
     const url  = URL.createObjectURL(blob);
     const a    = Object.assign(document.createElement('a'), {
       href: url,
-      download: `SIS_SGCA_BACKUP_${_isoLocal()}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.json`
+      download: `SYNC_SGCA_BACKUP_${_isoLocal()}_${new Date().toTimeString().slice(0,8).replace(/:/g,'-')}.json`
     });
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
@@ -9247,7 +9247,7 @@ async function _anexarDocumentoGerado(input, contratoId, docNome) {
  */
 
 // Nome padronizado de arquivo/título para documentos gerados, no mesmo espírito
-// dos nomes de backup (SIS_SGCA_BACKUP_...). Chrome/Edge usam a tag <title> como
+// dos nomes de backup (SYNC_SGCA_BACKUP_...). Chrome/Edge usam a tag <title> como
 // nome sugerido ao "Salvar como PDF", então isso já resolve a nomenclatura.
 function _nomeArquivoDoc(p, tipo) {
   const pa = p?.num_proc || p?.num || '';

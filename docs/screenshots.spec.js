@@ -91,6 +91,9 @@ test('capturas do README', async ({ page }) => {
 
   // ── 1. Contratos em Kanban ────────────────────────────────────────────────
   await page.click('#nav-contratos');
+  // espera a troca de view antes de olhar o card: clicar antes do app terminar de
+  // carregar deixava o cartao no DOM porem dentro do container oculto (flaky)
+  await expect(page.locator('#view-contratos')).toBeVisible();
   await expect(page.locator('.kanban-card').first()).toBeVisible();
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${SHOTS}/contratos.png` });
